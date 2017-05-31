@@ -16,10 +16,15 @@ fun getGreeting(): String {
 
 fun main(args: Array<String>) {
     var ha = HybridAutomata()
-    ha.addLocation(Location("q0"))
-    ha.addLocation(Location("q1"))
-    ha.addLocation(Location("q2"))
-    ha.addLocation(Location("q3"))
+            .addLocation("q0")
+            .addLocation("q1")
+            .addLocation("q2")
+            .addLocation("q3")
+            .addEdge("q0","q1")
+            .addEdge("q1","q0")
+            .addEdge("q1","q2")
+            .addEdge("q2","q3")
+            .addEdge("q3","q0")
 
     println(ha)
 }
