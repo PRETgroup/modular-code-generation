@@ -7,29 +7,17 @@ import me.nallen.modularCodeGeneration.parseTree.*
  * Created by nall426 on 31/05/2017.
  */
 
-fun getGreeting(): String {
-    val words = mutableListOf<String>()
-    words.add("Hello,")
-    words.add("world!")
-
-    return words.joinToString(separator = " ")
-}
-
 fun main(args: Array<String>) {
-    var ha = HybridAutomata()
-            .addLocation("q0")
-            .addLocation("q1")
-            .addLocation("q2")
-            .addLocation("q3")
-            .addEdge("q0","q1")
-            .addEdge("q1","q0")
-            .addEdge("q1","q2")
-            .addEdge("q2","q3")
-            .addEdge("q3","q0")
+    val ha = HybridAutomata("Cell")
+            .addLocation("q0", ParseTreeItem.generate("v < 44.5 && g < 44.5"))
+            .addLocation("q1", ParseTreeItem.generate("v < 44.5 && g > 0"))
+            .addLocation("q2", ParseTreeItem.generate("v < 131.1 - 80.1 * sqrt(theta)"))
+            .addLocation("q3", ParseTreeItem.generate("v > 30"))
+            .addEdge("q0","q1", ParseTreeItem.generate("g >= 44.5"))
+            .addEdge("q1","q0", ParseTreeItem.generate("g <= 0 && v < 44.5"))
+            .addEdge("q1","q2", ParseTreeItem.generate("v > 44.5"))
+            .addEdge("q2","q3", ParseTreeItem.generate("v >= 131.1 - 80.1 * sqrt(theta)"))
+            .addEdge("q3","q0", ParseTreeItem.generate("v <= 30"))
 
-    //println(ha)
-
-    var parsed = GenerateParseTreeFromString("!(5 < (x + 2)) && x2 > 7")
-
-    println(parsed.generateString())
+    println(ha)
 }

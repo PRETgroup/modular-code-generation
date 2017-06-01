@@ -13,7 +13,8 @@ internal enum class Operand {
     GREATER_THAN_OR_EQUAL, GREATER_THAN, LESS_THAN_OR_EQUAL, LESS_THAN,
     EQUAL, NOT_EQUAL,
     OPEN_BRACKET, CLOSE_BRACKET,
-    PLUS
+    PLUS, MINUS, MULTIPLY, DIVIDE,
+    SQUARE_ROOT
 }
 
 internal data class Operator(
@@ -35,7 +36,11 @@ internal val operands: Map<Operand, Operator> = hashMapOf(
         Operand.NOT_EQUAL to Operator("!=", 2, Associativity.LEFT, 7),
         Operand.OPEN_BRACKET to Operator("(", 0, Associativity.NONE, 1),
         Operand.CLOSE_BRACKET to Operator(")", 0, Associativity.NONE, 1),
-        Operand.PLUS to Operator("+", 2, Associativity.LEFT, 2)
+        Operand.PLUS to Operator("+", 2, Associativity.LEFT, 2),
+        Operand.MINUS to Operator("-", 2, Associativity.LEFT, 2),
+        Operand.MULTIPLY to Operator("*", 2, Associativity.LEFT, 3),
+        Operand.DIVIDE to Operator("/", 2, Associativity.LEFT, 3),
+        Operand.SQUARE_ROOT to Operator("sqrt", 1, Associativity.RIGHT, 3)
 )
 
 internal fun getOperandForSequence(input: String): Operand? {
