@@ -1,6 +1,7 @@
 package me.nallen.modularCodeGeneration
 
 import me.nallen.modularCodeGeneration.hybridAutomata.*
+import me.nallen.modularCodeGeneration.parseTree.*
 
 /**
  * Created by nall426 on 31/05/2017.
@@ -26,5 +27,9 @@ fun main(args: Array<String>) {
             .addEdge("q2","q3")
             .addEdge("q3","q0")
 
-    println(ha)
+    //println(ha)
+
+    var parsed = GenerateParseTreeFromString("!(5 < (x + 2)) && x2 > 7")
+
+    println(parsed.generateString())
 }
