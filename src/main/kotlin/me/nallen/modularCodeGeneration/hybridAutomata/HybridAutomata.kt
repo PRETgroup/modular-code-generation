@@ -11,7 +11,7 @@ data class HybridAutomata(
         var name: String = "HA",
         var locations: MutableList<Location> = ArrayList<Location>(),
         var edges: MutableList<Edge> = ArrayList<Edge>(),
-        var init: Initialisation = Initialisation()
+        var init: Initialisation = Initialisation("")
 ) {
     //private var continuousVariables = ArrayList<Variable>() // TODO: Keep track of continuous variables
     //private var events = ArrayList<Variable>() // TODO: Keep track of events
@@ -19,8 +19,8 @@ data class HybridAutomata(
     fun addLocation(
             name: String,
             invariant: ParseTreeItem = Literal("true"),
-            flow: List<ParseTreeItem> = ArrayList<ParseTreeItem>(),
-            update: List<ParseTreeItem> = ArrayList<ParseTreeItem>()
+            flow: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
+            update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
     ): HybridAutomata {
         return addLocation(Location(name, invariant, flow, update))
     }
@@ -40,7 +40,7 @@ data class HybridAutomata(
             fromLocation: String,
             toLocation: String,
             guard: ParseTreeItem = Literal("true"),
-            update: List<ParseTreeItem> = ArrayList<ParseTreeItem>()
+            update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
     ): HybridAutomata {
         return addEdge(Edge(fromLocation, toLocation, guard, update))
     }
@@ -72,26 +72,35 @@ data class HybridAutomata(
         return this
     }
 
+    fun setInit(init: Initialisation): HybridAutomata {
+        if(!locations.any({ it.name == init.state }))
+            throw IllegalArgumentException("Location with name ${init.state} does not exist!")
+
+        this.init = init
+
+        return this
+    }
+
     //TODO: Adding init should check that all continuousVariables are defined, otherwise default to 0 and WARN
 }
 
 data class Location(
         var name: String,
         var invariant: ParseTreeItem = Literal("true"),
-        var flow: List<ParseTreeItem> = ArrayList<ParseTreeItem>(),
-        var update: List<ParseTreeItem> = ArrayList<ParseTreeItem>()
+        var flow: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
+        var update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
 )
 
 data class Edge(
         var fromLocation: String,
         var toLocation: String,
         var guard: ParseTreeItem = Literal("true"),
-        var update: List<ParseTreeItem> = ArrayList<ParseTreeItem>()
+        var update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
 )
 
 data class Initialisation(
-        var state: Int = -1,
-        var valuations: String = ""
+        var state: String,
+        var valuations: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
 )
 
 data class Variable(

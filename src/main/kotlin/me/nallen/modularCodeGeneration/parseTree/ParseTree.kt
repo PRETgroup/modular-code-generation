@@ -4,32 +4,32 @@ package me.nallen.modularCodeGeneration.parseTree
  * Created by nall426 on 1/06/2017.
  */
 
-sealed class ParseTreeItem() {
+sealed class ParseTreeItem(var type: String) {
     companion object Factory {
         fun generate(input: String): ParseTreeItem = GenerateParseTreeFromString(input)
     }
 }
 
-data class And(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
-data class Or(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
-data class Not(var operandA: ParseTreeItem): ParseTreeItem()
+data class And(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("and")
+data class Or(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("or")
+data class Not(var operandA: ParseTreeItem): ParseTreeItem("not")
 
-data class GreaterThanOrEqual(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
-data class GreaterThan(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
-data class LessThanOrEqual(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
-data class LessThan(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
-data class Equal(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
-data class NotEqual(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
+data class GreaterThanOrEqual(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("greaterThanOrEqualTo")
+data class GreaterThan(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("greaterThan")
+data class LessThanOrEqual(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("lessThanOrEqualTo")
+data class LessThan(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("lessThan")
+data class Equal(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("euqal")
+data class NotEqual(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("notEqual")
 
-data class Plus(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
-data class Minus(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
-data class Multiply(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
-data class Divide(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem()
+data class Plus(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("plus")
+data class Minus(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("minus")
+data class Multiply(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("multiply")
+data class Divide(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("divide")
 
-data class SquareRoot(var operandA: ParseTreeItem): ParseTreeItem()
+data class SquareRoot(var operandA: ParseTreeItem): ParseTreeItem("squareRoot")
 
-data class Variable(var name: String): ParseTreeItem()
-data class Literal(var value: String): ParseTreeItem()
+data class Variable(var name: String): ParseTreeItem("variable")
+data class Literal(var value: String): ParseTreeItem("literal")
 
 
 fun GenerateParseTreeFromString(input: String): ParseTreeItem {

@@ -44,10 +44,14 @@ internal val operands: Map<Operand, Operator> = hashMapOf(
 )
 
 internal fun getOperandForSequence(input: String): Operand? {
+    val matches = ArrayList<Operand>()
     for((operand, operator) in operands) {
         if(input.startsWith(operator.symbol))
-            return operand
+            matches.add(operand)
     }
+
+    if(matches.size > 0)
+        return matches.sortedWith(compareBy({operands[it]?.symbol?.length})).last()
 
     return null
 }
