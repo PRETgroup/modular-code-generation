@@ -3,6 +3,7 @@ package me.nallen.modularCodeGeneration
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.*
 
@@ -11,6 +12,7 @@ import me.nallen.modularCodeGeneration.parseTree.*
  */
 
 fun main(args: Array<String>) {
+    val mapper: ObjectMapper = jacksonObjectMapper().configure(SerializationFeature.INDENT_OUTPUT, false)
 
     val ha = HybridAutomata("Cell")
             .addLocation(
@@ -87,7 +89,9 @@ fun main(args: Array<String>) {
             ))
 
     println(ha)
-
-    val mapper: ObjectMapper = jacksonObjectMapper().configure(SerializationFeature.INDENT_OUTPUT, false)
     print(mapper.writeValueAsString(ha))
+
+    val fsm = FiniteStateMachine.generateFromHybridAutomata(ha)
+    println(fsm)
+    print(mapper.writeValueAsString(fsm))
 }
