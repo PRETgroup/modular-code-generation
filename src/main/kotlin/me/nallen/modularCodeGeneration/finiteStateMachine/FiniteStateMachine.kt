@@ -1,20 +1,24 @@
 package me.nallen.modularCodeGeneration.finiteStateMachine
 
-import com.sun.org.apache.xml.internal.security.Init
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
 import me.nallen.modularCodeGeneration.parseTree.Literal
+import me.nallen.modularCodeGeneration.parseTree.Variable as ParseTreeVariable
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
+import me.nallen.modularCodeGeneration.parseTree.generateString
+import me.nallen.modularCodeGeneration.parseTree.getChildren
 
 /**
  * Created by nall426 on 31/05/2017.
  */
 
 data class FiniteStateMachine(
-        var name: String = "FSM",
-        var states: MutableList<State> = ArrayList<State>(),
-        var transitions: MutableList<Transition> = ArrayList<Transition>(),
-        var init: Initialisation = Initialisation("")
+        var name: String = "FSM"
 ) {
+    val states = ArrayList<State>()
+    val transitions = ArrayList<Transition>()
+    var init = Initialisation("")
+
+    val variables = ArrayList<Variable>()
 
     companion object Factory {
         fun generateFromHybridAutomata(ha: HybridAutomata): FiniteStateMachine {
@@ -32,8 +36,28 @@ data class FiniteStateMachine(
                 fsm.addTransition(name, name, invariant, updates)
             }
 
-            for((fromLocation, toLocation, guard, update) in ha.edges) {
-                fsm.addTransition(fromLocation, toLocation, guard, update)
+            for((fromLocation, toLocation, guard, update, inEvents, outEvents) in ha.edges) {
+                // Check for any variables
+                fsm.checkParseTreeForNewVariable(inEvents, VariableType.BOOLEAN, Locality.EXTERNAL_INPUT)
+
+                for(event in outEvents) {
+                    fsm.addVariableIfNotExist(event, VariableType.BOOLEAN, Locality.EXTERNAL_OUTPUT)
+                }
+
+                // Combine Guard
+                var combinedGuard = guard
+                if(inEvents !is Literal || inEvents.value == "false") {
+                    combinedGuard = ParseTreeItem.generate("(${guard.generateString()}) && (${inEvents.generateString()})")
+                }
+
+                // Combine Output
+                val combinedUpdate = HashMap<String, ParseTreeItem>()
+                combinedUpdate.putAll(update)
+                for(event in outEvents) {
+                    combinedUpdate.put(event, Literal("true"))
+                }
+
+                fsm.addTransition(fromLocation, toLocation, combinedGuard, combinedUpdate)
             }
 
             fsm.setInit(Initialisation(ha.init.state, ha.init.valuations))
@@ -51,8 +75,6 @@ data class FiniteStateMachine(
     fun addState(state: State): FiniteStateMachine {
         if(states.any({it.name == state.name}))
             throw IllegalArgumentException("Location with name ${state.name} already exists!")
-
-        //TODO: Check if location introduces any new continuousVariables (invariant, flow, update)
 
         states.add(state)
 
@@ -86,9 +108,13 @@ data class FiniteStateMachine(
             }
         }
 
-        //TODO: Check if edge introduces any new continuousVariables (guard, update)
+        // Check for any variables
+        checkParseTreeForNewVariable(transition.guard)
 
-        //TODO: Check if edge introudces any new events
+        for((key, value) in transition.update) {
+            addVariableIfNotExist(key)
+            checkParseTreeForNewVariable(value)
+        }
 
         transitions.add(transition)
 
@@ -102,6 +128,32 @@ data class FiniteStateMachine(
         this.init = init
 
         return this
+    }
+
+    /* Private Methods */
+
+    protected fun checkParseTreeForNewVariable(
+            item: ParseTreeItem,
+            type: VariableType = VariableType.REAL,
+            locality: Locality = Locality.INTERNAL
+    ) {
+        if(item is ParseTreeVariable) {
+            addVariableIfNotExist(item.name, type, locality)
+        }
+
+        for(child in item.getChildren()) {
+            checkParseTreeForNewVariable(child, type, locality)
+        }
+    }
+
+    protected fun addVariableIfNotExist(
+            item: String,
+            type: VariableType = VariableType.REAL,
+            locality: Locality = Locality.INTERNAL
+    ) {
+        if(!variables.any({it.name == item})) {
+            variables.add(Variable(item, type, locality))
+        }
     }
 }
 
@@ -120,3 +172,17 @@ data class Initialisation(
         var state: String,
         var valuations: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
 )
+
+data class Variable(
+        var name: String,
+        var type: VariableType,
+        var locality: Locality
+)
+
+enum class VariableType {
+    BOOLEAN, REAL
+}
+
+enum class Locality {
+    INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT
+}

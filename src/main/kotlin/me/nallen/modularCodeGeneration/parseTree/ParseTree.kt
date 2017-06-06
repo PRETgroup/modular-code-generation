@@ -142,3 +142,24 @@ fun ParseTreeItem.generateString(): String {
         is SquareRoot -> return "sqrt(" + operandA.generateString() + ")"
     }
 }
+
+fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
+    return when (this) {
+        is And -> arrayOf(operandA, operandB)
+        is Or -> arrayOf(operandA, operandB)
+        is Not -> arrayOf(operandA)
+        is GreaterThan -> arrayOf(operandA, operandB)
+        is GreaterThanOrEqual -> arrayOf(operandA, operandB)
+        is LessThanOrEqual -> arrayOf(operandA, operandB)
+        is LessThan -> arrayOf(operandA, operandB)
+        is Equal -> arrayOf(operandA, operandB)
+        is NotEqual -> arrayOf(operandA, operandB)
+        is Literal -> arrayOf()
+        is Variable -> arrayOf()
+        is Plus -> arrayOf(operandA, operandB)
+        is Minus -> arrayOf(operandA, operandB)
+        is Multiply -> arrayOf(operandA, operandB)
+        is Divide -> arrayOf(operandA, operandB)
+        is SquareRoot -> arrayOf(operandA)
+    }
+}

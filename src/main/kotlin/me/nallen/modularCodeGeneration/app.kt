@@ -17,7 +17,7 @@ fun main(args: Array<String>) {
     val ha = HybridAutomata("Cell")
             .addLocation(
                     "q0",
-                    ParseTreeItem.generate("v < 44.5 && g < 44.5"),
+                    ParseTreeItem.generate("v < V_T && g < V_T"),
                     hashMapOf(
                             "v_x" to ParseTreeItem.generate("C1 * v_x"),
                             "v_y" to ParseTreeItem.generate("C2 * v_y"),
@@ -29,7 +29,7 @@ fun main(args: Array<String>) {
             )
             .addLocation(
                     "q1",
-                    ParseTreeItem.generate("v < 44.5 && g > 0"),
+                    ParseTreeItem.generate("v < V_T && g > 0"),
                     hashMapOf(
                             "v_x" to ParseTreeItem.generate("C4 * v_x + C7 * g"),
                             "v_y" to ParseTreeItem.generate("C5 * v_y + C8 * g"),
@@ -41,7 +41,7 @@ fun main(args: Array<String>) {
             )
             .addLocation(
                     "q2",
-                    ParseTreeItem.generate("v < 131.1 - 80.1 * sqrt(theta)"),
+                    ParseTreeItem.generate("v < V_O - 80.1 * sqrt(theta)"),
                     hashMapOf(
                             "v_x" to ParseTreeItem.generate("C10 * v_x"),
                             "v_y" to ParseTreeItem.generate("C11 * v_y"),
@@ -53,7 +53,7 @@ fun main(args: Array<String>) {
             )
             .addLocation(
                     "q3",
-                    ParseTreeItem.generate("v > 30"),
+                    ParseTreeItem.generate("v > V_R"),
                     hashMapOf(
                             "v_x" to ParseTreeItem.generate("C13 * v_x * f_theta"),
                             "v_y" to ParseTreeItem.generate("C14 * v_y * f_theta"),
@@ -65,33 +65,32 @@ fun main(args: Array<String>) {
             )
             .addEdge(
                     "q0","q1",
-                    ParseTreeItem.generate("g >= 44.5"),
-                    hashMapOf(
+                    ParseTreeItem.generate("g >= V_T"),
+                    update = hashMapOf(
                             "v_x" to ParseTreeItem.generate("0.3 * v"),
                             "v_y" to ParseTreeItem.generate("0.0 * v"),
                             "v_z" to ParseTreeItem.generate("0.7 * v"),
                             "theta" to ParseTreeItem.generate("v / 44.5"),
-                            "f_theta" to ParseTreeItem.generate("0.3 * v")
+                            "f_theta" to ParseTreeItem.generate("theta")
                     )
             )
-            .addEdge("q1","q0", ParseTreeItem.generate("g <= 0 && v < 44.5"))
-            .addEdge("q1","q2", ParseTreeItem.generate("v > 44.5"))
-            .addEdge("q2","q3", ParseTreeItem.generate("v >= 131.1 - 80.1 * sqrt(theta)"))
-            .addEdge("q3","q0", ParseTreeItem.generate("v <= 30"))
+            .addEdge("q1","q0", ParseTreeItem.generate("g <= 0 && v < V_T"))
+            .addEdge("q1","q2", ParseTreeItem.generate("v > V_T"))
+            .addEdge("q2","q3", ParseTreeItem.generate("v >= V_O - 80.1 * sqrt(theta)"))
+            .addEdge("q3","q0", ParseTreeItem.generate("v <= V_R"))
             .setInit(Initialisation(
                     "q0",
                     hashMapOf(
                             "v_x" to ParseTreeItem.generate("0"),
                             "v_y" to ParseTreeItem.generate("0"),
                             "v_z" to ParseTreeItem.generate("0"),
-                            "theta" to ParseTreeItem.generate("0")
+                            "theta" to ParseTreeItem.generate("0"),
+                            "f_theta" to ParseTreeItem.generate("0")
                     )
             ))
 
-    println(ha)
-    print(mapper.writeValueAsString(ha))
+    println(mapper.writeValueAsString(ha))
 
     val fsm = FiniteStateMachine.generateFromHybridAutomata(ha)
-    println(fsm)
-    print(mapper.writeValueAsString(fsm))
+    println(mapper.writeValueAsString(fsm))
 }

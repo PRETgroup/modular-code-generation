@@ -1,20 +1,23 @@
 package me.nallen.modularCodeGeneration.hybridAutomata
 
 import me.nallen.modularCodeGeneration.parseTree.Literal
+import me.nallen.modularCodeGeneration.parseTree.Variable as ParseTreeVariable
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
+import me.nallen.modularCodeGeneration.parseTree.getChildren
 
 /**
  * Created by nall426 on 31/05/2017.
  */
 
 data class HybridAutomata(
-        var name: String = "HA",
-        var locations: MutableList<Location> = ArrayList<Location>(),
-        var edges: MutableList<Edge> = ArrayList<Edge>(),
-        var init: Initialisation = Initialisation("")
+        var name: String = "HA"
 ) {
-    //private var continuousVariables = ArrayList<Variable>() // TODO: Keep track of continuous variables
-    //private var events = ArrayList<Variable>() // TODO: Keep track of events
+    val locations = ArrayList<Location>()
+    val edges = ArrayList<Edge>()
+    var init = Initialisation("")
+
+    val continuousVariables = ArrayList<Variable>()
+    val events = ArrayList<Variable>()
 
     fun addLocation(
             name: String,
@@ -29,7 +32,18 @@ data class HybridAutomata(
         if(locations.any({it.name == location.name}))
             throw IllegalArgumentException("Location with name ${location.name} already exists!")
 
-        //TODO: Check if location introduces any new continuousVariables (invariant, flow, update)
+        // Check for any continuous variables
+        checkParseTreeForNewContinuousVariable(location.invariant)
+
+        for((key, value) in location.flow) {
+            addContinuousVariableIfNotExist(key)
+            checkParseTreeForNewContinuousVariable(value)
+        }
+
+        for((key, value) in location.update) {
+            addContinuousVariableIfNotExist(key)
+            checkParseTreeForNewContinuousVariable(value)
+        }
 
         locations.add(location)
 
@@ -40,9 +54,11 @@ data class HybridAutomata(
             fromLocation: String,
             toLocation: String,
             guard: ParseTreeItem = Literal("true"),
-            update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+            update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
+            inEvents: ParseTreeItem = Literal("true"),
+            outEvents: List<String> = ArrayList<String>()
     ): HybridAutomata {
-        return addEdge(Edge(fromLocation, toLocation, guard, update))
+        return addEdge(Edge(fromLocation, toLocation, guard, update, inEvents, outEvents))
     }
 
     fun addEdge(edge: Edge): HybridAutomata {
@@ -63,9 +79,20 @@ data class HybridAutomata(
             }
         }
 
-        //TODO: Check if edge introduces any new continuousVariables (guard, update)
+        // Check for any continuous variables
+        checkParseTreeForNewContinuousVariable(edge.guard)
 
-        //TODO: Check if edge introudces any new events
+        for((key, value) in edge.update) {
+            addContinuousVariableIfNotExist(key)
+            checkParseTreeForNewContinuousVariable(value)
+        }
+
+        // Check for any events
+        checkParseTreeForNewEvent(edge.inEvents, Locality.EXTERNAL_INPUT)
+
+        for(event in edge.outEvents) {
+            addEventIfNotExist(event, Locality.EXTERNAL_OUTPUT)
+        }
 
         edges.add(edge)
 
@@ -81,7 +108,39 @@ data class HybridAutomata(
         return this
     }
 
-    //TODO: Adding init should check that all continuousVariables are defined, otherwise default to 0 and WARN
+    /* Private Methods */
+
+    private fun checkParseTreeForNewContinuousVariable(item: ParseTreeItem, locality: Locality = Locality.INTERNAL) {
+        if(item is ParseTreeVariable) {
+            addContinuousVariableIfNotExist(item.name, locality)
+        }
+
+        for(child in item.getChildren()) {
+            checkParseTreeForNewContinuousVariable(child)
+        }
+    }
+
+    private fun addContinuousVariableIfNotExist(item: String, locality: Locality = Locality.INTERNAL) {
+        if(!continuousVariables.any({it.name == item})) {
+            continuousVariables.add(Variable(item, locality))
+        }
+    }
+
+    private fun checkParseTreeForNewEvent(item: ParseTreeItem, locality: Locality = Locality.INTERNAL) {
+        if(item is ParseTreeVariable) {
+            addEventIfNotExist(item.name, locality)
+        }
+
+        for(child in item.getChildren()) {
+            checkParseTreeForNewEvent(child, locality)
+        }
+    }
+
+    private fun addEventIfNotExist(item: String, locality: Locality = Locality.INTERNAL) {
+        if(!events.any({it.name == item})) {
+            events.add(Variable(item, locality))
+        }
+    }
 }
 
 data class Location(
@@ -95,7 +154,9 @@ data class Edge(
         var fromLocation: String,
         var toLocation: String,
         var guard: ParseTreeItem = Literal("true"),
-        var update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+        var update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
+        var inEvents: ParseTreeItem = Literal("true"),
+        var outEvents: List<String> = ArrayList<String>()
 )
 
 data class Initialisation(
