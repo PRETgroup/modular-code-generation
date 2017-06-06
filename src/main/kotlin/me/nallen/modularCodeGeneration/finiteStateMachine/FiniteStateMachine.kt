@@ -1,6 +1,7 @@
 package me.nallen.modularCodeGeneration.finiteStateMachine
 
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
+import me.nallen.modularCodeGeneration.hybridAutomata.Locality as HybridLocality
 import me.nallen.modularCodeGeneration.parseTree.Literal
 import me.nallen.modularCodeGeneration.parseTree.Variable as ParseTreeVariable
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
@@ -37,13 +38,6 @@ data class FiniteStateMachine(
             }
 
             for((fromLocation, toLocation, guard, update, inEvents, outEvents) in ha.edges) {
-                // Check for any variables
-                fsm.checkParseTreeForNewVariable(inEvents, VariableType.BOOLEAN, Locality.EXTERNAL_INPUT)
-
-                for(event in outEvents) {
-                    fsm.addVariableIfNotExist(event, VariableType.BOOLEAN, Locality.EXTERNAL_OUTPUT)
-                }
-
                 // Combine Guard
                 var combinedGuard = guard
                 if(inEvents !is Literal || inEvents.value == "false") {
@@ -58,6 +52,22 @@ data class FiniteStateMachine(
                 }
 
                 fsm.addTransition(fromLocation, toLocation, combinedGuard, combinedUpdate)
+            }
+
+            for((name, locality) in ha.continuousVariables) {
+                fsm.addVariableIfNotExist(
+                        name,
+                        VariableType.REAL,
+                        Locality.createFromHybridLocality(locality)
+                )
+            }
+
+            for((name, locality) in ha.events) {
+                fsm.addVariableIfNotExist(
+                        name,
+                        VariableType.BOOLEAN,
+                        Locality.createFromHybridLocality(locality)
+                )
             }
 
             fsm.setInit(Initialisation(ha.init.state, ha.init.valuations))
@@ -108,14 +118,6 @@ data class FiniteStateMachine(
             }
         }
 
-        // Check for any variables
-        checkParseTreeForNewVariable(transition.guard)
-
-        for((key, value) in transition.update) {
-            addVariableIfNotExist(key)
-            checkParseTreeForNewVariable(value)
-        }
-
         transitions.add(transition)
 
         return this
@@ -131,20 +133,6 @@ data class FiniteStateMachine(
     }
 
     /* Private Methods */
-
-    protected fun checkParseTreeForNewVariable(
-            item: ParseTreeItem,
-            type: VariableType = VariableType.REAL,
-            locality: Locality = Locality.INTERNAL
-    ) {
-        if(item is ParseTreeVariable) {
-            addVariableIfNotExist(item.name, type, locality)
-        }
-
-        for(child in item.getChildren()) {
-            checkParseTreeForNewVariable(child, type, locality)
-        }
-    }
 
     protected fun addVariableIfNotExist(
             item: String,
@@ -184,5 +172,15 @@ enum class VariableType {
 }
 
 enum class Locality {
-    INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT
+    INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT;
+
+    companion object {
+        fun createFromHybridLocality(locality: HybridLocality): Locality {
+            return when(locality) {
+                HybridLocality.INTERNAL -> Locality.INTERNAL
+                HybridLocality.EXTERNAL_INPUT -> Locality.EXTERNAL_INPUT
+                HybridLocality.EXTERNAL_OUTPUT -> Locality.EXTERNAL_OUTPUT
+            }
+        }
+    }
 }
