@@ -36,12 +36,12 @@ data class HybridAutomata(
         checkParseTreeForNewContinuousVariable(location.invariant)
 
         for((key, value) in location.flow) {
-            addContinuousVariableIfNotExist(key)
+            addContinuousVariable(key)
             checkParseTreeForNewContinuousVariable(value)
         }
 
         for((key, value) in location.update) {
-            addContinuousVariableIfNotExist(key)
+            addContinuousVariable(key)
             checkParseTreeForNewContinuousVariable(value)
         }
 
@@ -83,7 +83,7 @@ data class HybridAutomata(
         checkParseTreeForNewContinuousVariable(edge.guard)
 
         for((key, value) in edge.update) {
-            addContinuousVariableIfNotExist(key)
+            addContinuousVariable(key)
             checkParseTreeForNewContinuousVariable(value)
         }
 
@@ -91,7 +91,7 @@ data class HybridAutomata(
         checkParseTreeForNewEvent(edge.inEvents, Locality.EXTERNAL_INPUT)
 
         for(event in edge.outEvents) {
-            addEventIfNotExist(event, Locality.EXTERNAL_OUTPUT)
+            addEvent(event, Locality.EXTERNAL_OUTPUT)
         }
 
         edges.add(edge)
@@ -108,11 +108,27 @@ data class HybridAutomata(
         return this
     }
 
+    fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL): HybridAutomata {
+        if(!continuousVariables.any({it.name == item})) {
+            continuousVariables.add(Variable(item, locality))
+        }
+
+        return this
+    }
+
+    fun addEvent(item: String, locality: Locality = Locality.INTERNAL): HybridAutomata {
+        if(!events.any({it.name == item})) {
+            events.add(Variable(item, locality))
+        }
+
+        return this
+    }
+
     /* Private Methods */
 
     private fun checkParseTreeForNewContinuousVariable(item: ParseTreeItem, locality: Locality = Locality.INTERNAL) {
         if(item is ParseTreeVariable) {
-            addContinuousVariableIfNotExist(item.name, locality)
+            addContinuousVariable(item.name, locality)
         }
 
         for(child in item.getChildren()) {
@@ -120,25 +136,13 @@ data class HybridAutomata(
         }
     }
 
-    private fun addContinuousVariableIfNotExist(item: String, locality: Locality = Locality.INTERNAL) {
-        if(!continuousVariables.any({it.name == item})) {
-            continuousVariables.add(Variable(item, locality))
-        }
-    }
-
     private fun checkParseTreeForNewEvent(item: ParseTreeItem, locality: Locality = Locality.INTERNAL) {
         if(item is ParseTreeVariable) {
-            addEventIfNotExist(item.name, locality)
+            addEvent(item.name, locality)
         }
 
         for(child in item.getChildren()) {
             checkParseTreeForNewEvent(child, locality)
-        }
-    }
-
-    private fun addEventIfNotExist(item: String, locality: Locality = Locality.INTERNAL) {
-        if(!events.any({it.name == item})) {
-            events.add(Variable(item, locality))
         }
     }
 }

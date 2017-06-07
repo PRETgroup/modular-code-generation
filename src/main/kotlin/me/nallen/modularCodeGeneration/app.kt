@@ -3,6 +3,8 @@ package me.nallen.modularCodeGeneration
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import me.nallen.modularCodeGeneration.codeGen.CodeGenLanguage
+import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.*
@@ -15,6 +17,8 @@ fun main(args: Array<String>) {
     val mapper: ObjectMapper = jacksonObjectMapper().configure(SerializationFeature.INDENT_OUTPUT, false)
 
     val ha = HybridAutomata("Cell")
+            .addContinuousVariable("g", Locality.EXTERNAL_INPUT)
+            .addContinuousVariable("v", Locality.EXTERNAL_OUTPUT)
             .addLocation(
                     "q0",
                     ParseTreeItem.generate("v < V_T && g < V_T"),
@@ -93,4 +97,7 @@ fun main(args: Array<String>) {
 
     val fsm = FiniteStateMachine.generateFromHybridAutomata(ha)
     println(mapper.writeValueAsString(fsm))
+
+    val codegen = CodeGenManager.generateStringsForFSM(fsm, CodeGenLanguage.C)
+    println(mapper.writeValueAsString(codegen))
 }
