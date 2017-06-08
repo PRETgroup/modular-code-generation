@@ -10,7 +10,12 @@ import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
 
 data class CCodeGenerator(var fsm: FiniteStateMachine) {
     fun generate(): CCodeGenResult {
-        return CCodeGenResult("a", "b")
+        val generated = CCodeGenResult("", "")
+
+        generated.h = HFileGenerator.generate(fsm)
+        generated.c = CFileGenerator.generate(fsm)
+
+        return generated
     }
 }
 

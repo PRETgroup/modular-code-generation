@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import me.nallen.modularCodeGeneration.codeGen.CodeGenLanguage
 import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
+import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenResult
 import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.*
@@ -68,7 +69,7 @@ fun main(args: Array<String>) {
                     )
             )
             .addEdge(
-                    "q0","q1",
+                    "q0", "q1",
                     ParseTreeItem.generate("g >= V_T"),
                     update = hashMapOf(
                             "v_x" to ParseTreeItem.generate("0.3 * v"),
@@ -78,10 +79,10 @@ fun main(args: Array<String>) {
                             "f_theta" to ParseTreeItem.generate("theta")
                     )
             )
-            .addEdge("q1","q0", ParseTreeItem.generate("g <= 0 && v < V_T"))
-            .addEdge("q1","q2", ParseTreeItem.generate("v > V_T"))
-            .addEdge("q2","q3", ParseTreeItem.generate("v >= V_O - 80.1 * sqrt(theta)"))
-            .addEdge("q3","q0", ParseTreeItem.generate("v <= V_R"))
+            .addEdge("q1", "q0", ParseTreeItem.generate("g <= 0 && v < V_T"))
+            .addEdge("q1", "q2", ParseTreeItem.generate("v > V_T"))
+            .addEdge("q2", "q3", ParseTreeItem.generate("v >= V_O - 80.1 * sqrt(theta)"))
+            .addEdge("q3", "q0", ParseTreeItem.generate("v <= V_R"))
             .setInit(Initialisation(
                     "q0",
                     hashMapOf(
@@ -99,5 +100,15 @@ fun main(args: Array<String>) {
     println(mapper.writeValueAsString(fsm))
 
     val codegen = CodeGenManager.generateStringsForFSM(fsm, CodeGenLanguage.C)
-    println(mapper.writeValueAsString(codegen))
+
+    if (codegen is CCodeGenResult) {
+        println("H File:")
+        println(codegen.h)
+        println()
+        println("C File:")
+        println(codegen.c)
+    }
+    else {
+        println(mapper.writeValueAsString(codegen))
+    }
 }

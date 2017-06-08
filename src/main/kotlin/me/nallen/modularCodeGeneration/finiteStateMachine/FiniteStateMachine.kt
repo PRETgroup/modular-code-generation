@@ -183,4 +183,12 @@ enum class Locality {
             }
         }
     }
+
+    fun getTextualName(): String {
+        return when(this) {
+            Locality.INTERNAL -> "Internal Variables"
+            Locality.EXTERNAL_INPUT -> "Inputs"
+            Locality.EXTERNAL_OUTPUT -> "Outputs"
+        }
+    }
 }

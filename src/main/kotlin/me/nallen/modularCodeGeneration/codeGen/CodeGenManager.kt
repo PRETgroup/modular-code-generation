@@ -8,21 +8,19 @@ import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
  * Created by Nathan on 7/06/2017.
  */
 
-abstract class CodeGenManager {
-    companion object Factory {
-        fun generateStringsForFSM(fsm: FiniteStateMachine, language: CodeGenLanguage): CodeGenResult {
-            val result: CodeGenResult = when(language) {
-                CodeGenLanguage.C -> CCodeGenerator(fsm).generate()
-            }
-
-            return result
+object CodeGenManager {
+    fun generateStringsForFSM(fsm: FiniteStateMachine, language: CodeGenLanguage): CodeGenResult {
+        val result: CodeGenResult = when(language) {
+            CodeGenLanguage.C -> CCodeGenerator(fsm).generate()
         }
 
-        fun generateFilesForFSM(fsm: FiniteStateMachine, dir: String, language: CodeGenLanguage) {
-            val result = generateStringsForFSM(fsm, language)
+        return result
+    }
 
-            //TODO: Write the result to file(s)
-        }
+    fun generateFilesForFSM(fsm: FiniteStateMachine, dir: String, language: CodeGenLanguage) {
+        val result = generateStringsForFSM(fsm, language)
+
+        //TODO: Write the result to file(s)
     }
 }
 
