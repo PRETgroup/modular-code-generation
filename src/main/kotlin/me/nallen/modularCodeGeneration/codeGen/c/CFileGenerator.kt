@@ -93,6 +93,16 @@ object CFileGenerator {
         result.appendln("// ${fsm.name} Execution function")
         result.appendln("void ${fsm.name}Run(${fsm.name}* me) {")
 
+        result.appendln("\t// Create intermediary variables")
+        result.appendln("\tenum ${fsm.name}States state_u = me->state;")
+
+        //TODO: Need some way of doing this properly. Maybe pass a function into the "ForLocality" methods
+        result.append(generateVariableInitialisationForLocality(fsm, Locality.EXTERNAL_OUTPUT))
+
+        result.append(generateVariableInitialisationForLocality(fsm, Locality.INTERNAL))
+
+
+
         result.appendln("\t// TODO!")
 
         // TODO: Do this
