@@ -1,9 +1,5 @@
 package me.nallen.modularCodeGeneration.parseTree
 
-/**
- * Created by nall426 on 1/06/2017.
- */
-
 sealed class ParseTreeItem(var type: String) {
     companion object Factory {
         fun generate(input: String): ParseTreeItem = GenerateParseTreeFromString(input)

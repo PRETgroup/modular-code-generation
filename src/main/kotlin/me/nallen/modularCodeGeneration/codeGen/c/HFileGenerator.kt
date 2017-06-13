@@ -1,27 +1,29 @@
 package me.nallen.modularCodeGeneration.codeGen.c
 
+import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
 import me.nallen.modularCodeGeneration.finiteStateMachine.Locality
 import me.nallen.modularCodeGeneration.finiteStateMachine.Variable
-import me.nallen.modularCodeGeneration.finiteStateMachine.VariableType
-
-/**
- * Created by nall426 on 8/06/2017.
- */
 
 object HFileGenerator {
-    fun generate(fsm: FiniteStateMachine): String {
+    private var fsm: FiniteStateMachine = FiniteStateMachine("Temp")
+    private var config: Configuration = Configuration()
+
+    fun generate(fsm: FiniteStateMachine, config: Configuration = Configuration()): String {
+        this.fsm = fsm
+        this.config = config
+
         val result = StringBuilder()
 
         result.appendln("#ifndef ${fsm.name.toUpperCase()}_H_")
         result.appendln("#define ${fsm.name.toUpperCase()}_H_")
         result.appendln()
 
-        result.appendln(generateIncludes(fsm))
+        result.appendln(generateIncludes())
 
-        result.appendln(generateStruct(fsm))
+        result.appendln(generateStruct())
 
-        result.appendln(generateEnum(fsm))
+        result.appendln(generateEnum())
 
         result.appendln("// ${fsm.name} Initialisation function")
         result.appendln("void ${fsm.name}Init(${fsm.name}* me);")
@@ -36,7 +38,7 @@ object HFileGenerator {
         return result.toString().trim()
     }
 
-    private fun generateIncludes(fsm: FiniteStateMachine): String {
+    private fun generateIncludes(): String {
         val result = StringBuilder()
 
         result.appendln("#include <stdint.h>")
@@ -48,63 +50,38 @@ object HFileGenerator {
         return result.toString()
     }
 
-    private fun generateEnum(fsm: FiniteStateMachine): String {
+    private fun generateEnum(): String {
         val result = StringBuilder()
 
         result.appendln("// ${fsm.name} States")
         result.appendln("enum ${fsm.name}States {")
         for((name) in fsm.states) {
-            result.appendln("\t$name,")
+            result.appendln("${config.getIndent(1)}$name,")
         }
         result.appendln("};")
 
         return result.toString()
     }
 
-    private fun generateStruct(fsm: FiniteStateMachine): String {
+    private fun generateStruct(): String {
         val result = StringBuilder()
 
         result.appendln("// ${fsm.name} Data Struct")
         result.appendln("typedef stuct {")
 
-        result.appendln("\t// State")
-        result.appendln("\tenum ${fsm.name}States state;")
+        result.appendln("${config.getIndent(1)}// State")
+        result.appendln("${config.getIndent(1)}enum ${fsm.name}States state;")
 
-        result.append(generateVariableDeclarationsForLocality(fsm, Locality.EXTERNAL_INPUT))
-
-        result.append(generateVariableDeclarationsForLocality(fsm, Locality.EXTERNAL_OUTPUT))
-
-        result.append(generateVariableDeclarationsForLocality(fsm, Locality.INTERNAL))
+        result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_INPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+        result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_OUTPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+        result.append(Utils.performVariableFunctionForLocality(fsm, Locality.INTERNAL, HFileGenerator::generateVariableDeclaration, config, "Declare"))
 
         result.appendln("} ${fsm.name};")
 
         return result.toString()
     }
 
-    private fun generateVariableDeclarationsForLocality(fsm: FiniteStateMachine, locality: Locality): String {
-        val result = StringBuilder()
-
-        if(fsm.variables.count{it.locality == locality} > 0) {
-            result.appendln()
-            result.appendln("\t// ${locality.getTextualName()}")
-            for(variable in fsm.variables
-                    .filter{it.locality == locality}
-                    .sortedBy { it.type }) {
-                result.appendln("\t${generateVariableDeclaration(variable)}")
-            }
-        }
-
-        return result.toString()
-    }
-
     private fun generateVariableDeclaration(variable: Variable): String {
-        return "${generateCType(variable.type)} ${variable.name};"
-    }
-
-    private fun generateCType(type: VariableType): String {
-        when(type) {
-            VariableType.BOOLEAN -> return "bool"
-            VariableType.REAL -> return "double"
-        }
+        return "${Utils.generateCType(variable.type)} ${variable.name};"
     }
 }

@@ -10,13 +10,11 @@ import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.*
 
-/**
- * Created by nall426 on 31/05/2017.
- */
-
 fun main(args: Array<String>) {
     val mapper: ObjectMapper = jacksonObjectMapper().configure(SerializationFeature.INDENT_OUTPUT, false)
 
+    //TODO: Declare parameters
+    //TODO: Parameter synthesis option (compile time vs runtime)
     val ha = HybridAutomata("Cell")
             .addContinuousVariable("g", Locality.EXTERNAL_INPUT)
             .addContinuousVariable("v", Locality.EXTERNAL_OUTPUT)

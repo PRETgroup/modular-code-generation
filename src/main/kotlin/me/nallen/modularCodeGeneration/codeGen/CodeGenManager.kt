@@ -1,17 +1,12 @@
 package me.nallen.modularCodeGeneration.codeGen
 
-import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenResult
 import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenerator
 import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
 
-/**
- * Created by Nathan on 7/06/2017.
- */
-
 object CodeGenManager {
-    fun generateStringsForFSM(fsm: FiniteStateMachine, language: CodeGenLanguage): CodeGenResult {
+    fun generateStringsForFSM(fsm: FiniteStateMachine, language: CodeGenLanguage, config: Configuration = Configuration()): CodeGenResult {
         val result: CodeGenResult = when(language) {
-            CodeGenLanguage.C -> CCodeGenerator(fsm).generate()
+            CodeGenLanguage.C -> CCodeGenerator(fsm, config).generate()
         }
 
         return result
