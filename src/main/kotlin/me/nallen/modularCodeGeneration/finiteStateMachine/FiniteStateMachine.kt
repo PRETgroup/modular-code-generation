@@ -172,7 +172,7 @@ enum class VariableType {
 }
 
 enum class Locality {
-    INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT;
+    INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT, PARAMETER;
 
     companion object {
         fun createFromHybridLocality(locality: HybridLocality): Locality {
@@ -180,6 +180,7 @@ enum class Locality {
                 HybridLocality.INTERNAL -> Locality.INTERNAL
                 HybridLocality.EXTERNAL_INPUT -> Locality.EXTERNAL_INPUT
                 HybridLocality.EXTERNAL_OUTPUT -> Locality.EXTERNAL_OUTPUT
+                HybridLocality.PARAMETER -> Locality.PARAMETER
             }
         }
     }
@@ -189,6 +190,7 @@ enum class Locality {
             Locality.INTERNAL -> "Internal Variables"
             Locality.EXTERNAL_INPUT -> "Inputs"
             Locality.EXTERNAL_OUTPUT -> "Outputs"
+            Locality.PARAMETER -> "Parameters"
         }
     }
 }

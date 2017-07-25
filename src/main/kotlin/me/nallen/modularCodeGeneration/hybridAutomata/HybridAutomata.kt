@@ -116,6 +116,10 @@ data class HybridAutomata(
         return this
     }
 
+    fun addParameter(item: String): HybridAutomata {
+        return addContinuousVariable(item, Locality.PARAMETER)
+    }
+
     fun addEvent(item: String, locality: Locality = Locality.INTERNAL): HybridAutomata {
         if(!events.any({it.name == item})) {
             events.add(Variable(item, locality))
@@ -174,5 +178,5 @@ data class Variable(
 )
 
 enum class Locality {
-    INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT
+    INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT, PARAMETER
 }

@@ -18,6 +18,12 @@ fun main(args: Array<String>) {
     val ha = HybridAutomata("Cell")
             .addContinuousVariable("g", Locality.EXTERNAL_INPUT)
             .addContinuousVariable("v", Locality.EXTERNAL_OUTPUT)
+            .addParameter("C1").addParameter("C2").addParameter("C3")
+            .addParameter("C4").addParameter("C5").addParameter("C6")
+            .addParameter("C7").addParameter("C8").addParameter("C9")
+            .addParameter("C10").addParameter("C11").addParameter("C12")
+            .addParameter("C13").addParameter("C14").addParameter("C15")
+            .addParameter("V_O").addParameter("V_T").addParameter("V_R")
             .addLocation(
                     "q0",
                     ParseTreeItem.generate("v < V_T && g < V_T"),
