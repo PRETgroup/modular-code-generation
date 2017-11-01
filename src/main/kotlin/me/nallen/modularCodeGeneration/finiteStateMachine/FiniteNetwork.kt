@@ -1,6 +1,8 @@
 package me.nallen.modularCodeGeneration.finiteStateMachine
 
+import me.nallen.modularCodeGeneration.hybridAutomata.AutomataInstance
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
+import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 
 /**
  * Created by nathan on 6/06/17.
@@ -9,8 +11,8 @@ import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 data class FiniteNetwork(
         var name: String = "Network"
 ) {
-    val finiteStateMachines = HashMap<String, FiniteStateMachine>()
-
+    val definitions = ArrayList<FiniteStateMachine>()
+    val instances = HashMap<String, FiniteInstance>()
     val ioMapping = HashMap<MachineVariablePair, MachineVariablePair>()
 
     companion object Factory {
@@ -19,8 +21,12 @@ data class FiniteNetwork(
 
             network.name = hybridNetwork.name
 
-            for((name, hybridAutomata) in hybridNetwork.hybridAutomata) {
-                network.addFiniteStateMachine(name, FiniteStateMachine.generateFromHybridAutomata(hybridAutomata))
+            for(hybridAutomata in hybridNetwork.definitions) {
+                network.addDefinition(FiniteStateMachine.generateFromHybridAutomata(hybridAutomata))
+            }
+
+            for((name, instance) in hybridNetwork.instances) {
+                network.addInstance(name, FiniteInstance.generateFromAutomataInstance(instance))
             }
 
             for((input, output) in hybridNetwork.ioMapping) {
@@ -34,14 +40,35 @@ data class FiniteNetwork(
         }
     }
 
-    fun addFiniteStateMachine(name: String, fsm: FiniteStateMachine): FiniteNetwork {
-        finiteStateMachines.put(name, fsm)
+    fun addDefinition(fsm: FiniteStateMachine): FiniteNetwork {
+        definitions.add(fsm)
+
+        return this
+    }
+
+    fun addInstance(name: String, instance: FiniteInstance): FiniteNetwork {
+        instances.put(name, instance)
+
         return this
     }
 
     fun addMapping(input: MachineVariablePair, output: MachineVariablePair): FiniteNetwork {
         ioMapping.put(input, output)
+
         return this
+    }
+}
+
+data class FiniteInstance(
+        var machine: String,
+        var parameters: HashMap<String, ParseTreeItem>
+) {
+    companion object Factory {
+        fun generateFromAutomataInstance(instance: AutomataInstance): FiniteInstance {
+            val finiteInstance = FiniteInstance(instance.automata, instance.parameters)
+
+            return finiteInstance
+        }
     }
 }
 

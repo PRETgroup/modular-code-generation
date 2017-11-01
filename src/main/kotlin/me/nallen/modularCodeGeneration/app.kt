@@ -5,17 +5,19 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import me.nallen.modularCodeGeneration.codeGen.CodeGenLanguage
 import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
-import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenResult
-import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
+import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteNetwork
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.*
 
 fun main(args: Array<String>) {
     val mapper: ObjectMapper = jacksonObjectMapper().configure(SerializationFeature.INDENT_OUTPUT, false)
 
-    //TODO: Declare parameters
     //TODO: Parameter synthesis option (compile time vs runtime)
-    val ha = HybridAutomata("Cell")
+
+    val network = HybridNetwork();
+
+    network.addDefinition(
+            HybridAutomata("Cell")
             .addContinuousVariable("g", Locality.EXTERNAL_INPUT)
             .addContinuousVariable("v", Locality.EXTERNAL_OUTPUT)
             .addParameter("C1").addParameter("C2").addParameter("C3")
@@ -97,10 +99,44 @@ fun main(args: Array<String>) {
                             "f_theta" to ParseTreeItem.generate("0")
                     )
             ))
+    )
 
-    println(mapper.writeValueAsString(ha))
+    network.addInstance(
+            "SA",
+            AutomataInstance(
+                    "Cell",
+                    hashMapOf(
+                            "C1" to ParseTreeItem.generate("-8.7"),
+                            "C2" to ParseTreeItem.generate("-23.6"),
+                            "C3" to ParseTreeItem.generate("-6.9"),
+                            "C4" to ParseTreeItem.generate("-33.2"),
+                            "C5" to ParseTreeItem.generate("-190.9"),
+                            "C6" to ParseTreeItem.generate("-45.5"),
+                            "C7" to ParseTreeItem.generate("777200"),
+                            "C8" to ParseTreeItem.generate("58900"),
+                            "C9" to ParseTreeItem.generate("276600"),
+                            "C10" to ParseTreeItem.generate("75.9"),
+                            "C11" to ParseTreeItem.generate("20"),
+                            "C12" to ParseTreeItem.generate("-190.4"),
+                            "C13" to ParseTreeItem.generate("-12.9"),
+                            "C14" to ParseTreeItem.generate("6826.5"),
+                            "C15" to ParseTreeItem.generate("2"),
+                            "V_O" to ParseTreeItem.generate("131.1"),
+                            "V_T" to ParseTreeItem.generate("44.5"),
+                            "V_R" to ParseTreeItem.generate("30")
+                    )
+            )
+    )
 
-    val fsm = FiniteStateMachine.generateFromHybridAutomata(ha)
+    println(mapper.writeValueAsString(network))
+
+    val fsmNetwork = FiniteNetwork.generateFromHybridNetwork(network)
+
+    println(mapper.writeValueAsString(fsmNetwork))
+
+    CodeGenManager.generateForHybridNetwork(fsmNetwork, CodeGenLanguage.C, "")
+
+    /*val fsm = FiniteStateMachine.generateFromHybridAutomata(ha)
     println(mapper.writeValueAsString(fsm))
 
     val codegen = CodeGenManager.generateStringsForFSM(fsm, CodeGenLanguage.C)
@@ -114,5 +150,5 @@ fun main(args: Array<String>) {
     }
     else {
         println(mapper.writeValueAsString(codegen))
-    }
+    }*/
 }

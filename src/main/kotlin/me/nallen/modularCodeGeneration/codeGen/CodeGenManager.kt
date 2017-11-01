@@ -1,10 +1,12 @@
 package me.nallen.modularCodeGeneration.codeGen
 
 import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenerator
+import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteNetwork
 import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 
 object CodeGenManager {
-    fun generateStringsForFSM(fsm: FiniteStateMachine, language: CodeGenLanguage, config: Configuration = Configuration()): CodeGenResult {
+    private fun generateStringsForFSM(fsm: FiniteStateMachine, language: CodeGenLanguage, config: Configuration): CodeGenResult {
         val result: CodeGenResult = when(language) {
             CodeGenLanguage.C -> CCodeGenerator(fsm, config).generate()
         }
@@ -12,10 +14,14 @@ object CodeGenManager {
         return result
     }
 
-    fun generateFilesForFSM(fsm: FiniteStateMachine, dir: String, language: CodeGenLanguage) {
-        val result = generateStringsForFSM(fsm, language)
+    private fun generateFilesForFSM(fsm: FiniteStateMachine, language: CodeGenLanguage, dir: String, config: Configuration) {
+        val result = generateStringsForFSM(fsm, language, config)
 
         //TODO: Write the result to file(s)
+    }
+
+    fun generateForHybridNetwork(network: FiniteNetwork, language: CodeGenLanguage, dir: String, config: Configuration = Configuration()) {
+
     }
 }
 
