@@ -55,6 +55,7 @@ object Utils {
             is me.nallen.modularCodeGeneration.parseTree.Variable -> return "me->${item.name}"
             is Plus -> return padOperand(item, item.operandA) + " + " + padOperand(item, item.operandB)
             is Minus -> return padOperand(item, item.operandA) + " - " + padOperand(item, item.operandB)
+            is Negative -> return "-" + padOperand(item, item.operandA)
             is Multiply -> return padOperand(item, item.operandA) + " * " + padOperand(item, item.operandB)
             is Divide -> return padOperand(item, item.operandA) + " / " + padOperand(item, item.operandB)
             is SquareRoot -> return "sqrt(" + item.operandA.generateString() + ")"

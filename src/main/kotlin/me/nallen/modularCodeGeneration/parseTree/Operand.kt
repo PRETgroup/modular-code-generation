@@ -13,7 +13,7 @@ internal enum class Operand {
     GREATER_THAN_OR_EQUAL, GREATER_THAN, LESS_THAN_OR_EQUAL, LESS_THAN,
     EQUAL, NOT_EQUAL,
     OPEN_BRACKET, CLOSE_BRACKET,
-    PLUS, MINUS, MULTIPLY, DIVIDE,
+    PLUS, MINUS, MULTIPLY, DIVIDE, NEGATIVE,
     SQUARE_ROOT
 }
 
@@ -38,6 +38,7 @@ internal val operands: Map<Operand, Operator> = hashMapOf(
         Operand.CLOSE_BRACKET to Operator(")", 0, Associativity.NONE, 1),
         Operand.PLUS to Operator("+", 2, Associativity.LEFT, 2),
         Operand.MINUS to Operator("-", 2, Associativity.LEFT, 2),
+        Operand.NEGATIVE to Operator("`", 1, Associativity.RIGHT, 2),
         Operand.MULTIPLY to Operator("*", 2, Associativity.LEFT, 3),
         Operand.DIVIDE to Operator("/", 2, Associativity.LEFT, 3),
         Operand.SQUARE_ROOT to Operator("sqrt", 1, Associativity.RIGHT, 3)
@@ -51,7 +52,7 @@ internal fun getOperandForSequence(input: String): Operand? {
     }
 
     if(matches.size > 0)
-        return matches.sortedWith(compareBy({operands[it]?.symbol?.length})).last()
+        return matches.sortedWith(compareBy({operands[it]?.symbol?.length}, {operands[it]?.operands})).last()
 
     return null
 }
@@ -61,6 +62,7 @@ internal fun convertToPostfix(input: String): String {
     var storage = ""
     var skip = 0
     val op_stack = ArrayList<Operand>()
+    var followingOperand = true
 
     for(i in 0 .. input.length-1) {
         if(skip > 0) {
@@ -68,7 +70,7 @@ internal fun convertToPostfix(input: String): String {
             continue
         }
 
-        val operand = getOperandForSequence(input.substring(i))
+        var operand = getOperandForSequence(input.substring(i))
 
         if((operand != null || input[i].isWhitespace()) && storage.isNotEmpty()) {
             output += storage + " "
@@ -92,6 +94,9 @@ internal fun convertToPostfix(input: String): String {
             }
             else {
                 if(operand != Operand.OPEN_BRACKET) {
+                    if(operand == Operand.MINUS && followingOperand)
+                        operand = Operand.NEGATIVE
+
                     while((op_stack.size > 0) && (op_stack.last() != Operand.OPEN_BRACKET)) {
                         val lastOperator = operands[op_stack.last()]
                         if(lastOperator != null && operator != null) {
@@ -112,9 +117,12 @@ internal fun convertToPostfix(input: String): String {
                 op_stack.add(operand)
             }
 
+            followingOperand = true
+
             skip = (operator?.symbol?.length ?: 1) - 1
         }
         else if(!input[i].isWhitespace()){
+            followingOperand = false
             storage += input[i]
         }
     }
