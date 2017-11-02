@@ -151,6 +151,16 @@ fun main(args: Array<String>) {
             )
     )
 
+    network.addMapping(
+            AutomataVariablePair("SA", "g"),
+            AutomataVariablePair("RV", "v")
+    )
+
+    network.addMapping(
+            AutomataVariablePair("RV", "g"),
+            AutomataVariablePair("SA", "v")
+    )
+
     val fsmNetwork = FiniteNetwork.generateFromHybridNetwork(network)
 
     CodeGenManager.generateForNetwork(fsmNetwork, CodeGenLanguage.C, "Generated")

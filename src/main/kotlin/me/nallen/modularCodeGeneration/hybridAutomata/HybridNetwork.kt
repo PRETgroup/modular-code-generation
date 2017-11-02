@@ -46,11 +46,42 @@ data class HybridNetwork(
 
         return this
     }
+
+    fun addMapping(
+            to: AutomataVariablePair,
+            from: AutomataVariablePair
+    ): HybridNetwork {
+        if(!instances.containsKey(to.automata))
+            throw IllegalArgumentException("Unknown instance for 'to' connection ${to.automata}!")
+
+        val toInstance = instances.get(to.automata)!!
+        val toHa = definitions.first({it.name == toInstance.automata})
+
+        if(!toHa.continuousVariables.any({it.locality == Locality.EXTERNAL_INPUT && it.name == to.variable}))
+            throw IllegalArgumentException("Unknown input for 'to' connection ${to.variable}!")
+
+        if(!instances.containsKey(from.automata))
+            throw IllegalArgumentException("Unknown instance for 'from' connection ${from.automata}!")
+
+        val fromInstance = instances.get(from.automata)!!
+        val fromHa = definitions.first({it.name == fromInstance.automata})
+
+        if(!fromHa.continuousVariables.any({it.locality == Locality.EXTERNAL_OUTPUT && it.name == from.variable}))
+            throw IllegalArgumentException("Unknown input for 'from' connection ${from.variable}!")
+
+        if(ioMapping.containsKey(to)) {
+            throw IllegalArgumentException("A previous assignment to ${to.automata}.${to.variable} has already been created!")
+        }
+
+        ioMapping.put(to, from)
+
+        return this
+    }
 }
 
 data class AutomataInstance(
-        var automata: String,
-        var parameters: HashMap<String, ParseTreeItem>
+        val automata: String,
+        val parameters: HashMap<String, ParseTreeItem>
 )
 
-data class AutomataVariablePair(var automata: String, var variable: String)
+data class AutomataVariablePair(val automata: String, val variable: String)
