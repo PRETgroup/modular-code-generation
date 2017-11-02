@@ -47,9 +47,13 @@ object CodeGenManager {
             val generated = ArrayList<String>()
 
             for((_, instance) in network.instances) {
-                val fsm = network.definitions.first({it.name == instance.machine})
+                if (!generated.contains(instance.machine)) {
+                    generated.add(instance.machine)
 
-                generateFilesForFSM(fsm, language, outputDir.absolutePath, config)
+                    val fsm = network.definitions.first({ it.name == instance.machine })
+    
+                    generateFilesForFSM(fsm, language, outputDir.absolutePath, config)
+                }
             }
         }
     }

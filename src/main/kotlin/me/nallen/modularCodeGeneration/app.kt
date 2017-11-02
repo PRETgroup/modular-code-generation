@@ -10,8 +10,6 @@ import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.*
 
 fun main(args: Array<String>) {
-    val mapper: ObjectMapper = jacksonObjectMapper().configure(SerializationFeature.INDENT_OUTPUT, false)
-
     val network = HybridNetwork();
 
     network.addDefinition(
