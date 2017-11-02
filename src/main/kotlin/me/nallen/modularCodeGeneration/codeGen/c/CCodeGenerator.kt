@@ -2,14 +2,17 @@ package me.nallen.modularCodeGeneration.codeGen.c
 
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
+import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
+import java.io.File
 
 data class CCodeGenerator(var fsm: FiniteStateMachine, var config: Configuration = Configuration()) {
-    fun generate(): CCodeGenResult {
-        val generated = CCodeGenResult("", "")
+    fun generateFiles(dir: String) {
+        val outputDir = File(dir)
 
-        generated.h = HFileGenerator.generate(fsm, config)
-        generated.c = CFileGenerator.generate(fsm, config)
+        if(!outputDir.exists())
+            outputDir.mkdir()
 
-        return generated
+        File(outputDir, "${fsm.name}.h").writeText(HFileGenerator.generate(fsm, config))
+        File(outputDir, "${fsm.name}.c").writeText(CFileGenerator.generate(fsm, config))
     }
 }

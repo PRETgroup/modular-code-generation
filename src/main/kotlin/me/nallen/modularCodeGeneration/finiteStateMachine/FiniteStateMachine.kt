@@ -1,26 +1,23 @@
 package me.nallen.modularCodeGeneration.finiteStateMachine
 
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
+import me.nallen.modularCodeGeneration.parseTree.*
 import me.nallen.modularCodeGeneration.hybridAutomata.Locality as HybridLocality
-import me.nallen.modularCodeGeneration.parseTree.Literal
 import me.nallen.modularCodeGeneration.parseTree.Variable as ParseTreeVariable
-import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
-import me.nallen.modularCodeGeneration.parseTree.generateString
-import me.nallen.modularCodeGeneration.parseTree.getChildren
 
 /**
  * Created by nall426 on 31/05/2017.
  */
 
 data class FiniteStateMachine(
-        var name: String = "FSM"
+        var name: String = "FSM",
+
+        val states: ArrayList<State> = ArrayList<State>(),
+        val transitions: ArrayList<Transition> = ArrayList<Transition>(),
+        var init: Initialisation = Initialisation(""),
+
+        val variables: ArrayList<Variable> = ArrayList<Variable>()
 ) {
-    val states = ArrayList<State>()
-    val transitions = ArrayList<Transition>()
-    var init = Initialisation("")
-
-    val variables = ArrayList<Variable>()
-
     companion object Factory {
         fun generateFromHybridAutomata(ha: HybridAutomata): FiniteStateMachine {
             val fsm = FiniteStateMachine()
@@ -95,7 +92,7 @@ data class FiniteStateMachine(
             fromLocation: String,
             toLocation: String,
             guard: ParseTreeItem = Literal("true"),
-            update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+            update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
     ): FiniteStateMachine {
         return addTransition(Transition(fromLocation, toLocation, guard, update))
     }
@@ -132,6 +129,31 @@ data class FiniteStateMachine(
         return this
     }
 
+    fun setParameterValue(key: String, value: ParseTreeItem) {
+        // Check parameter exists
+        if(!variables.any({it.locality == Locality.PARAMETER && it.name == key}))
+            return
+
+        // Remove parameter from list
+        variables.removeIf({it.locality == Locality.PARAMETER && it.name == key})
+
+        // Parametrise all transitions
+        for(transition in transitions) {
+            // Guards
+            transition.guard.setParameterValue(key, value)
+
+            // Updates
+            for((_, update) in transition.update) {
+                update.setParameterValue(key, value)
+            }
+        }
+
+        // Parametrise initialisation
+        for((_, valuation) in init.valuations) {
+            valuation.setParameterValue(key, value)
+        }
+    }
+
     /* Private Methods */
 
     protected fun addVariableIfNotExist(
@@ -153,12 +175,12 @@ data class Transition(
         var fromLocation: String,
         var toLocation: String,
         var guard: ParseTreeItem = Literal("true"),
-        var update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+        var update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
 )
 
 data class Initialisation(
         var state: String,
-        var valuations: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+        var valuations: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
 )
 
 data class Variable(

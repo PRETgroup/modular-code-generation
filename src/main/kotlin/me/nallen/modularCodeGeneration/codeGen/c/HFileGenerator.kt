@@ -75,6 +75,7 @@ object HFileGenerator {
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_INPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_OUTPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.INTERNAL, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+        result.append(Utils.performVariableFunctionForLocality(fsm, Locality.PARAMETER, HFileGenerator::generateVariableDeclaration, config, "Declare"))
 
         result.appendln("} ${fsm.name};")
 

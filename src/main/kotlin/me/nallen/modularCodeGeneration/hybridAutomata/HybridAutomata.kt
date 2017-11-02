@@ -10,20 +10,20 @@ import me.nallen.modularCodeGeneration.parseTree.getChildren
  */
 
 data class HybridAutomata(
-        var name: String = "HA"
+        var name: String = "HA",
+
+        val locations: ArrayList<Location> = ArrayList<Location>(),
+        val edges: ArrayList<Edge> = ArrayList<Edge>(),
+        var init: Initialisation = Initialisation(""),
+
+        val continuousVariables: ArrayList<Variable> = ArrayList<Variable>(),
+        val events: ArrayList<Variable> = ArrayList<Variable>()
 ) {
-    val locations = ArrayList<Location>()
-    val edges = ArrayList<Edge>()
-    var init = Initialisation("")
-
-    val continuousVariables = ArrayList<Variable>()
-    val events = ArrayList<Variable>()
-
     fun addLocation(
             name: String,
             invariant: ParseTreeItem = Literal("true"),
-            flow: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
-            update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+            flow: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
+            update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
     ): HybridAutomata {
         return addLocation(Location(name, invariant, flow, update))
     }
@@ -54,7 +54,7 @@ data class HybridAutomata(
             fromLocation: String,
             toLocation: String,
             guard: ParseTreeItem = Literal("true"),
-            update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
+            update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
             inEvents: ParseTreeItem = Literal("true"),
             outEvents: List<String> = ArrayList<String>()
     ): HybridAutomata {
@@ -154,22 +154,22 @@ data class HybridAutomata(
 data class Location(
         var name: String,
         var invariant: ParseTreeItem = Literal("true"),
-        var flow: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
-        var update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+        var flow: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
+        var update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
 )
 
 data class Edge(
         var fromLocation: String,
         var toLocation: String,
         var guard: ParseTreeItem = Literal("true"),
-        var update: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
+        var update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
         var inEvents: ParseTreeItem = Literal("true"),
         var outEvents: List<String> = ArrayList<String>()
 )
 
 data class Initialisation(
         var state: String,
-        var valuations: Map<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+        var valuations: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
 )
 
 data class Variable(

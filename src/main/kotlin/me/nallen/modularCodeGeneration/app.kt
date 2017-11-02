@@ -12,8 +12,6 @@ import me.nallen.modularCodeGeneration.parseTree.*
 fun main(args: Array<String>) {
     val mapper: ObjectMapper = jacksonObjectMapper().configure(SerializationFeature.INDENT_OUTPUT, false)
 
-    //TODO: Parameter synthesis option (compile time vs runtime)
-
     val network = HybridNetwork();
 
     network.addDefinition(
@@ -128,27 +126,34 @@ fun main(args: Array<String>) {
             )
     )
 
-    println(mapper.writeValueAsString(network))
+    network.addInstance(
+            "RV",
+            AutomataInstance(
+                    "Cell",
+                    hashMapOf(
+                            "C1" to ParseTreeItem.generate("-8.7"),
+                            "C2" to ParseTreeItem.generate("-23.6"),
+                            "C3" to ParseTreeItem.generate("-6.9"),
+                            "C4" to ParseTreeItem.generate("-33.2"),
+                            "C5" to ParseTreeItem.generate("-190.9"),
+                            "C6" to ParseTreeItem.generate("-45.5"),
+                            "C7" to ParseTreeItem.generate("777200"),
+                            "C8" to ParseTreeItem.generate("58900"),
+                            "C9" to ParseTreeItem.generate("276600"),
+                            "C10" to ParseTreeItem.generate("75.9"),
+                            "C11" to ParseTreeItem.generate("11"),
+                            "C12" to ParseTreeItem.generate("-190.4"),
+                            "C13" to ParseTreeItem.generate("-12.9"),
+                            "C14" to ParseTreeItem.generate("6826.5"),
+                            "C15" to ParseTreeItem.generate("2"),
+                            "V_O" to ParseTreeItem.generate("131.1"),
+                            "V_T" to ParseTreeItem.generate("44.5"),
+                            "V_R" to ParseTreeItem.generate("30")
+                    )
+            )
+    )
 
     val fsmNetwork = FiniteNetwork.generateFromHybridNetwork(network)
 
-    println(mapper.writeValueAsString(fsmNetwork))
-
-    CodeGenManager.generateForHybridNetwork(fsmNetwork, CodeGenLanguage.C, "")
-
-    /*val fsm = FiniteStateMachine.generateFromHybridAutomata(ha)
-    println(mapper.writeValueAsString(fsm))
-
-    val codegen = CodeGenManager.generateStringsForFSM(fsm, CodeGenLanguage.C)
-
-    if (codegen is CCodeGenResult) {
-        println("H File:")
-        println(codegen.h)
-        println()
-        println("C File:")
-        println(codegen.c)
-    }
-    else {
-        println(mapper.writeValueAsString(codegen))
-    }*/
+    CodeGenManager.generateForNetwork(fsmNetwork, CodeGenLanguage.C, "Generated")
 }

@@ -1,8 +1,17 @@
 package me.nallen.modularCodeGeneration.parseTree
 
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonValue
+
 sealed class ParseTreeItem(var type: String) {
     companion object Factory {
+        @JsonCreator @JvmStatic
         fun generate(input: String): ParseTreeItem = GenerateParseTreeFromString(input)
+    }
+
+    @JsonValue
+    fun getString(): String {
+        return this.generateString()
     }
 }
 
@@ -25,7 +34,7 @@ data class Negative(var operandA: ParseTreeItem): ParseTreeItem("negative")
 
 data class SquareRoot(var operandA: ParseTreeItem): ParseTreeItem("squareRoot")
 
-data class Variable(var name: String): ParseTreeItem("variable")
+data class Variable(var name: String, var value: ParseTreeItem? = null): ParseTreeItem("variable")
 data class Literal(var value: String): ParseTreeItem("literal")
 
 
@@ -122,7 +131,7 @@ fun ParseTreeItem.getPrecedence(): Int {
 }
 
 fun ParseTreeItem.generateString(): String {
-    when (this) {
+        when (this) {
         is And -> return this.padOperand(operandA) + " && " + this.padOperand(operandB)
         is Or -> return this.padOperand(operandA) + " || " + this.padOperand(operandB)
         is Not -> return "!" + this.padOperand(operandA)
@@ -155,7 +164,7 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
         is Equal -> arrayOf(operandA, operandB)
         is NotEqual -> arrayOf(operandA, operandB)
         is Literal -> arrayOf()
-        is Variable -> arrayOf()
+        is Variable -> if(value != null) arrayOf(value!!) else arrayOf()
         is Plus -> arrayOf(operandA, operandB)
         is Minus -> arrayOf(operandA, operandB)
         is Negative -> arrayOf(operandA)
@@ -163,4 +172,19 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
         is Divide -> arrayOf(operandA, operandB)
         is SquareRoot -> arrayOf(operandA)
     }
+}
+
+fun ParseTreeItem.setParameterValue(key: String, value: ParseTreeItem): ParseTreeItem {
+    val children = this.getChildren()
+
+    for(child in children) {
+        child.setParameterValue(key, value)
+    }
+
+    if(this is Variable) {
+        if(this.name == key)
+            this.value = value
+    }
+
+    return this
 }

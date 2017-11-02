@@ -41,24 +41,29 @@ object Utils {
     }
 
     fun generateCodeForParseTreeItem(item: ParseTreeItem): String {
-        when (item) {
-            is And -> return padOperand(item, item.operandA) + " && " + padOperand(item, item.operandB)
-            is Or -> return padOperand(item, item.operandA) + " || " + padOperand(item, item.operandB)
-            is Not -> return "!" + padOperand(item, item.operandA)
-            is GreaterThan -> return padOperand(item, item.operandA) + " > " + padOperand(item, item.operandB)
-            is GreaterThanOrEqual -> return padOperand(item, item.operandA) + " >= " + padOperand(item, item.operandB)
-            is LessThanOrEqual -> return padOperand(item, item.operandA) + " <= " + padOperand(item, item.operandB)
-            is LessThan -> return padOperand(item, item.operandA) + " < " + padOperand(item, item.operandB)
-            is Equal -> return padOperand(item, item.operandA) + " == " + padOperand(item, item.operandB)
-            is NotEqual -> return padOperand(item, item.operandA) + " != " + padOperand(item, item.operandB)
-            is Literal -> return item.value
-            is me.nallen.modularCodeGeneration.parseTree.Variable -> return "me->${item.name}"
-            is Plus -> return padOperand(item, item.operandA) + " + " + padOperand(item, item.operandB)
-            is Minus -> return padOperand(item, item.operandA) + " - " + padOperand(item, item.operandB)
-            is Negative -> return "-" + padOperand(item, item.operandA)
-            is Multiply -> return padOperand(item, item.operandA) + " * " + padOperand(item, item.operandB)
-            is Divide -> return padOperand(item, item.operandA) + " / " + padOperand(item, item.operandB)
-            is SquareRoot -> return "sqrt(" + item.operandA.generateString() + ")"
+        return when (item) {
+            is And -> padOperand(item, item.operandA) + " && " + padOperand(item, item.operandB)
+            is Or -> padOperand(item, item.operandA) + " || " + padOperand(item, item.operandB)
+            is Not -> "!" + padOperand(item, item.operandA)
+            is GreaterThan -> padOperand(item, item.operandA) + " > " + padOperand(item, item.operandB)
+            is GreaterThanOrEqual -> padOperand(item, item.operandA) + " >= " + padOperand(item, item.operandB)
+            is LessThanOrEqual -> padOperand(item, item.operandA) + " <= " + padOperand(item, item.operandB)
+            is LessThan -> padOperand(item, item.operandA) + " < " + padOperand(item, item.operandB)
+            is Equal -> padOperand(item, item.operandA) + " == " + padOperand(item, item.operandB)
+            is NotEqual -> padOperand(item, item.operandA) + " != " + padOperand(item, item.operandB)
+            is Literal -> item.value
+            is me.nallen.modularCodeGeneration.parseTree.Variable -> {
+                if(item.value != null)
+                    padOperand(item, item.value!!)
+                else
+                    "me->${item.name}"
+            }
+            is Plus -> padOperand(item, item.operandA) + " + " + padOperand(item, item.operandB)
+            is Minus -> padOperand(item, item.operandA) + " - " + padOperand(item, item.operandB)
+            is Negative -> "-" + padOperand(item, item.operandA)
+            is Multiply -> padOperand(item, item.operandA) + " * " + padOperand(item, item.operandB)
+            is Divide -> padOperand(item, item.operandA) + " / " + padOperand(item, item.operandB)
+            is SquareRoot -> "sqrt(" + item.operandA.generateString() + ")"
         }
     }
 }
