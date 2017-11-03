@@ -63,7 +63,7 @@ object Utils {
             is Negative -> "-" + padOperand(item, item.operandA)
             is Multiply -> padOperand(item, item.operandA) + " * " + padOperand(item, item.operandB)
             is Divide -> padOperand(item, item.operandA) + " / " + padOperand(item, item.operandB)
-            is SquareRoot -> "sqrt(" + item.operandA.generateString() + ")"
+            is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA) + ")"
         }
     }
 }
