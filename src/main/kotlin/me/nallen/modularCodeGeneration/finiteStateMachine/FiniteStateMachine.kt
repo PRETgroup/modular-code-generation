@@ -28,7 +28,9 @@ data class FiniteStateMachine(
                 fsm.addState(name)
 
                 val updates = LinkedHashMap<String, ParseTreeItem>()
-                updates.putAll(flow)
+                for((key, value) in flow) {
+                    updates.put(key, Plus(ParseTreeVariable(key), Multiply(value, ParseTreeVariable("STEP_SIZE"))))
+                }
                 updates.putAll(update)
 
                 fsm.addTransition(name, name, invariant, updates)

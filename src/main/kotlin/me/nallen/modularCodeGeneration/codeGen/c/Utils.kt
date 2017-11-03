@@ -37,10 +37,10 @@ object Utils {
         if(item.getPrecedence() < operand.getPrecedence())
             return "(" + generateCodeForParseTreeItem(operand) + ")"
 
-        return generateCodeForParseTreeItem(operand)
+        return generateCodeForParseTreeItem(operand, item)
     }
 
-    fun generateCodeForParseTreeItem(item: ParseTreeItem): String {
+    fun generateCodeForParseTreeItem(item: ParseTreeItem, parent: ParseTreeItem? = null): String {
         return when (item) {
             is And -> padOperand(item, item.operandA) + " && " + padOperand(item, item.operandB)
             is Or -> padOperand(item, item.operandA) + " || " + padOperand(item, item.operandB)
@@ -54,7 +54,7 @@ object Utils {
             is Literal -> item.value
             is me.nallen.modularCodeGeneration.parseTree.Variable -> {
                 if(item.value != null)
-                    padOperand(item, item.value!!)
+                    padOperand(parent ?: item, item.value!!)
                 else
                     "me->${item.name}"
             }
