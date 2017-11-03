@@ -15,18 +15,18 @@ object Utils {
         }
     }
 
-    fun performVariableFunctionForLocality(fsm: FiniteStateMachine, locality: Locality, function: (v: Variable) -> String, config: Configuration = Configuration(), comment: String? = null): String {
+    fun performVariableFunctionForLocality(fsm: FiniteStateMachine, locality: Locality, function: (v: Variable) -> String, config: Configuration = Configuration(), comment: String? = null, depth: Int = 1): String {
         val result = StringBuilder()
 
         if(fsm.variables.any{it.locality == locality}) {
             result.appendln()
             if(comment != null)
-                result.appendln("${config.getIndent(1)}// $comment ${locality.getTextualName()}")
+                result.appendln("${config.getIndent(depth)}// $comment ${locality.getTextualName()}")
 
             for(variable in fsm.variables
                     .filter{it.locality == locality}
                     .sortedBy { it.type }) {
-                result.appendln("${config.getIndent(1)}${function(variable)}")
+                result.appendln("${config.getIndent(depth)}${function(variable)}")
             }
         }
 

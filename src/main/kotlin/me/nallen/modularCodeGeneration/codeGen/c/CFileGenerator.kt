@@ -74,7 +74,119 @@ object CFileGenerator {
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.INTERNAL, CFileGenerator::generateIntermediateVariable, config))
         result.appendln()
 
-        result.appendln(generateStateMachine())
+
+        val needsTransitionCounting = config.maximumInterTransitions > 1
+        val defaultIndent = if(needsTransitionCounting) 2 else 1
+
+        if(needsTransitionCounting) {
+            result.appendln("${config.getIndent(1)}unsigned int remainingTransitions = ${config.maximumInterTransitions};")
+            result.appendln("${config.getIndent(1)}while(remainingTransitions > 0) {")
+            result.appendln("${config.getIndent(2)}// Decrement the remaining transitions available")
+            result.appendln("${config.getIndent(2)}remainingTransitions--;")
+            result.appendln()
+        }
+
+        result.appendln(generateStateMachine(needsTransitionCounting))
+
+        result.appendln("${config.getIndent(defaultIndent)}// Update from intermediary variables")
+        result.appendln("${config.getIndent(defaultIndent)}me->state = state_u;")
+
+        result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_OUTPUT, CFileGenerator::updateFromIntermediateVariable, config, depth=defaultIndent))
+
+        result.append(Utils.performVariableFunctionForLocality(fsm, Locality.INTERNAL, CFileGenerator::updateFromIntermediateVariable, config, depth=defaultIndent))
+
+        if(needsTransitionCounting) {
+            result.appendln("${config.getIndent(1)}}")
+        }
+
+        if(config.runIntraTransitionOnEntry) {
+            result.appendln()
+
+            result.append(generateIntraStateMachine())
+        }
+
+        result.appendln("}")
+
+        return result.toString()
+    }
+
+    private fun generateStateMachine(countTransitions: Boolean): String {
+        val result = StringBuilder()
+
+        val defaultIndent = if(countTransitions) 2 else 1
+
+        result.appendln("${config.getIndent(defaultIndent)}// Run the state machine for transition logic")
+        if(config.runIntraTransitionOnEntry)
+            result.appendln("${config.getIndent(defaultIndent)}// This will only be inter-location transitions, with intra-location transitions happening later")
+
+        result.appendln("${config.getIndent(defaultIndent)}switch(me->state) {")
+
+        for((name) in fsm.states) {
+            result.appendln("${config.getIndent(defaultIndent+1)}case $name: // Logic for state $name")
+
+            var atLeastOneIf = false
+            for((fromLocation, toLocation, guard, update) in fsm.transitions.filter{it.fromLocation == name && (!config.runIntraTransitionOnEntry || it.fromLocation != it.toLocation) }) {
+                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard)}) {")
+
+                for((variable, equation) in update) {
+                    result.appendln("${config.getIndent(defaultIndent+3)}${variable}_u = ${Utils.generateCodeForParseTreeItem(equation)};")
+                }
+
+                if(update.isNotEmpty())
+                    result.appendln()
+
+                result.appendln("${config.getIndent(defaultIndent+3)}// Next state is $toLocation")
+                result.appendln("${config.getIndent(defaultIndent+3)}state_u = $toLocation;")
+
+                if(countTransitions && toLocation == fromLocation) {
+                    result.appendln()
+                    result.appendln("${config.getIndent(defaultIndent+3)}// Taking an intra-location transition stops execution")
+                    result.appendln("${config.getIndent(defaultIndent+3)}remainingTransitions = 0;")
+                }
+
+                result.appendln("${config.getIndent(defaultIndent+2)}}")
+
+                atLeastOneIf = true
+            }
+
+            if(atLeastOneIf && countTransitions) {
+                result.appendln("${config.getIndent(defaultIndent+2)}else {")
+                result.appendln("${config.getIndent(defaultIndent+3)}// No available transition stops execution")
+                result.appendln("${config.getIndent(defaultIndent+3)}remainingTransitions = 0;")
+                result.appendln("${config.getIndent(defaultIndent+2)}}")
+            }
+
+            result.appendln("${config.getIndent(defaultIndent+2)}break;")
+        }
+
+        result.appendln("${config.getIndent(defaultIndent)}}")
+
+        return result.toString()
+    }
+
+    private fun generateIntraStateMachine(): String {
+        val result = StringBuilder()
+
+        result.appendln("${config.getIndent(1)}// Intra-location logic for every state")
+        result.appendln("${config.getIndent(1)}switch(me->state) {")
+
+        for((name) in fsm.states) {
+            result.appendln("${config.getIndent(2)}case $name: // Intra-location logic for state $name")
+
+            for((_, _, _, update) in fsm.transitions.filter{it.fromLocation == name && it.fromLocation == it.toLocation}) {
+                for((variable, equation) in update) {
+                    result.appendln("${config.getIndent(3)}${variable}_u = ${Utils.generateCodeForParseTreeItem(equation)};")
+                }
+
+                if(update.isNotEmpty())
+                    result.appendln()
+            }
+
+            result.appendln("${config.getIndent(3)}break;")
+        }
+
+        result.appendln("${config.getIndent(1)}}")
+        result.appendln()
 
         result.appendln("${config.getIndent(1)}// Update from intermediary variables")
         result.appendln("${config.getIndent(1)}me->state = state_u;")
@@ -82,43 +194,6 @@ object CFileGenerator {
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_OUTPUT, CFileGenerator::updateFromIntermediateVariable, config))
 
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.INTERNAL, CFileGenerator::updateFromIntermediateVariable, config))
-
-        result.appendln("}")
-
-        return result.toString()
-    }
-
-    private fun generateStateMachine(): String {
-        val result = StringBuilder()
-
-        result.appendln("${config.getIndent(1)}switch(me->state) {")
-
-        for((name) in fsm.states) {
-            result.appendln("${config.getIndent(2)}case $name: // Logic for state $name")
-
-            var atLeastOneIf = false
-            for((_, toLocation, guard, update) in fsm.transitions.filter{it.fromLocation == name }) {
-                result.appendln("${config.getIndent(3)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard)}) {")
-
-                for((variable, equation) in update) {
-                    result.appendln("${config.getIndent(4)}${variable}_u = ${Utils.generateCodeForParseTreeItem(equation)};")
-                }
-
-                if(update.isNotEmpty())
-                    result.appendln()
-
-                result.appendln("${config.getIndent(4)}// Next state is $toLocation")
-                result.appendln("${config.getIndent(4)}state_u = $toLocation;")
-
-                result.appendln("${config.getIndent(3)}}")
-
-                atLeastOneIf = true
-            }
-
-            result.appendln("${config.getIndent(3)}break;")
-        }
-
-        result.appendln("${config.getIndent(1)}}")
 
         return result.toString()
     }
