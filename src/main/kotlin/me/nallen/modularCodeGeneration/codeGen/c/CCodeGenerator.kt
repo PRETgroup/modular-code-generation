@@ -1,11 +1,8 @@
 package me.nallen.modularCodeGeneration.codeGen.c
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import me.nallen.modularCodeGeneration.codeGen.CodeGenLanguage
 import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.codeGen.ParameterisationMethod
+import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteInstance
 import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteNetwork
 import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
@@ -40,7 +37,7 @@ class CCodeGenerator() {
                 outputDir.mkdir()
 
             // Generate FSM files
-            if(config.parametrisationMethod == ParameterisationMethod.COMPILE_TIME) {
+            if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 for((name, instance) in network.instances) {
                     val fsm = CodeGenManager.createParametrisedFsm(network, name, instance)
 

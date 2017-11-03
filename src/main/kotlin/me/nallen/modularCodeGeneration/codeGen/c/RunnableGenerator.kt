@@ -1,7 +1,7 @@
 package me.nallen.modularCodeGeneration.codeGen.c
 
 import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.codeGen.ParameterisationMethod
+import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.finiteStateMachine.*
 import kotlin.collections.LinkedHashMap
 
@@ -19,7 +19,7 @@ object RunnableGenerator {
 
         objects.clear()
         for((name, instance) in instances) {
-            if(config.parametrisationMethod == ParameterisationMethod.COMPILE_TIME) {
+            if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 objects.add(CodeObject(name, name))
             }
             else {
@@ -49,7 +49,7 @@ object RunnableGenerator {
         if(instances.isNotEmpty()) {
             result.appendln()
 
-            if(config.parametrisationMethod == ParameterisationMethod.COMPILE_TIME) {
+            if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 for((name, instance) in instances) {
                     result.appendln("#include \"${instance.machine}/$name.h\"")
                 }
@@ -94,7 +94,7 @@ object RunnableGenerator {
             result.appendln("${config.getIndent(1)}(void) memset((void *)&${name}_data, 0, sizeof(${instance}));")
             result.appendln("${config.getIndent(1)}${instance}Init(&${name}_data);")
 
-            if(config.parametrisationMethod == ParameterisationMethod.RUN_TIME) {
+            if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
                 for((key, value) in instances[name]!!.parameters) {
                     result.appendln("${config.getIndent(1)}${name}_data.$key = ${Utils.generateCodeForParseTreeItem(value)};")
                 }
