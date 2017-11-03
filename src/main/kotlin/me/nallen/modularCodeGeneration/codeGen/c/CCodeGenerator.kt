@@ -47,7 +47,7 @@ class CCodeGenerator() {
                     if(fsm == null)
                         throw IllegalArgumentException("Unable to find base machine $name to instantiate!")
 
-                    generateFsm(fsm!!, File(outputDir, instance.machine).absolutePath, config)
+                    generateFsm(fsm, File(outputDir, instance.machine).absolutePath, config)
                 }
             }
             else  {
