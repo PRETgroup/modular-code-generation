@@ -22,8 +22,8 @@ data class HybridAutomata(
     fun addLocation(
             name: String,
             invariant: ParseTreeItem = Literal("true"),
-            flow: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
-            update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+            flow: Map<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>(),
+            update: Map<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>()
     ): HybridAutomata {
         return addLocation(Location(name, invariant, flow, update))
     }
@@ -54,7 +54,7 @@ data class HybridAutomata(
             fromLocation: String,
             toLocation: String,
             guard: ParseTreeItem = Literal("true"),
-            update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
+            update: Map<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>(),
             inEvents: ParseTreeItem = Literal("true"),
             outEvents: List<String> = ArrayList<String>()
     ): HybridAutomata {
@@ -154,22 +154,22 @@ data class HybridAutomata(
 data class Location(
         var name: String,
         var invariant: ParseTreeItem = Literal("true"),
-        var flow: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
-        var update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+        var flow: Map<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>(),
+        var update: Map<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>()
 )
 
 data class Edge(
         var fromLocation: String,
         var toLocation: String,
         var guard: ParseTreeItem = Literal("true"),
-        var update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>(),
+        var update: Map<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>(),
         var inEvents: ParseTreeItem = Literal("true"),
         var outEvents: List<String> = ArrayList<String>()
 )
 
 data class Initialisation(
         var state: String,
-        var valuations: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+        var valuations: Map<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>()
 )
 
 data class Variable(

@@ -10,8 +10,8 @@ data class HybridNetwork(
         var name: String = "Network"
 ) {
     val definitions = ArrayList<HybridAutomata>()
-    val instances = HashMap<String, AutomataInstance>()
-    val ioMapping = HashMap<AutomataVariablePair, AutomataVariablePair>()
+    val instances = LinkedHashMap<String, AutomataInstance>()
+    val ioMapping = LinkedHashMap<AutomataVariablePair, AutomataVariablePair>()
 
     fun addDefinition(
             ha: HybridAutomata
@@ -81,7 +81,7 @@ data class HybridNetwork(
 
 data class AutomataInstance(
         val automata: String,
-        val parameters: HashMap<String, ParseTreeItem>
+        val parameters: Map<String, ParseTreeItem>
 )
 
 data class AutomataVariablePair(val automata: String, val variable: String)

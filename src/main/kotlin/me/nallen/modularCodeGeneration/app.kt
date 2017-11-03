@@ -25,55 +25,55 @@ fun main(args: Array<String>) {
             .addLocation(
                     "q0",
                     ParseTreeItem.generate("v < V_T && g < V_T"),
-                    hashMapOf(
+                    linkedMapOf(
                             "v_x" to ParseTreeItem.generate("C1 * v_x"),
                             "v_y" to ParseTreeItem.generate("C2 * v_y"),
                             "v_z" to ParseTreeItem.generate("C3 * v_z")
                     ),
-                    hashMapOf(
+                    linkedMapOf(
                             "v" to ParseTreeItem.generate("v_x - v_y + v_z")
                     )
             )
             .addLocation(
                     "q1",
                     ParseTreeItem.generate("v < V_T && g > 0"),
-                    hashMapOf(
+                    linkedMapOf(
                             "v_x" to ParseTreeItem.generate("C4 * v_x + C7 * g"),
                             "v_y" to ParseTreeItem.generate("C5 * v_y + C8 * g"),
                             "v_z" to ParseTreeItem.generate("C6 * v_z + C9 * g")
                     ),
-                    hashMapOf(
+                    linkedMapOf(
                             "v" to ParseTreeItem.generate("v_x - v_y + v_z")
                     )
             )
             .addLocation(
                     "q2",
                     ParseTreeItem.generate("v < V_O - 80.1 * sqrt(theta)"),
-                    hashMapOf(
+                    linkedMapOf(
                             "v_x" to ParseTreeItem.generate("C10 * v_x"),
                             "v_y" to ParseTreeItem.generate("C11 * v_y"),
                             "v_z" to ParseTreeItem.generate("C12 * v_z")
                     ),
-                    hashMapOf(
+                    linkedMapOf(
                             "v" to ParseTreeItem.generate("v_x - v_y + v_z")
                     )
             )
             .addLocation(
                     "q3",
                     ParseTreeItem.generate("v > V_R"),
-                    hashMapOf(
+                    linkedMapOf(
                             "v_x" to ParseTreeItem.generate("C13 * v_x * f_theta"),
                             "v_y" to ParseTreeItem.generate("C14 * v_y * f_theta"),
                             "v_z" to ParseTreeItem.generate("C15 * v_z")
                     ),
-                    hashMapOf(
+                    linkedMapOf(
                             "v" to ParseTreeItem.generate("v_x - v_y + v_z")
                     )
             )
             .addEdge(
                     "q0", "q1",
                     ParseTreeItem.generate("g >= V_T"),
-                    update = hashMapOf(
+                    update = linkedMapOf(
                             "v_x" to ParseTreeItem.generate("0.3 * v"),
                             "v_y" to ParseTreeItem.generate("0.0 * v"),
                             "v_z" to ParseTreeItem.generate("0.7 * v"),
@@ -87,7 +87,7 @@ fun main(args: Array<String>) {
             .addEdge("q3", "q0", ParseTreeItem.generate("v <= V_R"))
             .setInit(Initialisation(
                     "q0",
-                    hashMapOf(
+                    linkedMapOf(
                             "v_x" to ParseTreeItem.generate("0"),
                             "v_y" to ParseTreeItem.generate("0"),
                             "v_z" to ParseTreeItem.generate("0"),
@@ -101,7 +101,7 @@ fun main(args: Array<String>) {
             "SA",
             AutomataInstance(
                     "Cell",
-                    hashMapOf(
+                    linkedMapOf(
                             "C1" to ParseTreeItem.generate("-8.7"),
                             "C2" to ParseTreeItem.generate("-23.6"),
                             "C3" to ParseTreeItem.generate("-6.9"),
@@ -128,7 +128,7 @@ fun main(args: Array<String>) {
             "RV",
             AutomataInstance(
                     "Cell",
-                    hashMapOf(
+                    linkedMapOf(
                             "C1" to ParseTreeItem.generate("-8.7"),
                             "C2" to ParseTreeItem.generate("-23.6"),
                             "C3" to ParseTreeItem.generate("-6.9"),

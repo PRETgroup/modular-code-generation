@@ -3,10 +3,11 @@ package me.nallen.modularCodeGeneration.codeGen.c
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParameterisationMethod
 import me.nallen.modularCodeGeneration.finiteStateMachine.*
+import kotlin.collections.LinkedHashMap
 
 object RunnableGenerator {
-    private var instances: Map<String, FiniteInstance> = HashMap<String, FiniteInstance>()
-    private var ioMapping: Map<MachineVariablePair, MachineVariablePair> = HashMap<MachineVariablePair, MachineVariablePair>()
+    private var instances: Map<String, FiniteInstance> = LinkedHashMap<String, FiniteInstance>()
+    private var ioMapping: Map<MachineVariablePair, MachineVariablePair> = LinkedHashMap<MachineVariablePair, MachineVariablePair>()
     private var config: Configuration = Configuration()
 
     private var objects: ArrayList<CodeObject> = ArrayList<CodeObject>()

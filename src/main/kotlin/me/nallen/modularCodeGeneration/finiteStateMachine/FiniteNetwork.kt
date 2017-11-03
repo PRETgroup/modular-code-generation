@@ -12,8 +12,8 @@ data class FiniteNetwork(
         var name: String = "Network"
 ) {
     val definitions = ArrayList<FiniteStateMachine>()
-    val instances = HashMap<String, FiniteInstance>()
-    val ioMapping = HashMap<MachineVariablePair, MachineVariablePair>()
+    val instances = LinkedHashMap<String, FiniteInstance>()
+    val ioMapping = LinkedHashMap<MachineVariablePair, MachineVariablePair>()
 
     companion object Factory {
         fun generateFromHybridNetwork(hybridNetwork: HybridNetwork): FiniteNetwork {
@@ -61,7 +61,7 @@ data class FiniteNetwork(
 
 data class FiniteInstance(
         var machine: String,
-        var parameters: HashMap<String, ParseTreeItem>
+        var parameters: Map<String, ParseTreeItem>
 ) {
     companion object Factory {
         fun generateFromAutomataInstance(instance: AutomataInstance): FiniteInstance {

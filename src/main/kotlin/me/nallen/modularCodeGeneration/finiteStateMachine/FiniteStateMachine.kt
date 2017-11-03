@@ -27,7 +27,7 @@ data class FiniteStateMachine(
             for((name, invariant, flow, update) in ha.locations) {
                 fsm.addState(name)
 
-                val updates = HashMap<String, ParseTreeItem>()
+                val updates = LinkedHashMap<String, ParseTreeItem>()
                 updates.putAll(flow)
                 updates.putAll(update)
 
@@ -42,7 +42,7 @@ data class FiniteStateMachine(
                 }
 
                 // Combine Output
-                val combinedUpdate = HashMap<String, ParseTreeItem>()
+                val combinedUpdate = LinkedHashMap<String, ParseTreeItem>()
                 combinedUpdate.putAll(update)
                 for(event in outEvents) {
                     combinedUpdate.put(event, Literal("true"))
@@ -92,7 +92,7 @@ data class FiniteStateMachine(
             fromLocation: String,
             toLocation: String,
             guard: ParseTreeItem = Literal("true"),
-            update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+            update: Map<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>()
     ): FiniteStateMachine {
         return addTransition(Transition(fromLocation, toLocation, guard, update))
     }
@@ -175,12 +175,12 @@ data class Transition(
         var fromLocation: String,
         var toLocation: String,
         var guard: ParseTreeItem = Literal("true"),
-        var update: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+        var update: Map<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>()
 )
 
 data class Initialisation(
         var state: String,
-        var valuations: HashMap<String, ParseTreeItem> = HashMap<String, ParseTreeItem>()
+        var valuations: Map<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>()
 )
 
 data class Variable(
