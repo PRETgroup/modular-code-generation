@@ -92,6 +92,12 @@ object RunnableGenerator {
             first = false
             result.appendln("${config.getIndent(1)}(void) memset((void *)&${name}_data, 0, sizeof(${instance}));")
             result.appendln("${config.getIndent(1)}${instance}Init(&${name}_data);")
+
+            if(config.parametrisationMethod == ParameterisationMethod.RUN_TIME) {
+                for((key, value) in instances[name]!!.parameters) {
+                    result.appendln("${config.getIndent(1)}${name}_data.$key = ${Utils.generateCodeForParseTreeItem(value)};")
+                }
+            }
         }
 
         result.appendln()
@@ -111,7 +117,7 @@ object RunnableGenerator {
 
             prev = key.machine
             val from = ioMapping[key]!!
-            result.appendln("${config.getIndent(2)}${key.machine}_data.${key.variable} = ${from.machine}_data.${from.variable}")
+            result.appendln("${config.getIndent(2)}${key.machine}_data.${key.variable} = ${from.machine}_data.${from.variable};")
         }
 
         result.appendln()
