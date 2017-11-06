@@ -4,6 +4,7 @@ import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.finiteStateMachine.*
 import me.nallen.modularCodeGeneration.finiteStateMachine.Variable
+import me.nallen.modularCodeGeneration.parseTree.Literal
 
 object CFileGenerator {
     private var fsm: FiniteStateMachine = FiniteStateMachine("Temp")
@@ -60,8 +61,8 @@ object CFileGenerator {
 
     private fun generateDefaultInitForType(type: VariableType): String {
         when(type) {
-            VariableType.BOOLEAN -> return "false"
-            VariableType.REAL -> return "0"
+            VariableType.BOOLEAN -> return Utils.generateCodeForParseTreeItem(Literal("false"))
+            VariableType.REAL -> return Utils.generateCodeForParseTreeItem(Literal("0"))
         }
     }
 
