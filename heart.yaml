@@ -1,0 +1,135 @@
+definitions:
+  Cell:
+    inputs:
+      g: REAL
+    outputs:
+      v: REAL
+    parameters:
+      C1: REAL
+      C2: REAL
+      C3: REAL
+      C4: REAL
+      C5: REAL
+      C6: REAL
+      C7: REAL
+      C8: REAL
+      C9: REAL
+      C10: REAL
+      C11: REAL
+      C12: REAL
+      C13: REAL
+      C14: REAL
+      C15: REAL
+      V_O: REAL
+      V_T: REAL
+      V_R: REAL
+    locations:
+      q0:
+        invariant: v < V_T && g < V_T
+        flow:
+          v_x: C1 * v_x
+          v_y: C2 * v_y
+          v_z: C3 * v_z
+        update:
+          v: v_x - v_y + v_z
+        transitions:
+          - to: q1
+            guard: g >= V_T
+            update:
+              v_x: 0.3 * v
+              v_y: 0.0 * v
+              v_z: 0.7 * v
+              theta: v / 44.5
+              f_theta: theta
+      q1:
+        invariant: v < V_T && g > 0
+        flow:
+          v_x: C4 * v_x + C7 * g
+          v_y: C5 * v_y + C8 * g
+          v_z: C6 * v_z + C9 * g
+        update:
+          v: v_x - v_y + v_z
+        transitions:
+          - to: q2
+            guard: v >= V_T
+          - to: q0
+            guard: g <= 0 && v < V_T
+      q2:
+        invariant: v < V_O - 80.1 * sqrt(theta)
+        flow:
+          v_x: C10 * v_x
+          v_y: C11 * v_y
+          v_z: C12 * v_z
+        update:
+          v: v_x - v_y + v_z
+        transitions:
+          - to: q3
+            guard: v >= V_O - 80.1 * sqrt(theta)
+      q3:
+        invariant: v > V_R
+        flow:
+          v_x: C13 * v_x * f_theta
+          v_y: C14 * v_y * f_theta
+          v_z: C15 * v_z
+        update:
+          v: v_x - v_y + v_z
+        transitions:
+          - to: q0
+            guard: v <= V_R
+    initialisation:
+      state: q0
+      valuations:
+        v_x: 0
+        v_y: 0
+        v_z: 0
+        v: 0
+        theta: 0
+        f_theta: 0
+
+instances:
+  SA:
+    type: Cell
+    parameters:
+      C1: -8.7
+      C2: -23.6
+      C3: -6.9
+      C4: -33.2
+      C5: -190.9
+      C6: -45.5
+      C7: 777200
+      C8: 58900
+      C9: 276600
+      C10: 75.9
+      C11: 20
+      C12: -190.4
+      C13: -12.9
+      C14: 6826.5
+      C15: 2
+      V_O: 131.1
+      V_T: 44.5
+      V_R: 30
+  RV:
+    type: Cell
+    parameters:
+      C1: -8.7
+      C2: -23.6
+      C3: -6.9
+      C4: -33.2
+      C5: -190.9
+      C6: -45.5
+      C7: 777200
+      C8: 58900
+      C9: 276600
+      C10: 75.9
+      C11: 11
+      C12: -190.4
+      C13: -12.9
+      C14: 6826.5
+      C15: 2
+      V_O: 131.1
+      V_T: 44.5
+      V_R: 30
+
+mappings:
+  SA.g: RV.v
+  RV.g: SA.v

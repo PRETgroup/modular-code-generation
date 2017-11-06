@@ -7,6 +7,12 @@ sealed class ParseTreeItem(var type: String) {
     companion object Factory {
         @JsonCreator @JvmStatic
         fun generate(input: String): ParseTreeItem = GenerateParseTreeFromString(input)
+
+        @JsonCreator @JvmStatic
+        fun generate(input: Int): ParseTreeItem = GenerateParseTreeFromString(input.toString())
+
+        @JsonCreator @JvmStatic
+        fun generate(input: Double): ParseTreeItem = GenerateParseTreeFromString(input.toString())
     }
 
     @JsonValue
