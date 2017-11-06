@@ -3,6 +3,7 @@ package me.nallen.modularCodeGeneration.description
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.Literal
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
@@ -13,7 +14,7 @@ typealias HybridLocation = me.nallen.modularCodeGeneration.hybridAutomata.Locati
 
 class Importer() {
     companion object Factory {
-        fun import(path: String): HybridNetwork {
+        fun import(path: String): Pair<HybridNetwork, Configuration> {
             val file = File(path)
 
             if(!file.exists() || !file.isFile)
@@ -32,7 +33,9 @@ class Importer() {
 
             network.importMappings(schema.mappings)
 
-            return network
+            val config = schema.codegenConfig ?: Configuration()
+
+            return Pair(network, config)
         }
     }
 }

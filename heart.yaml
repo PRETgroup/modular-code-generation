@@ -135,3 +135,9 @@ instances:
 mappings:
   SA.g: RV.v
   RV.g: SA.v
+
+codegenConfig:
+  parametrisationMethod: COMPILE_TIME
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: false
+  

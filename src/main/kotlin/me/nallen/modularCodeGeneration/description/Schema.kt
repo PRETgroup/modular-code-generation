@@ -2,11 +2,13 @@ package me.nallen.modularCodeGeneration.description
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
+import me.nallen.modularCodeGeneration.codeGen.Configuration
 
 data class Schema(
         var definitions: Map<String, Definition>,
         var instances: Map<String, Instance>,
-        var mappings: Map<String, String>?
+        var mappings: Map<String, String>?,
+        var codegenConfig: Configuration?
 )
 
 data class Definition(
