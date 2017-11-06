@@ -113,7 +113,7 @@ object CFileGenerator {
             result.appendln("${config.getIndent(1)}}")
         }
 
-        if(config.runIntraTransitionOnEntry) {
+        if(config.requireOneIntraTransitionPerTick) {
             result.appendln()
 
             result.append(generateIntraStateMachine())
@@ -130,7 +130,7 @@ object CFileGenerator {
         val defaultIndent = if(countTransitions) 2 else 1
 
         result.appendln("${config.getIndent(defaultIndent)}// Run the state machine for transition logic")
-        if(config.runIntraTransitionOnEntry)
+        if(config.requireOneIntraTransitionPerTick)
             result.appendln("${config.getIndent(defaultIndent)}// This will only be inter-location transitions, with intra-location transitions happening later")
 
         result.appendln("${config.getIndent(defaultIndent)}switch(me->state) {")
@@ -139,7 +139,7 @@ object CFileGenerator {
             result.appendln("${config.getIndent(defaultIndent+1)}case $name: // Logic for state $name")
 
             var atLeastOneIf = false
-            for((fromLocation, toLocation, guard, update) in fsm.transitions.filter{it.fromLocation == name && (!config.runIntraTransitionOnEntry || it.fromLocation != it.toLocation) }) {
+            for((fromLocation, toLocation, guard, update) in fsm.transitions.filter{it.fromLocation == name && (!config.requireOneIntraTransitionPerTick || it.fromLocation != it.toLocation) }) {
                 result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard)}) {")
 
                 for((variable, equation) in update) {
