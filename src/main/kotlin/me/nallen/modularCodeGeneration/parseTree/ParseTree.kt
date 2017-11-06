@@ -13,6 +13,9 @@ sealed class ParseTreeItem(var type: String) {
 
         @JsonCreator @JvmStatic
         fun generate(input: Double): ParseTreeItem = GenerateParseTreeFromString(input.toString())
+
+        @JsonCreator @JvmStatic
+        fun generate(input: Boolean): ParseTreeItem = GenerateParseTreeFromString(input.toString())
     }
 
     @JsonValue
