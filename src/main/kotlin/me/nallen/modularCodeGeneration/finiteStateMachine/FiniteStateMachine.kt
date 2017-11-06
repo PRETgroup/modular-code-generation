@@ -53,11 +53,12 @@ data class FiniteStateMachine(
                 fsm.addTransition(fromLocation, toLocation, combinedGuard, combinedUpdate)
             }
 
-            for((name, locality) in ha.continuousVariables) {
+            for((name, locality, defaultValue) in ha.continuousVariables) {
                 fsm.addVariableIfNotExist(
                         name,
                         VariableType.REAL,
-                        Locality.createFromHybridLocality(locality)
+                        Locality.createFromHybridLocality(locality),
+                        defaultValue
                 )
             }
 
@@ -156,15 +157,22 @@ data class FiniteStateMachine(
         }
     }
 
+    fun setDefaultParametrisation() {
+        for(variable in variables.filter({it.locality == Locality.PARAMETER && it.defaultValue != null})) {
+            this.setParameterValue(variable.name, variable.defaultValue!!)
+        }
+    }
+
     /* Private Methods */
 
     protected fun addVariableIfNotExist(
             item: String,
             type: VariableType = VariableType.REAL,
-            locality: Locality = Locality.INTERNAL
+            locality: Locality = Locality.INTERNAL,
+            defaultValue: ParseTreeItem? = null
     ) {
         if(!variables.any({it.name == item})) {
-            variables.add(Variable(item, type, locality))
+            variables.add(Variable(item, type, locality, defaultValue))
         }
     }
 }
@@ -188,7 +196,8 @@ data class Initialisation(
 data class Variable(
         var name: String,
         var type: VariableType,
-        var locality: Locality
+        var locality: Locality,
+        var defaultValue: ParseTreeItem? = null
 )
 
 enum class VariableType {

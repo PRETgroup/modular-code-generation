@@ -174,7 +174,8 @@ data class Initialisation(
 
 data class Variable(
         var name: String,
-        var locality: Locality
+        var locality: Locality,
+        var defaultValue: ParseTreeItem? = null
 )
 
 enum class Locality {

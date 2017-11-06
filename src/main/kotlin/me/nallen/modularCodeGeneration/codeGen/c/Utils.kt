@@ -26,7 +26,9 @@ object Utils {
             for(variable in fsm.variables
                     .filter{it.locality == locality}
                     .sortedBy { it.type }) {
-                result.appendln("${config.getIndent(depth)}${function(variable)}")
+                val output = function(variable)
+                if(output.isNotEmpty())
+                    result.appendln("${config.getIndent(depth)}$output")
             }
         }
 

@@ -1,6 +1,7 @@
 package me.nallen.modularCodeGeneration.codeGen.c
 
 import me.nallen.modularCodeGeneration.codeGen.Configuration
+import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.finiteStateMachine.*
 import me.nallen.modularCodeGeneration.finiteStateMachine.Variable
 
@@ -37,6 +38,11 @@ object CFileGenerator {
 
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.INTERNAL, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
 
+        if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
+            if(fsm.variables.any({it.locality == Locality.PARAMETER && it.defaultValue != null}))
+                result.append(Utils.performVariableFunctionForLocality(fsm, Locality.PARAMETER, CFileGenerator::generateParameterInitialisation, config, "Initialise Default"))
+        }
+
         result.appendln("}")
 
         return result.toString()
@@ -57,6 +63,14 @@ object CFileGenerator {
             VariableType.BOOLEAN -> return "false"
             VariableType.REAL -> return "0"
         }
+    }
+
+    private fun generateParameterInitialisation(variable: Variable): String {
+        if(variable.defaultValue != null) {
+            return "me->${variable.name} = ${Utils.generateCodeForParseTreeItem(variable.defaultValue!!)};"
+        }
+
+        return ""
     }
 
 

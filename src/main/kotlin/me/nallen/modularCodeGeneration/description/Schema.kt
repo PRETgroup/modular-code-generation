@@ -1,5 +1,6 @@
 package me.nallen.modularCodeGeneration.description
 
+import com.fasterxml.jackson.annotation.JsonCreator
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 
 data class Schema(
@@ -9,12 +10,22 @@ data class Schema(
 )
 
 data class Definition(
-        var inputs: Map<String, VariableType>?,
-        var outputs: Map<String, VariableType>?,
-        var parameters: Map<String, VariableType>?,
+        var inputs: Map<String, VariableDefinition>?,
+        var outputs: Map<String, VariableDefinition>?,
+        var parameters: Map<String, VariableDefinition>?,
         var locations: Map<String, Location>?,
         var initialisation: Initialisation
 )
+
+data class VariableDefinition(
+        var type: VariableType,
+        var default: ParseTreeItem? = null
+) {
+    companion object Factory {
+        @JsonCreator @JvmStatic
+        fun create(input: String) = VariableDefinition(VariableType.valueOf(input))
+    }
+}
 
 enum class VariableType {
     BOOLEAN, REAL

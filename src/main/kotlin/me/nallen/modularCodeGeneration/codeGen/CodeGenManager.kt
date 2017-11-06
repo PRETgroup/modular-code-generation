@@ -35,6 +35,8 @@ object CodeGenManager {
                 fsm.setParameterValue(key, value)
             }
 
+            fsm.setDefaultParametrisation()
+
             return fsm
         }
 

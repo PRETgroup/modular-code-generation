@@ -134,7 +134,7 @@ private fun MutableMap<String, ParseTreeItem>.loadParseTreeItems(items: Map<Stri
     }
 }
 
-private fun HybridAutomata.loadVariables(variables: Map<String, VariableType>?, type: Locality) {
+private fun HybridAutomata.loadVariables(variables: Map<String, VariableDefinition>?, type: Locality) {
     if(variables != null) {
         for((key, value) in variables) {
             this.loadVariable(key, value, type)
@@ -142,13 +142,13 @@ private fun HybridAutomata.loadVariables(variables: Map<String, VariableType>?, 
     }
 }
 
-private fun HybridAutomata.loadVariable(name: String, value: VariableType, type: Locality) {
-    val variable = Variable(name, type)
+private fun HybridAutomata.loadVariable(name: String, value: VariableDefinition, type: Locality) {
+    val variable = Variable(name, type, value.default)
 
-    if(value == VariableType.REAL) {
+    if(value.type == VariableType.REAL) {
         this.continuousVariables.add(variable)
     }
-    else if(value == VariableType.BOOLEAN) {
+    else if(value.type == VariableType.BOOLEAN) {
         this.events.add(variable)
     }
 }
