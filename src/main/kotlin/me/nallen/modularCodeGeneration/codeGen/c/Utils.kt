@@ -58,7 +58,10 @@ object Utils {
                 if(item.value != null)
                     padOperand(parent ?: item, item.value!!)
                 else
-                    "me->${item.name}"
+                    if(item.name == "STEP_SIZE")
+                        "STEP_SIZE"
+                    else
+                        "me->${item.name}"
             }
             is Plus -> padOperand(item, item.operandA) + " + " + padOperand(item, item.operandB)
             is Minus -> padOperand(item, item.operandA) + " - " + padOperand(item, item.operandB)
