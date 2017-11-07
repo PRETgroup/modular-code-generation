@@ -33,7 +33,7 @@ object CFileGenerator {
         result.appendln("void ${fsm.name}Init(${fsm.name}* me) {")
 
         result.appendln("${config.getIndent(1)}// Initialise State")
-        result.appendln("${config.getIndent(1)}me->state = ${fsm.init.state}")
+        result.appendln("${config.getIndent(1)}me->state = ${fsm.init.state};")
 
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_OUTPUT, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
 

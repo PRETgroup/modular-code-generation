@@ -83,8 +83,8 @@ data class FiniteStateMachine(
     }
 
     fun addState(state: State): FiniteStateMachine {
-        if(states.any({it.name == state.name}))
-            throw IllegalArgumentException("Location with name ${state.name} already exists!")
+        /*if(states.any({it.name == state.name}))
+            throw IllegalArgumentException("Location with name ${state.name} already exists!")*/
 
         states.add(state)
 
@@ -101,7 +101,7 @@ data class FiniteStateMachine(
     }
 
     fun addTransition(transition: Transition): FiniteStateMachine {
-        if(!states.any({ it.name == transition.fromLocation }))
+        /*if(!states.any({ it.name == transition.fromLocation }))
             throw IllegalArgumentException("Location with name ${transition.fromLocation} does not exist!")
 
         if(!states.any({ it.name == transition.toLocation }))
@@ -116,7 +116,7 @@ data class FiniteStateMachine(
 
                 //TODO: Should be updated to merge updates if different
             }
-        }
+        }*/
 
         transitions.add(transition)
 
@@ -124,8 +124,8 @@ data class FiniteStateMachine(
     }
 
     fun setInit(init: Initialisation): FiniteStateMachine {
-        if(!states.any({ it.name == init.state }))
-            throw IllegalArgumentException("Location with name ${init.state} does not exist!")
+        /*if(!states.any({ it.name == init.state }))
+            throw IllegalArgumentException("Location with name ${init.state} does not exist!")*/
 
         this.init = init
 

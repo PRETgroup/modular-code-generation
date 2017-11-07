@@ -19,18 +19,9 @@ data class HybridAutomata(
         val continuousVariables: ArrayList<Variable> = ArrayList<Variable>(),
         val events: ArrayList<Variable> = ArrayList<Variable>()
 ) {
-    fun addLocation(
-            name: String,
-            invariant: ParseTreeItem = Literal("true"),
-            flow: MutableMap<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>(),
-            update: MutableMap<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>()
-    ): HybridAutomata {
-        return addLocation(Location(name, invariant, flow, update))
-    }
-
     fun addLocation(location: Location): HybridAutomata {
-        if(locations.any({it.name == location.name}))
-            throw IllegalArgumentException("Location with name ${location.name} already exists!")
+        /*if(locations.any({it.name == location.name}))
+            throw IllegalArgumentException("Location with name ${location.name} already exists!")*/
 
         // Check for any continuous variables
         checkParseTreeForNewContinuousVariable(location.invariant)
@@ -50,19 +41,8 @@ data class HybridAutomata(
         return this
     }
 
-    fun addEdge(
-            fromLocation: String,
-            toLocation: String,
-            guard: ParseTreeItem = Literal("true"),
-            update: MutableMap<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>(),
-            inEvents: ParseTreeItem = Literal("true"),
-            outEvents: List<String> = ArrayList<String>()
-    ): HybridAutomata {
-        return addEdge(Edge(fromLocation, toLocation, guard, update, inEvents, outEvents))
-    }
-
     fun addEdge(edge: Edge): HybridAutomata {
-        if(!locations.any({ it.name == edge.fromLocation }))
+        /*if(!locations.any({ it.name == edge.fromLocation }))
             throw IllegalArgumentException("Location with name ${edge.fromLocation} does not exist!")
 
         if(!locations.any({ it.name == edge.toLocation }))
@@ -77,7 +57,7 @@ data class HybridAutomata(
 
                 //TODO: Should be updated to merge updates if different
             }
-        }
+        }*/
 
         // Check for any continuous variables
         checkParseTreeForNewContinuousVariable(edge.guard)
@@ -99,25 +79,15 @@ data class HybridAutomata(
         return this
     }
 
-    fun setInit(init: Initialisation): HybridAutomata {
-        if(!locations.any({ it.name == init.state }))
-            throw IllegalArgumentException("Location with name ${init.state} does not exist!")
-
-        this.init = init
-
-        return this
-    }
-
-    fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL): HybridAutomata {
+    fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null): HybridAutomata {
         if(!continuousVariables.any({it.name == item})) {
-            continuousVariables.add(Variable(item, locality))
+            continuousVariables.add(Variable(item, locality, default))
+
+            if(default != null)
+                checkParseTreeForNewContinuousVariable(default)
         }
 
         return this
-    }
-
-    fun addParameter(item: String): HybridAutomata {
-        return addContinuousVariable(item, Locality.PARAMETER)
     }
 
     fun addEvent(item: String, locality: Locality = Locality.INTERNAL): HybridAutomata {

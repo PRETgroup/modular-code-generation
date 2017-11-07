@@ -54,7 +54,7 @@ private fun HybridNetwork.importLocations(definitions: Map<String, Definition>) 
 
         automata.loadInitialisation(definition.initialisation)
 
-        this.definitions.add(automata)
+        this.addDefinition(automata)
     }
 }
 
@@ -77,7 +77,7 @@ private fun HybridAutomata.loadLocation(name: String, location: Location) {
 
     this.loadTransitions(name, location.transitions)
 
-    this.locations.add(hybridLocation)
+    this.addLocation(hybridLocation)
 }
 
 private fun HybridAutomata.loadTransitions(from: String, transitions: List<Transition>?) {
@@ -94,7 +94,7 @@ private fun HybridAutomata.loadTransition(from: String, transition: Transition) 
     edge.guard = transition.guard ?: Literal("true")
     edge.update.loadParseTreeItems(transition.update)
 
-    this.edges.add(edge)
+    this.addEdge(edge)
 }
 
 private fun HybridAutomata.loadInitialisation(init: Initialisation) {
@@ -109,7 +109,7 @@ private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
 
         automataInstance.parameters.loadParseTreeItems(instance.parameters)
 
-        this.instances.put(name, automataInstance)
+        this.addInstance(name, automataInstance)
     }
 }
 
@@ -146,12 +146,10 @@ private fun HybridAutomata.loadVariables(variables: Map<String, VariableDefiniti
 }
 
 private fun HybridAutomata.loadVariable(name: String, value: VariableDefinition, type: Locality) {
-    val variable = Variable(name, type, value.default)
-
     if(value.type == VariableType.REAL) {
-        this.continuousVariables.add(variable)
+        this.addContinuousVariable(name, type, value.default)
     }
     else if(value.type == VariableType.BOOLEAN) {
-        this.events.add(variable)
+        this.addEvent(name, type)
     }
 }

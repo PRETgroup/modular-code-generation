@@ -16,8 +16,8 @@ data class HybridNetwork(
     fun addDefinition(
             ha: HybridAutomata
     ): HybridNetwork {
-        if(definitions.any({it.name == ha.name}))
-            throw IllegalArgumentException("Hybrid Automata with name ${ha.name} already exists!")
+        /*if(definitions.any({it.name == ha.name}))
+            throw IllegalArgumentException("Hybrid Automata with name ${ha.name} already exists!")*/
 
         definitions.add(ha)
 
@@ -28,7 +28,7 @@ data class HybridNetwork(
             name: String,
             instance: AutomataInstance
     ): HybridNetwork {
-        if(instances.containsKey(name))
+        /*if(instances.containsKey(name))
             throw IllegalArgumentException("Instance with name ${name} already exists!")
 
         if(!definitions.any({it.name == instance.automata}))
@@ -40,7 +40,7 @@ data class HybridNetwork(
         for(param in params) {
             if(!instance.parameters.containsKey(param.name))
                 throw IllegalArgumentException("Instance ${name} does not declare value for parameter ${param.name} of ${instance.automata}!")
-        }
+        }*/
 
         instances.put(name, instance)
 
@@ -51,7 +51,7 @@ data class HybridNetwork(
             to: AutomataVariablePair,
             from: AutomataVariablePair
     ): HybridNetwork {
-        if(!instances.containsKey(to.automata))
+        /*if(!instances.containsKey(to.automata))
             throw IllegalArgumentException("Unknown instance for 'to' connection ${to.automata}!")
 
         val toInstance = instances.get(to.automata)!!
@@ -71,7 +71,7 @@ data class HybridNetwork(
 
         if(ioMapping.containsKey(to)) {
             throw IllegalArgumentException("A previous assignment to ${to.automata}.${to.variable} has already been created!")
-        }
+        }*/
 
         ioMapping.put(to, from)
 
