@@ -33,7 +33,7 @@ object CFileGenerator {
         result.appendln("void ${fsm.name}Init(${fsm.name}* me) {")
 
         result.appendln("${config.getIndent(1)}// Initialise State")
-        result.appendln("${config.getIndent(1)}me->state = ${fsm.init.state};")
+        result.appendln("${config.getIndent(1)}me->state = ${fsm.name}_${fsm.init.state};")
 
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_OUTPUT, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
 
@@ -137,7 +137,7 @@ object CFileGenerator {
         result.appendln("${config.getIndent(defaultIndent)}switch(me->state) {")
 
         for((name) in fsm.states) {
-            result.appendln("${config.getIndent(defaultIndent+1)}case $name: // Logic for state $name")
+            result.appendln("${config.getIndent(defaultIndent+1)}case ${fsm.name}_$name: // Logic for state $name")
 
             var atLeastOneIf = false
             for((fromLocation, toLocation, guard, update) in fsm.transitions.filter{it.fromLocation == name && (!config.requireOneIntraTransitionPerTick || it.fromLocation != it.toLocation) }) {
@@ -151,7 +151,7 @@ object CFileGenerator {
                     result.appendln()
 
                 result.appendln("${config.getIndent(defaultIndent+3)}// Next state is $toLocation")
-                result.appendln("${config.getIndent(defaultIndent+3)}state_u = $toLocation;")
+                result.appendln("${config.getIndent(defaultIndent+3)}state_u = ${fsm.name}_$toLocation;")
 
                 if(countTransitions && toLocation == fromLocation) {
                     result.appendln()

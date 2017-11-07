@@ -63,7 +63,7 @@ object HFileGenerator {
         result.appendln("// ${fsm.name} States")
         result.appendln("enum ${fsm.name}States {")
         for((name) in fsm.states) {
-            result.appendln("${config.getIndent(1)}$name,")
+            result.appendln("${config.getIndent(1)}${fsm.name}_$name,")
         }
         result.appendln("};")
 
