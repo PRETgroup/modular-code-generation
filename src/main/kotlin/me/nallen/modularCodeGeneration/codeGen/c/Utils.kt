@@ -87,7 +87,7 @@ object Utils {
                     if(item.name == "STEP_SIZE")
                         "STEP_SIZE"
                     else
-                        "me->${item.name}"
+                        "me->${Utils.createVariableName(item.name)}"
             }
             is Plus -> padOperand(item, item.operandA) + " + " + padOperand(item, item.operandB)
             is Minus -> padOperand(item, item.operandA) + " - " + padOperand(item, item.operandB)

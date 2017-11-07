@@ -42,7 +42,7 @@ object MakefileGenerator {
                     if (!generated.contains(instance.machine)) {
                         generated.add(instance.machine)
 
-                        val deliminatedName = Utils.createFileName(name)
+                        val deliminatedName = Utils.createFileName(instance.machine)
                         result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedName.c"), listOf("$deliminatedName.h", CCodeGenerator.CONFIG_FILE)))
                         result.appendln()
                         sources.add("Objects/$deliminatedName")
