@@ -22,9 +22,9 @@ object HFileGenerator {
 
         result.appendln(generateIncludes())
 
-        result.appendln(generateStruct())
-
         result.appendln(generateEnum())
+
+        result.appendln(generateStruct())
 
         result.appendln("// ${fsm.name} Initialisation function")
         result.appendln("void ${fsm.name}Init(${fsm.name}* me);")
@@ -74,7 +74,7 @@ object HFileGenerator {
         val result = StringBuilder()
 
         result.appendln("// ${fsm.name} Data Struct")
-        result.appendln("typedef stuct {")
+        result.appendln("typedef struct {")
 
         result.appendln("${config.getIndent(1)}// State")
         result.appendln("${config.getIndent(1)}enum ${fsm.name}States state;")
