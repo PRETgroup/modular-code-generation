@@ -30,6 +30,15 @@ class CCodeGenerator() {
             File(outputDir, "runnable.c").writeText(RunnableGenerator.generate(instances, ioMapping, config))
         }
 
+        private fun generateMakefile(instances: Map<String, FiniteInstance>, dir: String, config: Configuration = Configuration()) {
+            val outputDir = File(dir)
+
+            if(!outputDir.exists())
+                outputDir.mkdir()
+
+            File(outputDir, "Makefile").writeText(MakefileGenerator.generate(instances, config))
+        }
+
         fun generateNetwork(network: FiniteNetwork, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
@@ -63,6 +72,9 @@ class CCodeGenerator() {
 
             // Generate runnable
             generateRunnable(network.instances, network.ioMapping, outputDir.absolutePath, config)
+
+            // Generate Makfile
+            generateMakefile(network.instances, outputDir.absolutePath, config)
         }
     }
 }
