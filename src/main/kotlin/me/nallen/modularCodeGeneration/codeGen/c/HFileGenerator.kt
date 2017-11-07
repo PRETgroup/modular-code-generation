@@ -1,6 +1,7 @@
 package me.nallen.modularCodeGeneration.codeGen.c
 
 import me.nallen.modularCodeGeneration.codeGen.Configuration
+import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
 import me.nallen.modularCodeGeneration.finiteStateMachine.Locality
 import me.nallen.modularCodeGeneration.finiteStateMachine.Variable
@@ -46,6 +47,12 @@ object HFileGenerator {
         result.appendln("#include <stdio.h>")
         result.appendln("#include <math.h>") // This may not be needed in all cases
         // TODO: Check if FSM uses a math.h function (sqrt, pow, etc.)
+
+        result.appendln()
+        if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME)
+            result.appendln("#include \"../${CCodeGenerator.CONFIG_FILE}\"")
+        else
+            result.appendln("#include \"${CCodeGenerator.CONFIG_FILE}\"")
 
         return result.toString()
     }

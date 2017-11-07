@@ -15,7 +15,7 @@ object MakefileGenerator {
 
         val result = StringBuilder()
 
-        val name = "NAME HERE"
+        val name = "output"
 
         result.appendln("TARGET = $name")
         result.appendln("CC = gcc")
@@ -31,7 +31,7 @@ object MakefileGenerator {
         if(instances.isNotEmpty()) {
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 for((name, instance) in instances) {
-                    result.append(generateCompileCommand(name, listOf("${instance.machine}/$name.c"), listOf("${instance.machine}/$name.h", "step.h")))
+                    result.append(generateCompileCommand(name, listOf("${instance.machine}/$name.c"), listOf("${instance.machine}/$name.h", CCodeGenerator.CONFIG_FILE)))
                     result.appendln()
                     sources.add("Objects/$name")
                 }
@@ -42,7 +42,7 @@ object MakefileGenerator {
                     if (!generated.contains(instance.machine)) {
                         generated.add(instance.machine)
 
-                        result.append(generateCompileCommand(instance.machine, listOf("${instance.machine}.c"), listOf("${instance.machine}.h", "step.h")))
+                        result.append(generateCompileCommand(instance.machine, listOf("${instance.machine}.c"), listOf("${instance.machine}.h", CCodeGenerator.CONFIG_FILE)))
                         result.appendln()
                         sources.add("Objects/${instance.machine}")
                     }
@@ -50,7 +50,7 @@ object MakefileGenerator {
             }
         }
 
-        result.append(generateCompileCommand("runnable", listOf("runnable.c"), listOf("step.h")))
+        result.append(generateCompileCommand("runnable", listOf("runnable.c"), listOf(CCodeGenerator.CONFIG_FILE)))
         result.appendln()
         sources.add("Objects/runnable")
 

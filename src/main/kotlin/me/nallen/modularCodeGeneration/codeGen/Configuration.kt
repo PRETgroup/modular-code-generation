@@ -2,6 +2,8 @@ package me.nallen.modularCodeGeneration.codeGen
 
 data class Configuration(
         val indentSize: Int = 4,
+        val stepSize: Double = 0.001,
+        val simulationTime: Double = 10.0,
         val parametrisationMethod: ParametrisationMethod = ParametrisationMethod.COMPILE_TIME,
         val maximumInterTransitions: Int = 1,
         val requireOneIntraTransitionPerTick: Boolean = false

@@ -11,6 +11,10 @@ import java.io.File
 
 class CCodeGenerator() {
     companion object {
+        val RUNNABLE = "runnable.c"
+        val MAKEFILE = "Makefile"
+        val CONFIG_FILE = "config.h"
+
         private fun generateFsm(fsm: FiniteStateMachine, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
@@ -27,7 +31,7 @@ class CCodeGenerator() {
             if(!outputDir.exists())
                 outputDir.mkdir()
 
-            File(outputDir, "runnable.c").writeText(RunnableGenerator.generate(instances, ioMapping, config))
+            File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(instances, ioMapping, config))
         }
 
         private fun generateMakefile(instances: Map<String, FiniteInstance>, dir: String, config: Configuration = Configuration()) {
@@ -36,7 +40,21 @@ class CCodeGenerator() {
             if(!outputDir.exists())
                 outputDir.mkdir()
 
-            File(outputDir, "Makefile").writeText(MakefileGenerator.generate(instances, config))
+            File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(instances, config))
+        }
+
+        private fun generateConfigFile(dir: String, config: Configuration = Configuration()) {
+            val outputDir = File(dir)
+
+            if(!outputDir.exists())
+                outputDir.mkdir()
+
+            val content = StringBuilder()
+
+            content.appendln("#define STEP_SIZE ${config.stepSize}")
+            content.appendln("#define SIMULATION_TIME ${config.simulationTime}")
+
+            File(outputDir, CONFIG_FILE).writeText(content.toString())
         }
 
         fun generateNetwork(network: FiniteNetwork, dir: String, config: Configuration = Configuration()) {
@@ -75,6 +93,9 @@ class CCodeGenerator() {
 
             // Generate Makfile
             generateMakefile(network.instances, outputDir.absolutePath, config)
+
+            // Generate Config file
+            generateConfigFile(outputDir.absolutePath, config)
         }
     }
 }
