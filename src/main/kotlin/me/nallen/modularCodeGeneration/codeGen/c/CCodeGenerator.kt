@@ -34,13 +34,13 @@ class CCodeGenerator() {
             File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(instances, ioMapping, config))
         }
 
-        private fun generateMakefile(instances: Map<String, FiniteInstance>, dir: String, config: Configuration = Configuration()) {
+        private fun generateMakefile(name: String, instances: Map<String, FiniteInstance>, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
                 outputDir.mkdir()
 
-            File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(instances, config))
+            File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(name, instances, config))
         }
 
         private fun generateConfigFile(dir: String, config: Configuration = Configuration()) {
@@ -92,7 +92,7 @@ class CCodeGenerator() {
             generateRunnable(network.instances, network.ioMapping, outputDir.absolutePath, config)
 
             // Generate Makfile
-            generateMakefile(network.instances, outputDir.absolutePath, config)
+            generateMakefile(network.name, network.instances, outputDir.absolutePath, config)
 
             // Generate Config file
             generateConfigFile(outputDir.absolutePath, config)

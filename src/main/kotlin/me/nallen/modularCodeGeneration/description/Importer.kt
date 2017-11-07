@@ -27,6 +27,8 @@ class Importer() {
 
             val network = HybridNetwork()
 
+            network.name = schema.name
+
             network.importLocations(schema.definitions)
 
             network.importInstances(schema.instances)

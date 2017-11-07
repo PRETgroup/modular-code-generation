@@ -9,13 +9,11 @@ object MakefileGenerator {
     private var instances: Map<String, FiniteInstance> = LinkedHashMap<String, FiniteInstance>()
     private var config: Configuration = Configuration()
 
-    fun generate(instances: Map<String, FiniteInstance>, config: Configuration = Configuration()): String {
+    fun generate(name: String, instances: Map<String, FiniteInstance>, config: Configuration = Configuration()): String {
         this.instances = instances
         this.config = config
 
         val result = StringBuilder()
-
-        val name = "output"
 
         result.appendln("TARGET = $name")
         result.appendln("CC = gcc")

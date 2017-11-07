@@ -5,6 +5,7 @@ import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 
 data class Schema(
+        var name: String,
         var definitions: Map<String, Definition>,
         var instances: Map<String, Instance>,
         var mappings: Map<String, String>?,
