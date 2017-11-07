@@ -29,9 +29,11 @@ object MakefileGenerator {
         if(instances.isNotEmpty()) {
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 for((name, instance) in instances) {
-                    result.append(generateCompileCommand(name, listOf("${instance.machine}/$name.c"), listOf("${instance.machine}/$name.h", CCodeGenerator.CONFIG_FILE)))
+                    val deliminatedName = Utils.createFileName(name)
+                    val deliminatedFolder = Utils.createFolderName(instance.machine)
+                    result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedFolder/$deliminatedName.c"), listOf("$deliminatedFolder/$deliminatedName.h", CCodeGenerator.CONFIG_FILE)))
                     result.appendln()
-                    sources.add("Objects/$name")
+                    sources.add("Objects/$deliminatedName")
                 }
             }
             else {
@@ -40,9 +42,10 @@ object MakefileGenerator {
                     if (!generated.contains(instance.machine)) {
                         generated.add(instance.machine)
 
-                        result.append(generateCompileCommand(instance.machine, listOf("${instance.machine}.c"), listOf("${instance.machine}.h", CCodeGenerator.CONFIG_FILE)))
+                        val deliminatedName = Utils.createFileName(name)
+                        result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedName.c"), listOf("$deliminatedName.h", CCodeGenerator.CONFIG_FILE)))
                         result.appendln()
-                        sources.add("Objects/${instance.machine}")
+                        sources.add("Objects/$deliminatedName")
                     }
                 }
             }

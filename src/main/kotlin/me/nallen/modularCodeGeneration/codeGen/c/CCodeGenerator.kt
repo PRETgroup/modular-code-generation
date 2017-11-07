@@ -21,8 +21,8 @@ class CCodeGenerator() {
             if(!outputDir.exists())
                 outputDir.mkdir()
 
-            File(outputDir, "${fsm.name}.h").writeText(HFileGenerator.generate(fsm, config))
-            File(outputDir, "${fsm.name}.c").writeText(CFileGenerator.generate(fsm, config))
+            File(outputDir, "${Utils.createFileName(fsm.name)}.h").writeText(HFileGenerator.generate(fsm, config))
+            File(outputDir, "${Utils.createFileName(fsm.name)}.c").writeText(CFileGenerator.generate(fsm, config))
         }
 
         private fun generateRunnable(instances: Map<String, FiniteInstance>, ioMapping: Map<MachineVariablePair, MachineVariablePair>, dir: String, config: Configuration = Configuration()) {
@@ -71,7 +71,7 @@ class CCodeGenerator() {
                     if(fsm == null)
                         throw IllegalArgumentException("Unable to find base machine $name to instantiate!")
 
-                    generateFsm(fsm, File(outputDir, instance.machine).absolutePath, config)
+                    generateFsm(fsm, File(outputDir, Utils.createFolderName(instance.machine)).absolutePath, config)
                 }
             }
             else  {

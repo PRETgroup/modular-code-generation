@@ -16,7 +16,7 @@ object CFileGenerator {
 
         val result = StringBuilder()
 
-        result.appendln("#include \"${fsm.name}.h\"")
+        result.appendln("#include \"${Utils.createFileName(fsm.name)}.h\"")
         result.appendln()
 
         result.appendln(generateInitialisationFunction())
@@ -30,10 +30,10 @@ object CFileGenerator {
         val result = StringBuilder()
 
         result.appendln("// ${fsm.name} Initialisation function")
-        result.appendln("void ${fsm.name}Init(${fsm.name}* me) {")
+        result.appendln("void ${Utils.createFunctionName(fsm.name, "Init")}(${Utils.createTypeName(fsm.name)}* me) {")
 
         result.appendln("${config.getIndent(1)}// Initialise State")
-        result.appendln("${config.getIndent(1)}me->state = ${fsm.name}_${fsm.init.state};")
+        result.appendln("${config.getIndent(1)}me->state = ${Utils.createMacroName(fsm.name, fsm.init.state)};")
 
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_OUTPUT, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
 
@@ -56,7 +56,7 @@ object CFileGenerator {
             initValue = Utils.generateCodeForParseTreeItem(fsm.init.valuations[variable.name] !!)
         }
 
-        return "me->${variable.name} = $initValue;"
+        return "me->${Utils.createVariableName(variable.name)} = $initValue;"
     }
 
     private fun generateDefaultInitForType(type: VariableType): String {
@@ -68,7 +68,7 @@ object CFileGenerator {
 
     private fun generateParameterInitialisation(variable: Variable): String {
         if(variable.defaultValue != null) {
-            return "me->${variable.name} = ${Utils.generateCodeForParseTreeItem(variable.defaultValue!!)};"
+            return "me->${Utils.createVariableName(variable.name)} = ${Utils.generateCodeForParseTreeItem(variable.defaultValue!!)};"
         }
 
         return ""
@@ -79,10 +79,10 @@ object CFileGenerator {
         val result = StringBuilder()
 
         result.appendln("// ${fsm.name} Execution function")
-        result.appendln("void ${fsm.name}Run(${fsm.name}* me) {")
+        result.appendln("void ${Utils.createFunctionName(fsm.name, "Run")}(${Utils.createTypeName(fsm.name)}* me) {")
 
         result.appendln("${config.getIndent(1)}// Create intermediary variables")
-        result.appendln("${config.getIndent(1)}enum ${fsm.name}States state_u = me->state;")
+        result.appendln("${config.getIndent(1)}enum ${Utils.createTypeName(fsm.name, "States")} state_u = me->state;")
 
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_OUTPUT, CFileGenerator::generateIntermediateVariable, config))
 
@@ -94,10 +94,10 @@ object CFileGenerator {
         val defaultIndent = if(needsTransitionCounting) 2 else 1
 
         if(needsTransitionCounting) {
-            result.appendln("${config.getIndent(1)}unsigned int remainingTransitions = ${config.maximumInterTransitions};")
-            result.appendln("${config.getIndent(1)}while(remainingTransitions > 0) {")
+            result.appendln("${config.getIndent(1)}unsigned int remaining_transitions = ${config.maximumInterTransitions};")
+            result.appendln("${config.getIndent(1)}while(remaining_transitions > 0) {")
             result.appendln("${config.getIndent(2)}// Decrement the remaining transitions available")
-            result.appendln("${config.getIndent(2)}remainingTransitions--;")
+            result.appendln("${config.getIndent(2)}remaining_transitions--;")
             result.appendln()
         }
 
@@ -137,26 +137,26 @@ object CFileGenerator {
         result.appendln("${config.getIndent(defaultIndent)}switch(me->state) {")
 
         for((name) in fsm.states) {
-            result.appendln("${config.getIndent(defaultIndent+1)}case ${fsm.name}_$name: // Logic for state $name")
+            result.appendln("${config.getIndent(defaultIndent+1)}case ${Utils.createMacroName(fsm.name, name)}: // Logic for state $name")
 
             var atLeastOneIf = false
             for((fromLocation, toLocation, guard, update) in fsm.transitions.filter{it.fromLocation == name && (!config.requireOneIntraTransitionPerTick || it.fromLocation != it.toLocation) }) {
                 result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard)}) {")
 
                 for((variable, equation) in update) {
-                    result.appendln("${config.getIndent(defaultIndent+3)}${variable}_u = ${Utils.generateCodeForParseTreeItem(equation)};")
+                    result.appendln("${config.getIndent(defaultIndent+3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation)};")
                 }
 
                 if(update.isNotEmpty())
                     result.appendln()
 
                 result.appendln("${config.getIndent(defaultIndent+3)}// Next state is $toLocation")
-                result.appendln("${config.getIndent(defaultIndent+3)}state_u = ${fsm.name}_$toLocation;")
+                result.appendln("${config.getIndent(defaultIndent+3)}state_u = ${Utils.createMacroName(fsm.name, toLocation)};")
 
                 if(countTransitions && toLocation == fromLocation) {
                     result.appendln()
                     result.appendln("${config.getIndent(defaultIndent+3)}// Taking an intra-location transition stops execution")
-                    result.appendln("${config.getIndent(defaultIndent+3)}remainingTransitions = 0;")
+                    result.appendln("${config.getIndent(defaultIndent+3)}remaining_transitions = 0;")
                 }
 
                 result.appendln("${config.getIndent(defaultIndent+2)}}")
@@ -167,7 +167,7 @@ object CFileGenerator {
             if(atLeastOneIf && countTransitions) {
                 result.appendln("${config.getIndent(defaultIndent+2)}else {")
                 result.appendln("${config.getIndent(defaultIndent+3)}// No available transition stops execution")
-                result.appendln("${config.getIndent(defaultIndent+3)}remainingTransitions = 0;")
+                result.appendln("${config.getIndent(defaultIndent+3)}remaining_transitions = 0;")
                 result.appendln("${config.getIndent(defaultIndent+2)}}")
             }
 
@@ -186,11 +186,11 @@ object CFileGenerator {
         result.appendln("${config.getIndent(1)}switch(me->state) {")
 
         for((name) in fsm.states) {
-            result.appendln("${config.getIndent(2)}case $name: // Intra-location logic for state $name")
+            result.appendln("${config.getIndent(2)}case ${Utils.createMacroName(fsm.name, name)}: // Intra-location logic for state $name")
 
             for((_, _, _, update) in fsm.transitions.filter{it.fromLocation == name && it.fromLocation == it.toLocation}) {
                 for((variable, equation) in update) {
-                    result.appendln("${config.getIndent(3)}${variable}_u = ${Utils.generateCodeForParseTreeItem(equation)};")
+                    result.appendln("${config.getIndent(3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation)};")
                 }
 
                 if(update.isNotEmpty())
@@ -214,10 +214,10 @@ object CFileGenerator {
     }
 
     private fun generateIntermediateVariable(variable: Variable): String {
-        return "${Utils.generateCType(variable.type)} ${variable.name}_u = me->${variable.name};"
+        return "${Utils.generateCType(variable.type)} ${Utils.createVariableName(variable.name)}_u = me->${Utils.createVariableName(variable.name)};"
     }
 
     private fun updateFromIntermediateVariable(variable: Variable): String {
-        return "me->${variable.name} = ${variable.name}_u;"
+        return "me->${Utils.createVariableName(variable.name)} = ${Utils.createVariableName(variable.name)}_u;"
     }
 }

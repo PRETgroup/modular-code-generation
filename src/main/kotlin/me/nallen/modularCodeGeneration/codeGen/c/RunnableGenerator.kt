@@ -51,7 +51,7 @@ object RunnableGenerator {
 
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 for((name, instance) in instances) {
-                    result.appendln("#include \"${instance.machine}/$name.h\"")
+                    result.appendln("#include \"${Utils.createFolderName(instance.machine)}/${Utils.createFileName(name)}.h\"")
                 }
             }
             else {
@@ -60,7 +60,7 @@ object RunnableGenerator {
                     if (!generated.contains(instance.machine)) {
                         generated.add(instance.machine)
 
-                        result.appendln("#include \"${instance.machine}.h\"")
+                        result.appendln("#include \"${Utils.createFileName(instance.machine)}.h\"")
                     }
                 }
             }
@@ -73,7 +73,7 @@ object RunnableGenerator {
         val result = StringBuilder()
 
         for((name, instance) in objects) {
-            result.appendln("$instance ${name}_data;")
+            result.appendln("${Utils.createTypeName(instance)} ${Utils.createVariableName(name, "data")};")
         }
 
         return result.toString()
@@ -91,12 +91,12 @@ object RunnableGenerator {
             if(!first)
                 result.appendln()
             first = false
-            result.appendln("${config.getIndent(1)}(void) memset((void *)&${name}_data, 0, sizeof(${instance}));")
-            result.appendln("${config.getIndent(1)}${instance}Init(&${name}_data);")
+            result.appendln("${config.getIndent(1)}(void) memset((void *)&${Utils.createVariableName(name, "data")}, 0, sizeof(${Utils.createTypeName(instance)}));")
+            result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Init")}(&${Utils.createVariableName(name, "data")});")
 
             if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
                 for((key, value) in instances[name]!!.parameters) {
-                    result.appendln("${config.getIndent(1)}${name}_data.$key = ${Utils.generateCodeForParseTreeItem(value)};")
+                    result.appendln("${config.getIndent(1)}${Utils.createVariableName(name, "data")}.${Utils.createVariableName(key)} = ${Utils.generateCodeForParseTreeItem(value)};")
                 }
             }
         }
@@ -118,7 +118,7 @@ object RunnableGenerator {
 
             prev = key.machine
             val from = ioMapping[key]!!
-            result.appendln("${config.getIndent(2)}${key.machine}_data.${key.variable} = ${from.machine}_data.${from.variable};")
+            result.appendln("${config.getIndent(2)}${Utils.createVariableName(key.machine, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.createVariableName(from.machine, "data")}.${Utils.createVariableName(from.variable)};")
         }
 
         result.appendln()
@@ -131,7 +131,7 @@ object RunnableGenerator {
             if(!first)
                 result.appendln()
             first = false
-            result.appendln("${config.getIndent(2)}${instance}Run(&${name}_data);")
+            result.appendln("${config.getIndent(2)}${Utils.createFunctionName(instance, "Run")}(&${Utils.createVariableName(name, "data")});")
         }
 
         result.appendln("${config.getIndent(1)}}")

@@ -16,8 +16,8 @@ object HFileGenerator {
 
         val result = StringBuilder()
 
-        result.appendln("#ifndef ${fsm.name.toUpperCase()}_H_")
-        result.appendln("#define ${fsm.name.toUpperCase()}_H_")
+        result.appendln("#ifndef ${Utils.createMacroName(fsm.name)}_H_")
+        result.appendln("#define ${Utils.createMacroName(fsm.name)}_H_")
         result.appendln()
 
         result.appendln(generateIncludes())
@@ -27,14 +27,14 @@ object HFileGenerator {
         result.appendln(generateStruct())
 
         result.appendln("// ${fsm.name} Initialisation function")
-        result.appendln("void ${fsm.name}Init(${fsm.name}* me);")
+        result.appendln("void ${Utils.createFunctionName(fsm.name, "Init")}(${Utils.createTypeName(fsm.name)}* me);")
         result.appendln()
 
         result.appendln("// ${fsm.name} Execution function")
-        result.appendln("void ${fsm.name}Run(${fsm.name}* me);")
+        result.appendln("void ${Utils.createFunctionName(fsm.name, "Run")}(${Utils.createTypeName(fsm.name)}* me);")
         result.appendln()
 
-        result.appendln("#endif // ${fsm.name.toUpperCase()}_H_")
+        result.appendln("#endif // ${Utils.createMacroName(fsm.name)}_H_")
 
         return result.toString().trim()
     }
@@ -61,9 +61,9 @@ object HFileGenerator {
         val result = StringBuilder()
 
         result.appendln("// ${fsm.name} States")
-        result.appendln("enum ${fsm.name}States {")
+        result.appendln("enum ${Utils.createTypeName(fsm.name, "States")} {")
         for((name) in fsm.states) {
-            result.appendln("${config.getIndent(1)}${fsm.name}_$name,")
+            result.appendln("${config.getIndent(1)}${Utils.createMacroName(fsm.name, name)},")
         }
         result.appendln("};")
 
@@ -77,19 +77,19 @@ object HFileGenerator {
         result.appendln("typedef struct {")
 
         result.appendln("${config.getIndent(1)}// State")
-        result.appendln("${config.getIndent(1)}enum ${fsm.name}States state;")
+        result.appendln("${config.getIndent(1)}enum ${Utils.createTypeName(fsm.name, "States")} state;")
 
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_INPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_OUTPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.INTERNAL, HFileGenerator::generateVariableDeclaration, config, "Declare"))
         result.append(Utils.performVariableFunctionForLocality(fsm, Locality.PARAMETER, HFileGenerator::generateVariableDeclaration, config, "Declare"))
 
-        result.appendln("} ${fsm.name};")
+        result.appendln("} ${Utils.createTypeName(fsm.name)};")
 
         return result.toString()
     }
 
     private fun generateVariableDeclaration(variable: Variable): String {
-        return "${Utils.generateCType(variable.type)} ${variable.name};"
+        return "${Utils.generateCType(variable.type)} ${Utils.createVariableName(variable.name)};"
     }
 }

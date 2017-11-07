@@ -6,6 +6,8 @@ import me.nallen.modularCodeGeneration.finiteStateMachine.Locality
 import me.nallen.modularCodeGeneration.finiteStateMachine.Variable
 import me.nallen.modularCodeGeneration.finiteStateMachine.VariableType
 import me.nallen.modularCodeGeneration.parseTree.*
+import me.nallen.modularCodeGeneration.utils.NamingConvention
+import me.nallen.modularCodeGeneration.utils.convertWordDelimiterConvention
 
 object Utils {
     fun generateCType(type: VariableType): String {
@@ -33,6 +35,30 @@ object Utils {
         }
 
         return result.toString()
+    }
+
+    fun createFolderName(vararg original: String): String {
+        return original.convertWordDelimiterConvention(NamingConvention.UPPER_CAMEL_CASE)
+    }
+
+    fun createFileName(vararg original: String): String {
+        return original.convertWordDelimiterConvention(NamingConvention.SNAKE_CASE)
+    }
+
+    fun createTypeName(vararg original: String): String {
+        return original.convertWordDelimiterConvention(NamingConvention.UPPER_CAMEL_CASE)
+    }
+
+    fun createVariableName(vararg original: String): String {
+        return original.convertWordDelimiterConvention(NamingConvention.SNAKE_CASE)
+    }
+
+    fun createFunctionName(vararg original: String): String {
+        return original.convertWordDelimiterConvention(NamingConvention.UPPER_CAMEL_CASE)
+    }
+
+    fun createMacroName(vararg original: String): String {
+        return original.convertWordDelimiterConvention(NamingConvention.UPPER_SNAKE_CASE)
     }
 
     fun padOperand(item: ParseTreeItem, operand: ParseTreeItem): String {
