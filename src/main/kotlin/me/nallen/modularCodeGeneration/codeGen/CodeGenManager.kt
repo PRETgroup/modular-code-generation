@@ -42,7 +42,51 @@ object CodeGenManager {
 
         return null
     }
+
+    fun collectFieldsToLog(network: FiniteNetwork, config: Configuration): List<LoggingField> {
+        val toLog = ArrayList<LoggingField>()
+
+        if(config.logging.fields == null) {
+            // Collect all "outputs" and log them
+            for((name, instance) in network.instances) {
+                if(network.definitions.any({it.name == instance.machine})) {
+                    val definition = network.definitions.first({it.name == instance.machine})
+
+                    val outputs = definition.variables.filter({it.locality == Locality.EXTERNAL_OUTPUT})
+                    for(output in outputs) {
+                        toLog.add(LoggingField(name, output.name, output.type))
+                    }
+                }
+            }
+
+        }
+        else {
+            for(field in config.logging.fields) {
+                if(field.contains(".")) {
+                    val machine = field.substringBeforeLast(".")
+                    val variable = field.substringAfterLast(".")
+
+                    if(network.instances.containsKey(machine)) {
+                        val instance = network.instances[machine]!!
+                        if(network.definitions.any({it.name == instance.machine})) {
+                            val definition = network.definitions.first({it.name == instance.machine})
+
+                            if(definition.variables.any({it.locality == Locality.EXTERNAL_OUTPUT && it.name == variable})) {
+                                val output = definition.variables.first({it.locality == Locality.EXTERNAL_OUTPUT && it.name == variable})
+
+                                toLog.add(LoggingField(machine, output.name, output.type))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return toLog
+    }
 }
+
+data class LoggingField(val machine: String, val variable: String, val type: VariableType)
 
 enum class CodeGenLanguage {
     C

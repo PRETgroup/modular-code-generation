@@ -25,13 +25,13 @@ class CCodeGenerator() {
             File(outputDir, "${Utils.createFileName(fsm.name)}.c").writeText(CFileGenerator.generate(fsm, config))
         }
 
-        private fun generateRunnable(instances: Map<String, FiniteInstance>, ioMapping: Map<MachineVariablePair, MachineVariablePair>, dir: String, config: Configuration = Configuration()) {
+        private fun generateRunnable(network: FiniteNetwork, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
                 outputDir.mkdir()
 
-            File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(instances, ioMapping, config))
+            File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(network, config))
         }
 
         private fun generateMakefile(name: String, instances: Map<String, FiniteInstance>, dir: String, config: Configuration = Configuration()) {
@@ -51,8 +51,11 @@ class CCodeGenerator() {
 
             val content = StringBuilder()
 
-            content.appendln("#define STEP_SIZE ${config.stepSize}")
-            content.appendln("#define SIMULATION_TIME ${config.simulationTime}")
+            content.appendln("#define STEP_SIZE ${config.execution.stepSize}")
+            content.appendln("#define SIMULATION_TIME ${config.execution.simulationTime}")
+            content.appendln("#define ENABLE_LOGGING ${if(config.logging.enable) 1 else 0}")
+            content.appendln("#define LOGGING_FILE \"${config.logging.file}\"")
+            content.appendln("#define LOGGING_INTERVAL ${config.logging.interval ?: config.execution.stepSize}")
 
             File(outputDir, CONFIG_FILE).writeText(content.toString())
         }
@@ -89,7 +92,7 @@ class CCodeGenerator() {
             }
 
             // Generate runnable
-            generateRunnable(network.instances, network.ioMapping, outputDir.absolutePath, config)
+            generateRunnable(network, outputDir.absolutePath, config)
 
             // Generate Makfile
             generateMakefile(network.name, network.instances, outputDir.absolutePath, config)

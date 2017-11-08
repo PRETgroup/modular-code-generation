@@ -263,8 +263,11 @@ mappings:
   RV.g: SA.v
 
 codegenConfig:
-  stepSize: 0.001
-  simulationTime: 10
+  execution:
+    stepSize: 0.001
+    simulationTime: 10
+  logging:
+    file: out.csv
   parametrisationMethod: COMPILE_TIME
   maximumInterTransitions: 1
   requireOneIntraTransitionPerTick: false

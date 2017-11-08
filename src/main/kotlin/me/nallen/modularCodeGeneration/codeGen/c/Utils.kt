@@ -11,9 +11,16 @@ import me.nallen.modularCodeGeneration.utils.convertWordDelimiterConvention
 
 object Utils {
     fun generateCType(type: VariableType): String {
-        when(type) {
-            VariableType.BOOLEAN -> return "bool"
-            VariableType.REAL -> return "double"
+        return when(type) {
+            VariableType.BOOLEAN -> "bool"
+            VariableType.REAL -> "double"
+        }
+    }
+
+    fun generatePrintfType(type: VariableType): String {
+        return when(type) {
+            VariableType.BOOLEAN -> "%c"
+            VariableType.REAL -> "%f"
         }
     }
 
