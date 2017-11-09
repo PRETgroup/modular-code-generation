@@ -29,7 +29,7 @@ class Importer() {
 
             network.name = schema.name
 
-            network.importLocations(schema.definitions)
+            network.importAutomata(schema.definitions)
 
             network.importInstances(schema.instances)
 
@@ -42,7 +42,7 @@ class Importer() {
     }
 }
 
-private fun HybridNetwork.importLocations(definitions: Map<String, Definition>) {
+private fun HybridNetwork.importAutomata(definitions: Map<String, Definition>) {
     for((name, definition) in definitions) {
         val automata = HybridAutomata(name)
 
