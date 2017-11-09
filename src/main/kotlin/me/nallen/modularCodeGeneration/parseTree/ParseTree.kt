@@ -35,6 +35,8 @@ data class LessThan(var operandA: ParseTreeItem, var operandB: ParseTreeItem): P
 data class Equal(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("euqal")
 data class NotEqual(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("notEqual")
 
+data class FunctionCall(var functionName: String, var arguments: List<ParseTreeItem>): ParseTreeItem("functionCall")
+
 data class Plus(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("plus")
 data class Minus(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("minus")
 data class Multiply(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("multiply")
@@ -60,34 +62,50 @@ fun GenerateParseTreeFromString(input: String): ParseTreeItem {
         val operand = getOperandForSequence(argument)
 
         if(operand != null) {
-            val operator = operands[operand]
-            if(operator != null) {
-                val item = when(operand) {
-                    Operand.AND -> And(stack[stack.size-2], stack[stack.size-1])
-                    Operand.OR -> Or(stack[stack.size-2], stack[stack.size-1])
-                    Operand.NOT -> Not(stack[stack.size-1])
-                    Operand.GREATER_THAN_OR_EQUAL -> GreaterThanOrEqual(stack[stack.size-2], stack[stack.size-1])
-                    Operand.GREATER_THAN -> GreaterThan(stack[stack.size-2], stack[stack.size-1])
-                    Operand.LESS_THAN_OR_EQUAL -> LessThanOrEqual(stack[stack.size-2], stack[stack.size-1])
-                    Operand.LESS_THAN -> LessThan(stack[stack.size-2], stack[stack.size-1])
-                    Operand.EQUAL -> Equal(stack[stack.size-2], stack[stack.size-1])
-                    Operand.NOT_EQUAL -> NotEqual(stack[stack.size-2], stack[stack.size-1])
-                    Operand.OPEN_BRACKET -> null
-                    Operand.CLOSE_BRACKET -> null
-                    Operand.PLUS -> Plus(stack[stack.size-2], stack[stack.size-1])
-                    Operand.MINUS -> Minus(stack[stack.size-2], stack[stack.size-1])
-                    Operand.NEGATIVE -> Negative(stack[stack.size-1])
-                    Operand.MULTIPLY -> Multiply(stack[stack.size-2], stack[stack.size-1])
-                    Operand.DIVIDE -> Divide(stack[stack.size-2], stack[stack.size-1])
-                    Operand.SQUARE_ROOT -> SquareRoot(stack[stack.size-1])
-                }
+            val item = when(operand) {
+                Operand.AND -> And(stack[stack.size-2], stack[stack.size-1])
+                Operand.OR -> Or(stack[stack.size-2], stack[stack.size-1])
+                Operand.NOT -> Not(stack[stack.size-1])
+                Operand.GREATER_THAN_OR_EQUAL -> GreaterThanOrEqual(stack[stack.size-2], stack[stack.size-1])
+                Operand.GREATER_THAN -> GreaterThan(stack[stack.size-2], stack[stack.size-1])
+                Operand.LESS_THAN_OR_EQUAL -> LessThanOrEqual(stack[stack.size-2], stack[stack.size-1])
+                Operand.LESS_THAN -> LessThan(stack[stack.size-2], stack[stack.size-1])
+                Operand.EQUAL -> Equal(stack[stack.size-2], stack[stack.size-1])
+                Operand.NOT_EQUAL -> NotEqual(stack[stack.size-2], stack[stack.size-1])
+                Operand.OPEN_BRACKET -> null
+                Operand.CLOSE_BRACKET -> null
+                Operand.FUNCTION_CALL -> {
+                    val regex = Regex("^(.+)<(\\d+)>$")
+                    val match = regex.matchEntire(argument)
 
-                if(item != null) {
-                    for(i in 1..operator.operands)
-                        stack.removeAt(stack.size-1)
+                    if(match != null) {
+                        val functionArguments = ArrayList<ParseTreeItem>()
+                        for(i in match.groupValues[2].toInt() downTo 1)
+                            functionArguments.add(stack[stack.size-i])
 
-                    stack.add(item)
+                        FunctionCall(match.groupValues[1], functionArguments)
+                    }
+                    else
+                        throw IllegalArgumentException("An error occurred while trying to parse the function $argument")
                 }
+                Operand.FUNCTION_SEPARATOR -> null
+                Operand.PLUS -> Plus(stack[stack.size-2], stack[stack.size-1])
+                Operand.MINUS -> Minus(stack[stack.size-2], stack[stack.size-1])
+                Operand.NEGATIVE -> Negative(stack[stack.size-1])
+                Operand.MULTIPLY -> Multiply(stack[stack.size-2], stack[stack.size-1])
+                Operand.DIVIDE -> Divide(stack[stack.size-2], stack[stack.size-1])
+                Operand.SQUARE_ROOT -> SquareRoot(stack[stack.size-1])
+            }
+
+            if(item != null) {
+                var numOperands = operands[operand]?.operands ?: 0
+                if(item is FunctionCall)
+                    numOperands = item.arguments.size
+
+                for(i in 1..numOperands)
+                    stack.removeAt(stack.size-1)
+
+                stack.add(item)
             }
         }
         else {
@@ -122,6 +140,7 @@ fun ParseTreeItem.getPrecedence(): Int {
         is LessThan -> Operand.LESS_THAN
         is Equal -> Operand.EQUAL
         is NotEqual -> Operand.NOT_EQUAL
+        is FunctionCall -> return 1
         is Literal -> return 0
         is Variable -> return 0
         is Plus -> Operand.PLUS
@@ -150,6 +169,15 @@ fun ParseTreeItem.generateString(): String {
         is LessThan -> return this.padOperand(operandA) + " < " + this.padOperand(operandB)
         is Equal -> return this.padOperand(operandA) + " == " + this.padOperand(operandB)
         is NotEqual -> return this.padOperand(operandA) + " != " + this.padOperand(operandB)
+        is FunctionCall -> {
+            val builder = StringBuilder()
+            for(argument in arguments) {
+                if(builder.isNotEmpty()) builder.append(", ")
+                builder.append(argument.generateString())
+            }
+
+            return "$functionName(${builder.toString()})"
+        }
         is Literal -> return this.value
         is Variable -> return this.name
         is Plus -> return this.padOperand(operandA) + " + " + this.padOperand(operandB)
@@ -172,6 +200,7 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
         is LessThan -> arrayOf(operandA, operandB)
         is Equal -> arrayOf(operandA, operandB)
         is NotEqual -> arrayOf(operandA, operandB)
+        is FunctionCall -> arguments.toTypedArray()
         is Literal -> arrayOf()
         is Variable -> if(value != null) arrayOf(value!!) else arrayOf()
         is Plus -> arrayOf(operandA, operandB)

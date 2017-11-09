@@ -86,6 +86,15 @@ object Utils {
             is LessThan -> padOperand(item, item.operandA) + " < " + padOperand(item, item.operandB)
             is Equal -> padOperand(item, item.operandA) + " == " + padOperand(item, item.operandB)
             is NotEqual -> padOperand(item, item.operandA) + " != " + padOperand(item, item.operandB)
+            is FunctionCall -> {
+                val builder = StringBuilder()
+                for(argument in item.arguments) {
+                    if(builder.isNotEmpty()) builder.append(", ")
+                    builder.append(argument.generateString())
+                }
+
+                return "${Utils.createFunctionName(item.functionName)}(${builder.toString()})"
+            }
             is Literal -> item.value
             is me.nallen.modularCodeGeneration.parseTree.Variable -> {
                 if(item.value != null)
