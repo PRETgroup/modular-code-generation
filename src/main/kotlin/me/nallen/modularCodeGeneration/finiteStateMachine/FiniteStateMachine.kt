@@ -16,6 +16,8 @@ data class FiniteStateMachine(
         val transitions: ArrayList<Transition> = ArrayList<Transition>(),
         var init: Initialisation = Initialisation(""),
 
+        val functions: ArrayList<FunctionDefinition> = ArrayList(),
+
         val variables: ArrayList<Variable> = ArrayList<Variable>()
 ) {
     companion object Factory {
@@ -68,6 +70,10 @@ data class FiniteStateMachine(
                         VariableType.BOOLEAN,
                         Locality.createFromHybridLocality(locality)
                 )
+            }
+
+            for(function in ha.functions) {
+                fsm.addFunction(function.name, function.logic, function.inputs)
             }
 
             fsm.setInit(Initialisation(ha.init.state, ha.init.valuations))
@@ -132,6 +138,20 @@ data class FiniteStateMachine(
         return this
     }
 
+    fun addFunction(
+            name: String,
+            logic: Program,
+            inputs: ArrayList<VariableDeclaration> = ArrayList()
+    ): FiniteStateMachine {
+        return addFunction(FunctionDefinition(name, logic, inputs))
+    }
+
+    fun addFunction(functionDef: FunctionDefinition): FiniteStateMachine {
+        functions.add(functionDef)
+
+        return this
+    }
+
     fun setParameterValue(key: String, value: ParseTreeItem) {
         // Check parameter exists
         if(!variables.any({it.locality == Locality.PARAMETER && it.name == key}))
@@ -154,6 +174,15 @@ data class FiniteStateMachine(
         // Parametrise initialisation
         for((_, valuation) in init.valuations) {
             valuation.setParameterValue(key, value)
+        }
+
+        // Parametrise functions
+        for(function in functions) {
+            for(input in function.inputs) {
+                input.defaultValue?.setParameterValue(key, value)
+            }
+
+            function.logic.setParameterValue(key, value)
         }
     }
 
@@ -191,6 +220,12 @@ data class Transition(
 data class Initialisation(
         var state: String,
         var valuations: Map<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>()
+)
+
+data class FunctionDefinition(
+        var name: String,
+        var logic: Program,
+        var inputs: ArrayList<VariableDeclaration> = ArrayList()
 )
 
 data class Variable(

@@ -1,9 +1,7 @@
 package me.nallen.modularCodeGeneration.hybridAutomata
 
-import me.nallen.modularCodeGeneration.parseTree.Literal
+import me.nallen.modularCodeGeneration.parseTree.*
 import me.nallen.modularCodeGeneration.parseTree.Variable as ParseTreeVariable
-import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
-import me.nallen.modularCodeGeneration.parseTree.getChildren
 
 /**
  * Created by nall426 on 31/05/2017.
@@ -15,6 +13,8 @@ data class HybridAutomata(
         val locations: ArrayList<Location> = ArrayList<Location>(),
         val edges: ArrayList<Edge> = ArrayList<Edge>(),
         var init: Initialisation = Initialisation(""),
+
+        val functions: ArrayList<FunctionDefinition> = ArrayList<FunctionDefinition>(),
 
         val continuousVariables: ArrayList<Variable> = ArrayList<Variable>(),
         val events: ArrayList<Variable> = ArrayList<Variable>()
@@ -151,3 +151,9 @@ data class Variable(
 enum class Locality {
     INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT, PARAMETER
 }
+
+data class FunctionDefinition(
+        var name: String,
+        var logic: Program,
+        var inputs: ArrayList<VariableDeclaration> = ArrayList()
+)

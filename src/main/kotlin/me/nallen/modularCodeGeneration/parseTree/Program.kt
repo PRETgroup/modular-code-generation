@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 data class Program(
         val lines: ArrayList<ProgramLine> = ArrayList(),
 
-        val variables: ArrayList<Variable> = ArrayList()
+        val variables: ArrayList<VariableDeclaration> = ArrayList()
 ) {
     companion object Factory {
         @JsonCreator @JvmStatic
@@ -14,15 +14,84 @@ data class Program(
     }
 
     @JsonValue
-    override fun toString(): String {
+    fun getString(): String {
         return this.generateString()
     }
+
+    private fun addVariable(item: String, type: VariableType, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null): Program {
+        if(!variables.any({it.name == item})) {
+            variables.add(VariableDeclaration(item, type, locality, default))
+
+            if(default != null)
+                checkParseTreeForNewVariable(default)
+        }
+
+        return this
+    }
+
+    fun collectVariables(existing: List<VariableDeclaration> = ArrayList()): Program {
+        for(item in existing) {
+            addVariable(item.name, item.type, Locality.EXTERNAL_INPUT, item.defaultValue)
+        }
+
+        val bodiesToParse = ArrayList<Program>()
+        for(line in lines) {
+            when(line) {
+                is Statement -> checkParseTreeForNewVariable(line.logic)
+                is Assignment -> {
+                    checkParseTreeForNewVariable(line.variableName)
+                    checkParseTreeForNewVariable(line.variableValue)
+                }
+                is Return -> checkParseTreeForNewVariable(line.logic)
+                is IfStatement -> {
+                    checkParseTreeForNewVariable(line.condition)
+                    bodiesToParse.add(line.body)
+                }
+                is ElseIfStatement -> {
+                    checkParseTreeForNewVariable(line.condition)
+                    bodiesToParse.add(line.body)
+                }
+                is ElseStatement -> bodiesToParse.add(line.body)
+            }
+        }
+
+        for(body in bodiesToParse) {
+            body.collectVariables(variables)
+        }
+
+        return this
+    }
+
+    private fun checkParseTreeForNewVariable(item: ParseTreeItem) {
+        if(item is Variable) {
+            addVariable(item.name, VariableType.REAL) // TODO: This needs to be automatically detected!
+        }
+
+        for(child in item.getChildren()) {
+            checkParseTreeForNewVariable(child)
+        }
+    }
+}
+
+data class VariableDeclaration(
+        var name: String,
+        var type: VariableType,
+        var locality: Locality,
+        var defaultValue: ParseTreeItem? = null
+)
+
+enum class VariableType {
+    BOOLEAN, REAL
+}
+
+enum class Locality {
+    INTERNAL, EXTERNAL_INPUT
 }
 
 sealed class ProgramLine(var type: String)
 
 data class Statement(var logic: ParseTreeItem): ProgramLine("statement")
-data class Assignment(var variableName: String, var variableValue: ParseTreeItem): ProgramLine("assignment")
+data class Assignment(var variableName: Variable, var variableValue: ParseTreeItem): ProgramLine("assignment")
 data class Return(var logic: ParseTreeItem): ProgramLine("return")
 data class IfStatement(var condition: ParseTreeItem, var body: Program): ProgramLine("ifStatement")
 data class ElseStatement(var body: Program): ProgramLine("elseStatement")
@@ -75,7 +144,7 @@ fun generateProgramFromString(input: String): Program {
                 else {
                     val match = assignmentRegex.matchEntire(line)
                     if(match != null) {
-                        programLine = Assignment(match.groupValues[1], ParseTreeItem.Factory.generate(match.groupValues[2]))
+                        programLine = Assignment(Variable(match.groupValues[1]), ParseTreeItem.Factory.generate(match.groupValues[2]))
                     }
                     else {
                         programLine = Statement(ParseTreeItem.Factory.generate(line))
@@ -112,7 +181,7 @@ fun Program.generateString(): String {
     for(line in lines) {
         val lineString = when(line) {
             is Statement -> line.logic.generateString()
-            is Assignment -> "${line.variableName} = ${line.variableValue.generateString()}"
+            is Assignment -> "${line.variableName.generateString()} = ${line.variableValue.generateString()}"
             is Return -> "return ${line.logic.generateString()}"
             is IfStatement -> "if(${line.condition.generateString()}) {\n${line.body.generateString().prependIndent("  ")}\n}"
             is ElseIfStatement -> "else if(${line.condition.generateString()}) {\n${line.body.generateString().prependIndent("  ")}\n}"
@@ -123,4 +192,32 @@ fun Program.generateString(): String {
     }
 
     return builder.toString().trimEnd()
+}
+
+fun Program.setParameterValue(key: String, value: ParseTreeItem): Program {
+    for(variable in variables) {
+        variable.defaultValue?.setParameterValue(key, value)
+    }
+
+    for(line in lines) {
+        when(line) {
+            is Statement -> line.logic.setParameterValue(key, value)
+            is Assignment -> {
+                line.variableName.setParameterValue(key, value)
+                line.variableValue.setParameterValue(key, value)
+            }
+            is Return -> line.logic.setParameterValue(key, value)
+            is IfStatement -> {
+                line.condition.setParameterValue(key, value)
+                line.body.setParameterValue(key, value)
+            }
+            is ElseIfStatement -> {
+                line.condition.setParameterValue(key, value)
+                line.body.setParameterValue(key, value)
+            }
+            is ElseStatement -> line.body.setParameterValue(key, value)
+        }
+    }
+
+    return this
 }

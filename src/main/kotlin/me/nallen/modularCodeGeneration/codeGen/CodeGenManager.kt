@@ -31,6 +31,10 @@ object CodeGenManager {
             val fsm = mapper.readValue<FiniteStateMachine>(json)
             fsm.name = name
 
+            for(function in fsm.functions) {
+                function.logic.collectVariables(function.inputs)
+            }
+
             for ((key, value) in instance.parameters) {
                 fsm.setParameterValue(key, value)
             }

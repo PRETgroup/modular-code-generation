@@ -7,9 +7,13 @@ import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.Literal
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
+import me.nallen.modularCodeGeneration.parseTree.Program
+import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
 import java.io.File
 import java.io.IOException
 
+typealias ParseTreeVariableType = me.nallen.modularCodeGeneration.parseTree.VariableType
+typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
 typealias HybridLocation = me.nallen.modularCodeGeneration.hybridAutomata.Location
 
 class Importer() {
@@ -55,6 +59,8 @@ private fun HybridNetwork.importAutomata(definitions: Map<String, Definition>) {
         automata.loadLocations(definition.locations)
 
         automata.loadInitialisation(definition.initialisation)
+
+        automata.loadFunctions(definition.functions)
 
         this.addDefinition(automata)
     }
@@ -103,6 +109,36 @@ private fun HybridAutomata.loadInitialisation(init: Initialisation) {
     this.init.state = init.state
 
     this.init.valuations.loadParseTreeItems(init.valuations)
+}
+
+private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
+    if(functions != null) {
+        for((name, function) in functions) {
+            this.loadFunction(name, function)
+        }
+    }
+}
+
+private fun HybridAutomata.loadFunction(name: String, function: Function) {
+    val inputs = ArrayList<VariableDeclaration>()
+    if(function.inputs != null) {
+        for(input in function.inputs!!) {
+            inputs.add(VariableDeclaration(input.key, input.value.type.convertToParseTreeType(), ParseTreeLocality.EXTERNAL_INPUT, input.value.default))
+        }
+    }
+
+    function.logic.collectVariables(inputs)
+
+    val func = FunctionDefinition(name, function.logic, inputs)
+
+    this.functions.add(func)
+}
+
+private fun VariableType.convertToParseTreeType(): ParseTreeVariableType {
+    return when(this) {
+        VariableType.BOOLEAN -> ParseTreeVariableType.BOOLEAN
+        VariableType.REAL -> ParseTreeVariableType.REAL
+    }
 }
 
 private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {

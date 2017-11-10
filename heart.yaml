@@ -114,6 +114,12 @@ definitions:
         transitions:
           - to: q0
             guard: v <= V_R
+    functions:
+      f:
+        inputs:
+          theta: REAL
+        logic: |
+          return 5 * C15 * theta
     initialisation:
       state: q0
       valuations:

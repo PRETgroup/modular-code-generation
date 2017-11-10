@@ -3,6 +3,7 @@ package me.nallen.modularCodeGeneration.description
 import com.fasterxml.jackson.annotation.JsonCreator
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.codeGen.Configuration
+import me.nallen.modularCodeGeneration.parseTree.Program
 
 data class Schema(
         var name: String,
@@ -17,6 +18,7 @@ data class Definition(
         var outputs: Map<String, VariableDefinition>?,
         var parameters: Map<String, VariableDefinition>?,
         var locations: Map<String, Location>?,
+        var functions: Map<String, Function>?,
         var initialisation: Initialisation
 )
 
@@ -45,6 +47,11 @@ data class Transition(
         var to: String,
         var guard: ParseTreeItem?,
         var update: Map<String, ParseTreeItem>?
+)
+
+data class Function(
+        var inputs: Map<String, VariableDefinition>?,
+        var logic: Program
 )
 
 data class Initialisation(
