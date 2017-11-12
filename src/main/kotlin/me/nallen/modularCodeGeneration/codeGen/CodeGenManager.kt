@@ -3,8 +3,11 @@ package me.nallen.modularCodeGeneration.codeGen
 import com.fasterxml.jackson.module.kotlin.*
 import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenerator
 import me.nallen.modularCodeGeneration.finiteStateMachine.*
+import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
 import me.nallen.modularCodeGeneration.parseTree.VariableType
 import java.io.File
+
+typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
 
 object CodeGenManager {
     private val mapper = jacksonObjectMapper()
@@ -33,7 +36,9 @@ object CodeGenManager {
             fsm.name = name
 
             for(function in fsm.functions) {
-                function.logic.collectVariables(function.inputs)
+                val inputs = ArrayList(function.inputs)
+                inputs.addAll(fsm.variables.filter({it.locality == Locality.PARAMETER}).map({ VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) }))
+                function.logic.collectVariables(inputs)
             }
 
             for ((key, value) in instance.parameters) {

@@ -8,6 +8,8 @@ import me.nallen.modularCodeGeneration.parseTree.*
 import me.nallen.modularCodeGeneration.utils.NamingConvention
 import me.nallen.modularCodeGeneration.utils.convertWordDelimiterConvention
 
+typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
+
 object Utils {
     fun generateCType(type: VariableType): String {
         return when(type) {
@@ -116,17 +118,23 @@ object Utils {
     fun generateCodeForProgram(program: Program, config: Configuration, depth: Int = 0): String {
         val builder = StringBuilder()
 
+        for(input in program.variables.filter({it.locality == ParseTreeLocality.INTERNAL})) {
+            builder.appendln("${config.getIndent(depth)}${Utils.generateCType(input.type)} ${Utils.createVariableName(input.name)};")
+        }
+        if(builder.isNotEmpty())
+            builder.appendln()
+
         for(line in program.lines) {
-            val lineString = config.getIndent(depth) + when(line) {
-                is Statement -> Utils.generateCodeForParseTreeItem(line.logic)
-                is Assignment -> "${Utils.generateCodeForParseTreeItem(line.variableName)} = ${Utils.generateCodeForParseTreeItem(line.variableValue)}"
-                is Return -> "return ${Utils.generateCodeForParseTreeItem(line.logic)}"
+            val lineString = when(line) {
+                is Statement -> "${Utils.generateCodeForParseTreeItem(line.logic)};"
+                is Assignment -> "${Utils.generateCodeForParseTreeItem(line.variableName)} = ${Utils.generateCodeForParseTreeItem(line.variableValue)};"
+                is Return -> "return ${Utils.generateCodeForParseTreeItem(line.logic)};"
                 is IfStatement -> "if(${Utils.generateCodeForParseTreeItem(line.condition)}) {\n${Utils.generateCodeForProgram(line.body, config, depth+1)}\n}"
                 is ElseIfStatement -> "else if(${Utils.generateCodeForParseTreeItem(line.condition)}) {\n${Utils.generateCodeForProgram(line.body, config, depth+1)}\n}"
                 is ElseStatement -> "else {\n${Utils.generateCodeForProgram(line.body, config, depth+1)}\n}"
             }
 
-            builder.appendln(lineString)
+            builder.appendln(lineString.prependIndent(config.getIndent(depth)))
         }
 
         return builder.toString().trimEnd()
