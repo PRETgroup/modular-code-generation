@@ -235,10 +235,6 @@ data class Variable(
         var defaultValue: ParseTreeItem? = null
 )
 
-enum class VariableType {
-    BOOLEAN, REAL
-}
-
 enum class Locality {
     INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT, PARAMETER;
 

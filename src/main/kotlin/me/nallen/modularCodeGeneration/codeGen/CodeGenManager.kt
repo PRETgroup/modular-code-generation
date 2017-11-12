@@ -3,6 +3,7 @@ package me.nallen.modularCodeGeneration.codeGen
 import com.fasterxml.jackson.module.kotlin.*
 import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenerator
 import me.nallen.modularCodeGeneration.finiteStateMachine.*
+import me.nallen.modularCodeGeneration.parseTree.VariableType
 import java.io.File
 
 object CodeGenManager {

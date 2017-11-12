@@ -4,7 +4,6 @@ import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
 import me.nallen.modularCodeGeneration.finiteStateMachine.Locality
 import me.nallen.modularCodeGeneration.finiteStateMachine.Variable
-import me.nallen.modularCodeGeneration.finiteStateMachine.VariableType
 import me.nallen.modularCodeGeneration.parseTree.*
 import me.nallen.modularCodeGeneration.utils.NamingConvention
 import me.nallen.modularCodeGeneration.utils.convertWordDelimiterConvention
@@ -112,5 +111,24 @@ object Utils {
             is Divide -> padOperand(item, item.operandA) + " / " + padOperand(item, item.operandB)
             is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA) + ")"
         }
+    }
+
+    fun generateCodeForProgram(program: Program, config: Configuration, depth: Int = 0): String {
+        val builder = StringBuilder()
+
+        for(line in program.lines) {
+            val lineString = config.getIndent(depth) + when(line) {
+                is Statement -> Utils.generateCodeForParseTreeItem(line.logic)
+                is Assignment -> "${Utils.generateCodeForParseTreeItem(line.variableName)} = ${Utils.generateCodeForParseTreeItem(line.variableValue)}"
+                is Return -> "return ${Utils.generateCodeForParseTreeItem(line.logic)}"
+                is IfStatement -> "if(${Utils.generateCodeForParseTreeItem(line.condition)}) {\n${Utils.generateCodeForProgram(line.body, config, depth+1)}\n}"
+                is ElseIfStatement -> "else if(${Utils.generateCodeForParseTreeItem(line.condition)}) {\n${Utils.generateCodeForProgram(line.body, config, depth+1)}\n}"
+                is ElseStatement -> "else {\n${Utils.generateCodeForProgram(line.body, config, depth+1)}\n}"
+            }
+
+            builder.appendln(lineString)
+        }
+
+        return builder.toString().trimEnd()
     }
 }

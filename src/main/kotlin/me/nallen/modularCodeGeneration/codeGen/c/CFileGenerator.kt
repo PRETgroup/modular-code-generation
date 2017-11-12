@@ -5,6 +5,7 @@ import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.finiteStateMachine.*
 import me.nallen.modularCodeGeneration.finiteStateMachine.Variable
 import me.nallen.modularCodeGeneration.parseTree.Literal
+import me.nallen.modularCodeGeneration.parseTree.VariableType
 
 object CFileGenerator {
     private var fsm: FiniteStateMachine = FiniteStateMachine("Temp")
@@ -19,11 +20,49 @@ object CFileGenerator {
         result.appendln("#include \"${Utils.createFileName(fsm.name)}.h\"")
         result.appendln()
 
+        if(fsm.functions.size > 0)
+            result.appendln(generateCustomFunctions())
+
         result.appendln(generateInitialisationFunction())
 
         result.appendln(generateExecutionFunction())
 
         return result.toString().trim()
+    }
+
+    private fun generateCustomFunctions(): String {
+        val result = StringBuilder()
+
+        for(function in fsm.functions) {
+            result.appendln(generateCustomFunction(function))
+        }
+
+        return result.toString()
+    }
+
+    private fun generateCustomFunction(function: FunctionDefinition): String {
+        val result = StringBuilder()
+
+        result.append("static void ${Utils.createFunctionName(function.name)}(")
+        var first = true
+        if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
+            first = false
+            result.append("${Utils.createTypeName(fsm.name)}* me")
+        }
+        for(input in function.inputs) {
+            if(!first)
+                result.append(", ")
+            first = false
+
+            result.append("${Utils.generateCType(input.type)} ${Utils.createVariableName(input.name)}")
+        }
+        result.appendln(") {")
+
+        result.appendln(Utils.generateCodeForProgram(function.logic, config, 1))
+
+        result.appendln("}")
+
+        return result.toString()
     }
 
     private fun generateInitialisationFunction(): String {
