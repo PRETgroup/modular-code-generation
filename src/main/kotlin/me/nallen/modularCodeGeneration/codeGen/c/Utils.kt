@@ -119,6 +119,7 @@ object Utils {
             is Multiply -> padOperand(item, item.operandA, prefixData) + " * " + padOperand(item, item.operandB, prefixData)
             is Divide -> padOperand(item, item.operandA, prefixData) + " / " + padOperand(item, item.operandB, prefixData)
             is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+            is Exponential -> "exp(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
         }
     }
 
