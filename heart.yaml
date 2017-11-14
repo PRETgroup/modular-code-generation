@@ -115,11 +115,25 @@ definitions:
           - to: q0
             guard: v <= V_R
     functions:
+      a:
+        inputs:
+          test: BOOLEAN
+          value: REAL
+        logic: |
+          return test && (value > 5)
       f:
         inputs:
           theta: REAL
         logic: |
-          return 5 * C15 * theta
+          x = 5 > C15
+          z = a(x, C10)
+          if(z) {
+            y = 10 * C14
+            if(y < 2) {
+              return 5
+            }
+          }
+          return x * theta
     initialisation:
       state: q0
       valuations:

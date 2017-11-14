@@ -35,10 +35,15 @@ object CodeGenManager {
             val fsm = mapper.readValue<FiniteStateMachine>(json)
             fsm.name = name
 
+            val functionTypes = LinkedHashMap<String, VariableType?>()
+
             for(function in fsm.functions) {
                 val inputs = ArrayList(function.inputs)
                 inputs.addAll(fsm.variables.filter({it.locality == Locality.PARAMETER}).map({ VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) }))
-                function.logic.collectVariables(inputs)
+                function.logic.collectVariables(inputs, functionTypes)
+
+                function.returnType = function.logic.getReturnType(functionTypes)
+                functionTypes.put(function.name, function.returnType)
             }
 
             for ((key, value) in instance.parameters) {

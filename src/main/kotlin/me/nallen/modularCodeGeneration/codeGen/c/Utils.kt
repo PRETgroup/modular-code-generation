@@ -13,8 +13,9 @@ typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
 object Utils {
     val DEFAULT_CUSTOM_VARIABLES = mapOf("STEP_SIZE" to "STEP_SIZE")
 
-    fun generateCType(type: VariableType): String {
+    fun generateCType(type: VariableType?): String {
         return when(type) {
+            null -> "void"
             VariableType.BOOLEAN -> "bool"
             VariableType.REAL -> "double"
         }

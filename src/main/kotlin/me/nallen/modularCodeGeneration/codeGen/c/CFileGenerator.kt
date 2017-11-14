@@ -47,7 +47,7 @@ object CFileGenerator {
     private fun generateCustomFunction(fsm: FiniteStateMachine, function: FunctionDefinition): String {
         val result = StringBuilder()
 
-        result.append("static void ${Utils.createFunctionName(function.name)}(")
+        result.append("static ${Utils.generateCType(function.returnType)} ${Utils.createFunctionName(function.name)}(")
         var first = true
         if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
             first = false

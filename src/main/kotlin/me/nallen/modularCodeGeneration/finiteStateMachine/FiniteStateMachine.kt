@@ -73,7 +73,7 @@ data class FiniteStateMachine(
             }
 
             for(function in ha.functions) {
-                fsm.addFunction(function.name, function.logic, function.inputs)
+                fsm.addFunction(function.name, function.logic, function.inputs, function.returnType)
             }
 
             fsm.setInit(Initialisation(ha.init.state, ha.init.valuations))
@@ -141,9 +141,10 @@ data class FiniteStateMachine(
     fun addFunction(
             name: String,
             logic: Program,
-            inputs: ArrayList<VariableDeclaration> = ArrayList()
+            inputs: ArrayList<VariableDeclaration> = ArrayList(),
+            returnType: VariableType? = null
     ): FiniteStateMachine {
-        return addFunction(FunctionDefinition(name, logic, inputs))
+        return addFunction(FunctionDefinition(name, logic, inputs, returnType))
     }
 
     fun addFunction(functionDef: FunctionDefinition): FiniteStateMachine {
@@ -225,7 +226,8 @@ data class Initialisation(
 data class FunctionDefinition(
         var name: String,
         var logic: Program,
-        var inputs: ArrayList<VariableDeclaration> = ArrayList()
+        var inputs: ArrayList<VariableDeclaration> = ArrayList(),
+        var returnType: VariableType? = null
 )
 
 data class Variable(

@@ -18,37 +18,47 @@ data class Program(
         return this.generateString()
     }
 
-    private fun addVariable(item: String, type: VariableType, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null): Program {
+    private fun addVariable(item: String, type: VariableType, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null, knownVariables: HashMap<String, VariableType> = LinkedHashMap(), knownFunctions: Map<String, VariableType?> = LinkedHashMap()): Program {
         if(!variables.any({it.name == item})) {
             variables.add(VariableDeclaration(item, type, locality, default))
 
             if(default != null)
-                checkParseTreeForNewVariable(default)
+                checkParseTreeForNewVariable(default, knownVariables, knownFunctions)
         }
 
         return this
     }
 
-    fun collectVariables(existing: List<VariableDeclaration> = ArrayList()): Program {
+    fun collectVariables(existing: List<VariableDeclaration> = ArrayList(), knownFunctionTypes: Map<String, VariableType?> = LinkedHashMap()): Program {
+        val knownVariables = LinkedHashMap<String, VariableType>()
+
         for(item in existing) {
-            addVariable(item.name, item.type, Locality.EXTERNAL_INPUT, item.defaultValue)
+            knownVariables.put(item.name, item.type)
         }
+
+        for(item in existing) {
+            addVariable(item.name, item.type, Locality.EXTERNAL_INPUT, item.defaultValue, knownVariables, knownFunctionTypes)
+        }
+
 
         val bodiesToParse = ArrayList<Program>()
         for(line in lines) {
             when(line) {
-                is Statement -> checkParseTreeForNewVariable(line.logic)
+                is Statement -> checkParseTreeForNewVariable(line.logic, knownVariables, knownFunctionTypes)
                 is Assignment -> {
-                    checkParseTreeForNewVariable(line.variableName)
-                    checkParseTreeForNewVariable(line.variableValue)
+                    if(!knownVariables.containsKey(line.variableName.name))
+                        knownVariables.put(line.variableName.name, line.variableValue.getOperationResultType(knownVariables, knownFunctionTypes))
+
+                    checkParseTreeForNewVariable(line.variableName, knownVariables, knownFunctionTypes)
+                    checkParseTreeForNewVariable(line.variableValue, knownVariables, knownFunctionTypes)
                 }
-                is Return -> checkParseTreeForNewVariable(line.logic)
+                is Return -> checkParseTreeForNewVariable(line.logic, knownVariables, knownFunctionTypes)
                 is IfStatement -> {
-                    checkParseTreeForNewVariable(line.condition)
+                    checkParseTreeForNewVariable(line.condition, knownVariables, knownFunctionTypes)
                     bodiesToParse.add(line.body)
                 }
                 is ElseIfStatement -> {
-                    checkParseTreeForNewVariable(line.condition)
+                    checkParseTreeForNewVariable(line.condition, knownVariables, knownFunctionTypes)
                     bodiesToParse.add(line.body)
                 }
                 is ElseStatement -> bodiesToParse.add(line.body)
@@ -56,19 +66,65 @@ data class Program(
         }
 
         for(body in bodiesToParse) {
-            body.collectVariables(variables)
+            body.collectVariables(variables, knownFunctionTypes)
         }
 
         return this
     }
 
-    private fun checkParseTreeForNewVariable(item: ParseTreeItem) {
+    fun getReturnType(knownFunctionTypes: Map<String, VariableType?> = LinkedHashMap()): VariableType? {
+        val bodiesToParse = ArrayList<Program>()
+
+        val variableTypeMap = LinkedHashMap<String, VariableType>()
+        for(variable in variables) {
+            variableTypeMap.put(variable.name, variable.type)
+        }
+
+        var currentReturnType: VariableType? = null
+
+        for(line in lines) {
+            when(line) {
+                is Return -> currentReturnType = combineReturnTypes(currentReturnType, line.logic.getOperationResultType(variableTypeMap, knownFunctionTypes))
+                is IfStatement -> {
+                    bodiesToParse.add(line.body)
+                }
+                is ElseIfStatement -> {
+                    bodiesToParse.add(line.body)
+                }
+                is ElseStatement -> bodiesToParse.add(line.body)
+            }
+        }
+
+        for(body in bodiesToParse) {
+            currentReturnType = combineReturnTypes(currentReturnType, body.getReturnType(knownFunctionTypes))
+        }
+
+        return currentReturnType
+    }
+
+    private fun combineReturnTypes(a: VariableType?, b: VariableType?): VariableType? {
+        if(a == null)
+            return b
+
+        if(b == null)
+            return a
+
+        if(a != b)
+            throw IllegalArgumentException("Error in return types!")
+
+        return a
+    }
+
+    private fun checkParseTreeForNewVariable(item: ParseTreeItem, knownVariables: HashMap<String, VariableType>, knownFunctions: Map<String, VariableType?>) {
         if(item is Variable) {
-            addVariable(item.name, VariableType.REAL) // TODO: This needs to be automatically detected!
+            addVariable(item.name, item.getOperationResultType(knownVariables, knownFunctions))
+
+            if(!knownVariables.containsKey(item.name))
+                knownVariables.put(item.name, variables.first({it.name == item.name}).type)
         }
 
         for(child in item.getChildren()) {
-            checkParseTreeForNewVariable(child)
+            checkParseTreeForNewVariable(child, knownVariables, knownFunctions)
         }
     }
 }
@@ -79,10 +135,6 @@ data class VariableDeclaration(
         var locality: Locality,
         var defaultValue: ParseTreeItem? = null
 )
-
-enum class VariableType {
-    BOOLEAN, REAL
-}
 
 enum class Locality {
     INTERNAL, EXTERNAL_INPUT

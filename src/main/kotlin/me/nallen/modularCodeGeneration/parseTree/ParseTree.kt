@@ -48,6 +48,9 @@ data class SquareRoot(var operandA: ParseTreeItem): ParseTreeItem("squareRoot")
 data class Variable(var name: String, var value: ParseTreeItem? = null): ParseTreeItem("variable")
 data class Literal(var value: String): ParseTreeItem("literal")
 
+enum class VariableType {
+    BOOLEAN, REAL
+}
 
 fun GenerateParseTreeFromString(input: String): ParseTreeItem {
     val postfix = convertToPostfix(input)
@@ -109,7 +112,7 @@ fun GenerateParseTreeFromString(input: String): ParseTreeItem {
             }
         }
         else {
-            if(argument.toDoubleOrNull() != null || "true" == argument || "false" == argument)
+            if(getTypeFromLiteral(argument) != null)
                 stack.add(Literal(argument))
             else
                 stack.add(Variable(argument))
@@ -120,6 +123,15 @@ fun GenerateParseTreeFromString(input: String): ParseTreeItem {
         throw IllegalArgumentException("Invalid formula provided: $input")
 
     return stack[0]
+}
+
+private fun getTypeFromLiteral(literal: String): VariableType? {
+    if(literal.toDoubleOrNull() != null)
+        return VariableType.REAL
+    else if("true" == literal || "false" == literal)
+        return VariableType.BOOLEAN
+
+    return null
 }
 
 fun ParseTreeItem.padOperand(operand: ParseTreeItem): String {
@@ -209,6 +221,29 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
         is Multiply -> arrayOf(operandA, operandB)
         is Divide -> arrayOf(operandA, operandB)
         is SquareRoot -> arrayOf(operandA)
+    }
+}
+
+fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableType>, knownFunctions: Map<String, VariableType?>): VariableType {
+    return when(this) {
+        is And -> VariableType.BOOLEAN
+        is Or -> VariableType.BOOLEAN
+        is Not -> VariableType.BOOLEAN
+        is GreaterThanOrEqual -> VariableType.BOOLEAN
+        is GreaterThan -> VariableType.BOOLEAN
+        is LessThanOrEqual -> VariableType.BOOLEAN
+        is LessThan -> VariableType.BOOLEAN
+        is Equal -> VariableType.BOOLEAN
+        is NotEqual -> VariableType.BOOLEAN
+        is FunctionCall -> knownFunctions[functionName] ?: VariableType.REAL
+        is Plus -> VariableType.REAL
+        is Minus -> VariableType.REAL
+        is Multiply -> VariableType.REAL
+        is Divide -> VariableType.REAL
+        is Negative -> VariableType.REAL
+        is SquareRoot -> VariableType.REAL
+        is Variable -> knownVariables[name] ?: VariableType.REAL
+        is Literal -> getTypeFromLiteral(value) ?: VariableType.REAL
     }
 }
 

@@ -155,5 +155,6 @@ enum class Locality {
 data class FunctionDefinition(
         var name: String,
         var logic: Program,
-        var inputs: ArrayList<VariableDeclaration> = ArrayList()
+        var inputs: ArrayList<VariableDeclaration> = ArrayList(),
+        var returnType: VariableType? = null
 )

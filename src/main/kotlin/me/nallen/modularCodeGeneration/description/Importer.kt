@@ -113,13 +113,15 @@ private fun HybridAutomata.loadInitialisation(init: Initialisation) {
 
 private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
     if(functions != null) {
+        val functionTypes = LinkedHashMap<String, ParseTreeVariableType?>()
+
         for((name, function) in functions) {
-            this.loadFunction(name, function)
+            this.loadFunction(name, function, functionTypes)
         }
     }
 }
 
-private fun HybridAutomata.loadFunction(name: String, function: Function) {
+private fun HybridAutomata.loadFunction(name: String, function: Function, existingFunctionTypes: HashMap<String, ParseTreeVariableType?>) {
     val inputs = ArrayList<VariableDeclaration>()
     if(function.inputs != null) {
         for(input in function.inputs!!) {
@@ -127,9 +129,12 @@ private fun HybridAutomata.loadFunction(name: String, function: Function) {
         }
     }
 
-    function.logic.collectVariables(inputs)
+    function.logic.collectVariables(inputs, existingFunctionTypes)
 
     val func = FunctionDefinition(name, function.logic, inputs)
+
+    func.returnType = function.logic.getReturnType(existingFunctionTypes)
+    existingFunctionTypes.put(func.name, func.returnType)
 
     this.functions.add(func)
 }
