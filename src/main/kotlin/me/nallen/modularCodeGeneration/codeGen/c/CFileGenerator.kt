@@ -11,9 +11,13 @@ object CFileGenerator {
     private var fsm: FiniteStateMachine = FiniteStateMachine("Temp")
     private var config: Configuration = Configuration()
 
+    private var requireSelfReferenceInFunctionCalls: Boolean = false
+
     fun generate(fsm: FiniteStateMachine, config: Configuration = Configuration()): String {
         this.fsm = fsm
         this.config = config
+
+        this.requireSelfReferenceInFunctionCalls = config.parametrisationMethod == ParametrisationMethod.RUN_TIME
 
         val result = StringBuilder()
 
@@ -34,13 +38,13 @@ object CFileGenerator {
         val result = StringBuilder()
 
         for(function in fsm.functions) {
-            result.appendln(generateCustomFunction(function))
+            result.appendln(generateCustomFunction(fsm, function))
         }
 
         return result.toString()
     }
 
-    private fun generateCustomFunction(function: FunctionDefinition): String {
+    private fun generateCustomFunction(fsm: FiniteStateMachine, function: FunctionDefinition): String {
         val result = StringBuilder()
 
         result.append("static void ${Utils.createFunctionName(function.name)}(")
@@ -58,7 +62,12 @@ object CFileGenerator {
         }
         result.appendln(") {")
 
-        result.appendln(Utils.generateCodeForProgram(function.logic, config, 1))
+        val customDefinedVariables = LinkedHashMap<String, String>(Utils.DEFAULT_CUSTOM_VARIABLES)
+        for(parameter in fsm.variables.filter({it.locality == Locality.PARAMETER})) {
+            customDefinedVariables.put(parameter.name, "me->${Utils.createVariableName(parameter.name)}")
+        }
+
+        result.appendln(Utils.generateCodeForProgram(function.logic, config, 1, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, customDefinedVariables)))
 
         result.appendln("}")
 
@@ -92,7 +101,7 @@ object CFileGenerator {
         var initValue: String = generateDefaultInitForType(variable.type)
 
         if(fsm.init.valuations.containsKey(variable.name)) {
-            initValue = Utils.generateCodeForParseTreeItem(fsm.init.valuations[variable.name] !!)
+            initValue = Utils.generateCodeForParseTreeItem(fsm.init.valuations[variable.name] !!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))
         }
 
         return "me->${Utils.createVariableName(variable.name)} = $initValue;"
@@ -107,7 +116,7 @@ object CFileGenerator {
 
     private fun generateParameterInitialisation(variable: Variable): String {
         if(variable.defaultValue != null) {
-            return "me->${Utils.createVariableName(variable.name)} = ${Utils.generateCodeForParseTreeItem(variable.defaultValue!!)};"
+            return "me->${Utils.createVariableName(variable.name)} = ${Utils.generateCodeForParseTreeItem(variable.defaultValue!!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};"
         }
 
         return ""
@@ -180,10 +189,10 @@ object CFileGenerator {
 
             var atLeastOneIf = false
             for((fromLocation, toLocation, guard, update) in fsm.transitions.filter{it.fromLocation == name && (!config.requireOneIntraTransitionPerTick || it.fromLocation != it.toLocation) }) {
-                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard)}) {")
+                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))}) {")
 
                 for((variable, equation) in update) {
-                    result.appendln("${config.getIndent(defaultIndent+3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation)};")
+                    result.appendln("${config.getIndent(defaultIndent+3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};")
                 }
 
                 if(update.isNotEmpty())
@@ -229,7 +238,7 @@ object CFileGenerator {
 
             for((_, _, _, update) in fsm.transitions.filter{it.fromLocation == name && it.fromLocation == it.toLocation}) {
                 for((variable, equation) in update) {
-                    result.appendln("${config.getIndent(3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation)};")
+                    result.appendln("${config.getIndent(3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls = requireSelfReferenceInFunctionCalls))};")
                 }
 
                 if(update.isNotEmpty())

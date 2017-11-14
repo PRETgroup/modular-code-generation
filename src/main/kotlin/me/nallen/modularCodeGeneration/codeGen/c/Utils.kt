@@ -11,6 +11,8 @@ import me.nallen.modularCodeGeneration.utils.convertWordDelimiterConvention
 typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
 
 object Utils {
+    val DEFAULT_CUSTOM_VARIABLES = mapOf("STEP_SIZE" to "STEP_SIZE")
+
     fun generateCType(type: VariableType): String {
         return when(type) {
             VariableType.BOOLEAN -> "bool"
@@ -69,29 +71,33 @@ object Utils {
         return original.convertWordDelimiterConvention(NamingConvention.UPPER_SNAKE_CASE)
     }
 
-    fun padOperand(item: ParseTreeItem, operand: ParseTreeItem): String {
+    private fun padOperand(item: ParseTreeItem, operand: ParseTreeItem, prefixData: PrefixData): String {
         if(item.getPrecedence() < operand.getPrecedence())
-            return "(" + generateCodeForParseTreeItem(operand) + ")"
+            return "(" + generateCodeForParseTreeItem(operand, prefixData) + ")"
 
-        return generateCodeForParseTreeItem(operand, item)
+        return generateCodeForParseTreeItem(operand, prefixData, item)
     }
 
-    fun generateCodeForParseTreeItem(item: ParseTreeItem, parent: ParseTreeItem? = null): String {
+    fun generateCodeForParseTreeItem(item: ParseTreeItem, prefixData: PrefixData = PrefixData(""), parent: ParseTreeItem? = null): String {
         return when (item) {
-            is And -> padOperand(item, item.operandA) + " && " + padOperand(item, item.operandB)
-            is Or -> padOperand(item, item.operandA) + " || " + padOperand(item, item.operandB)
-            is Not -> "!" + padOperand(item, item.operandA)
-            is GreaterThan -> padOperand(item, item.operandA) + " > " + padOperand(item, item.operandB)
-            is GreaterThanOrEqual -> padOperand(item, item.operandA) + " >= " + padOperand(item, item.operandB)
-            is LessThanOrEqual -> padOperand(item, item.operandA) + " <= " + padOperand(item, item.operandB)
-            is LessThan -> padOperand(item, item.operandA) + " < " + padOperand(item, item.operandB)
-            is Equal -> padOperand(item, item.operandA) + " == " + padOperand(item, item.operandB)
-            is NotEqual -> padOperand(item, item.operandA) + " != " + padOperand(item, item.operandB)
+            is And -> padOperand(item, item.operandA, prefixData) + " && " + padOperand(item, item.operandB, prefixData)
+            is Or -> padOperand(item, item.operandA, prefixData) + " || " + padOperand(item, item.operandB, prefixData)
+            is Not -> "!" + padOperand(item, item.operandA, prefixData)
+            is GreaterThan -> padOperand(item, item.operandA, prefixData) + " > " + padOperand(item, item.operandB, prefixData)
+            is GreaterThanOrEqual -> padOperand(item, item.operandA, prefixData) + " >= " + padOperand(item, item.operandB, prefixData)
+            is LessThanOrEqual -> padOperand(item, item.operandA, prefixData) + " <= " + padOperand(item, item.operandB, prefixData)
+            is LessThan -> padOperand(item, item.operandA, prefixData) + " < " + padOperand(item, item.operandB, prefixData)
+            is Equal -> padOperand(item, item.operandA, prefixData) + " == " + padOperand(item, item.operandB, prefixData)
+            is NotEqual -> padOperand(item, item.operandA, prefixData) + " != " + padOperand(item, item.operandB, prefixData)
             is FunctionCall -> {
                 val builder = StringBuilder()
+
+                if(prefixData.requireSelfReferenceInFunctionCalls)
+                    builder.append("me")
+
                 for(argument in item.arguments) {
                     if(builder.isNotEmpty()) builder.append(", ")
-                    builder.append(argument.generateString())
+                    builder.append(generateCodeForParseTreeItem(argument, prefixData))
                 }
 
                 return "${Utils.createFunctionName(item.functionName)}(${builder.toString()})"
@@ -99,39 +105,40 @@ object Utils {
             is Literal -> item.value
             is me.nallen.modularCodeGeneration.parseTree.Variable -> {
                 if(item.value != null)
-                    padOperand(parent ?: item, item.value!!)
+                    padOperand(parent ?: item, item.value!!, prefixData)
                 else
-                    if(item.name == "STEP_SIZE")
-                        "STEP_SIZE"
+                    if(prefixData.customVariableNames.containsKey(item.name))
+                        prefixData.customVariableNames[item.name]!!
                     else
-                        "me->${Utils.createVariableName(item.name)}"
+                        "${prefixData.prefix}${Utils.createVariableName(item.name)}"
             }
-            is Plus -> padOperand(item, item.operandA) + " + " + padOperand(item, item.operandB)
-            is Minus -> padOperand(item, item.operandA) + " - " + padOperand(item, item.operandB)
-            is Negative -> "-" + padOperand(item, item.operandA)
-            is Multiply -> padOperand(item, item.operandA) + " * " + padOperand(item, item.operandB)
-            is Divide -> padOperand(item, item.operandA) + " / " + padOperand(item, item.operandB)
-            is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA) + ")"
+            is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
+            is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)
+            is Negative -> "-" + padOperand(item, item.operandA, prefixData)
+            is Multiply -> padOperand(item, item.operandA, prefixData) + " * " + padOperand(item, item.operandB, prefixData)
+            is Divide -> padOperand(item, item.operandA, prefixData) + " / " + padOperand(item, item.operandB, prefixData)
+            is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
         }
     }
 
-    fun generateCodeForProgram(program: Program, config: Configuration, depth: Int = 0): String {
+    fun generateCodeForProgram(program: Program, config: Configuration, depth: Int = 0, prefixData: PrefixData = PrefixData("")): String {
         val builder = StringBuilder()
 
         for(input in program.variables.filter({it.locality == ParseTreeLocality.INTERNAL})) {
-            builder.appendln("${config.getIndent(depth)}${Utils.generateCType(input.type)} ${Utils.createVariableName(input.name)};")
+            if(!prefixData.customVariableNames.containsKey(input.name))
+                builder.appendln("${config.getIndent(depth)}${Utils.generateCType(input.type)} ${Utils.createVariableName(input.name)};")
         }
         if(builder.isNotEmpty())
             builder.appendln()
 
         for(line in program.lines) {
             val lineString = when(line) {
-                is Statement -> "${Utils.generateCodeForParseTreeItem(line.logic)};"
-                is Assignment -> "${Utils.generateCodeForParseTreeItem(line.variableName)} = ${Utils.generateCodeForParseTreeItem(line.variableValue)};"
-                is Return -> "return ${Utils.generateCodeForParseTreeItem(line.logic)};"
-                is IfStatement -> "if(${Utils.generateCodeForParseTreeItem(line.condition)}) {\n${Utils.generateCodeForProgram(line.body, config, depth+1)}\n}"
-                is ElseIfStatement -> "else if(${Utils.generateCodeForParseTreeItem(line.condition)}) {\n${Utils.generateCodeForProgram(line.body, config, depth+1)}\n}"
-                is ElseStatement -> "else {\n${Utils.generateCodeForProgram(line.body, config, depth+1)}\n}"
+                is Statement -> "${Utils.generateCodeForParseTreeItem(line.logic, prefixData)};"
+                is Assignment -> "${Utils.generateCodeForParseTreeItem(line.variableName, prefixData)} = ${Utils.generateCodeForParseTreeItem(line.variableValue, prefixData)};"
+                is Return -> "return ${Utils.generateCodeForParseTreeItem(line.logic, prefixData)};"
+                is IfStatement -> "if(${Utils.generateCodeForParseTreeItem(line.condition, prefixData)}) {\n${Utils.generateCodeForProgram(line.body, config, 1, prefixData)}\n}"
+                is ElseIfStatement -> "else if(${Utils.generateCodeForParseTreeItem(line.condition, prefixData)}) {\n${Utils.generateCodeForProgram(line.body, config, 1, prefixData)}\n}"
+                is ElseStatement -> "else {\n${Utils.generateCodeForProgram(line.body, config, 1, prefixData)}\n}"
             }
 
             builder.appendln(lineString.prependIndent(config.getIndent(depth)))
@@ -139,4 +146,10 @@ object Utils {
 
         return builder.toString().trimEnd()
     }
+
+    data class PrefixData(
+            val prefix: String,
+            val requireSelfReferenceInFunctionCalls: Boolean = false,
+            val customVariableNames: Map<String, String> = DEFAULT_CUSTOM_VARIABLES
+    )
 }

@@ -5,18 +5,20 @@ import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.LoggingField
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.finiteStateMachine.*
-import kotlin.collections.LinkedHashMap
 
 object RunnableGenerator {
     private var network: FiniteNetwork = FiniteNetwork()
     private var config: Configuration = Configuration()
 
+    private var requireSelfReferenceInFunctionCalls: Boolean = false
     private var objects: ArrayList<CodeObject> = ArrayList<CodeObject>()
     private var toLog: List<LoggingField> = ArrayList<LoggingField>()
 
     fun generate(network: FiniteNetwork, config: Configuration = Configuration()): String {
         this.network = network
         this.config = config
+
+        this.requireSelfReferenceInFunctionCalls = config.parametrisationMethod == ParametrisationMethod.RUN_TIME
 
         objects.clear()
         for((name, instance) in network.instances) {
@@ -99,7 +101,7 @@ object RunnableGenerator {
 
             if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
                 for((key, value) in network.instances[name]!!.parameters) {
-                    result.appendln("${config.getIndent(1)}${Utils.createVariableName(name, "data")}.${Utils.createVariableName(key)} = ${Utils.generateCodeForParseTreeItem(value)};")
+                    result.appendln("${config.getIndent(1)}${Utils.createVariableName(name, "data")}.${Utils.createVariableName(key)} = ${Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("${Utils.createVariableName(name, "data")}.", requireSelfReferenceInFunctionCalls))};")
                 }
             }
         }
