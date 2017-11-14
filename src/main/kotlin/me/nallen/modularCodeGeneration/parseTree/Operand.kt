@@ -22,29 +22,30 @@ internal data class Operator(
         var symbol: String,
         var operands: Int,
         var associativity: Associativity,
-        var precedence: Int
+        var precedence: Int,
+        var commutative: Boolean
 )
 
 internal val operands: Map<Operand, Operator> = hashMapOf(
-        Operand.AND to Operator("&&", 2, Associativity.LEFT, 11),
-        Operand.OR to Operator("||", 2, Associativity.LEFT, 12),
-        Operand.NOT to Operator("!", 1, Associativity.RIGHT, 2),
-        Operand.GREATER_THAN_OR_EQUAL to Operator(">=", 2, Associativity.LEFT, 6),
-        Operand.GREATER_THAN to Operator(">", 2, Associativity.LEFT, 6),
-        Operand.LESS_THAN_OR_EQUAL to Operator("<=", 2, Associativity.LEFT, 6),
-        Operand.LESS_THAN to Operator("<", 2, Associativity.LEFT, 6),
-        Operand.EQUAL to Operator("==", 2, Associativity.LEFT, 7),
-        Operand.NOT_EQUAL to Operator("!=", 2, Associativity.LEFT, 7),
-        Operand.OPEN_BRACKET to Operator("(", 0, Associativity.NONE, 1),
-        Operand.CLOSE_BRACKET to Operator(")", 0, Associativity.NONE, 1),
-        Operand.FUNCTION_SEPARATOR to Operator(",", 0, Associativity.NONE, 1),
-        Operand.PLUS to Operator("+", 2, Associativity.LEFT, 4),
-        Operand.MINUS to Operator("-", 2, Associativity.LEFT, 4),
-        Operand.NEGATIVE to Operator("`", 1, Associativity.RIGHT, 2),
-        Operand.MULTIPLY to Operator("*", 2, Associativity.LEFT, 3),
-        Operand.DIVIDE to Operator("/", 2, Associativity.LEFT, 3),
-        Operand.SQUARE_ROOT to Operator("sqrt", 1, Associativity.RIGHT, 3),
-        Operand.EXPONENTIAL to Operator("exp", 1, Associativity.RIGHT, 3)
+        Operand.AND to Operator("&&", 2, Associativity.LEFT, 11, true),
+        Operand.OR to Operator("||", 2, Associativity.LEFT, 12, true),
+        Operand.NOT to Operator("!", 1, Associativity.RIGHT, 2, true),
+        Operand.GREATER_THAN_OR_EQUAL to Operator(">=", 2, Associativity.LEFT, 6, false),
+        Operand.GREATER_THAN to Operator(">", 2, Associativity.LEFT, 6, false),
+        Operand.LESS_THAN_OR_EQUAL to Operator("<=", 2, Associativity.LEFT, 6, false),
+        Operand.LESS_THAN to Operator("<", 2, Associativity.LEFT, 6, false),
+        Operand.EQUAL to Operator("==", 2, Associativity.LEFT, 7, true),
+        Operand.NOT_EQUAL to Operator("!=", 2, Associativity.LEFT, 7, true),
+        Operand.OPEN_BRACKET to Operator("(", 0, Associativity.NONE, 1, true),
+        Operand.CLOSE_BRACKET to Operator(")", 0, Associativity.NONE, 1, true),
+        Operand.FUNCTION_SEPARATOR to Operator(",", 0, Associativity.NONE, 1, true),
+        Operand.PLUS to Operator("+", 2, Associativity.LEFT, 4, true),
+        Operand.MINUS to Operator("-", 2, Associativity.LEFT, 4, false),
+        Operand.NEGATIVE to Operator("`", 1, Associativity.RIGHT, 2, true),
+        Operand.MULTIPLY to Operator("*", 2, Associativity.LEFT, 3, true),
+        Operand.DIVIDE to Operator("/", 2, Associativity.LEFT, 3, false),
+        Operand.SQUARE_ROOT to Operator("sqrt", 1, Associativity.RIGHT, 3, true),
+        Operand.EXPONENTIAL to Operator("exp", 1, Associativity.RIGHT, 3, true)
 )
 
 internal fun getOperandForSequence(input: String): Operand? {
@@ -107,7 +108,7 @@ internal fun convertToPostfix(input: String): String {
         }
 
         if(operand != null) {
-            val operator = operands[operand]
+            var operator = operands[operand]
             skip = 0;
 
             if(operand == Operand.CLOSE_BRACKET) {
@@ -124,6 +125,9 @@ internal fun convertToPostfix(input: String): String {
                 }
 
                 if (isFunctionCall) {
+                    if(followingOperand)
+                        functionCalls.last().parameters--
+
                     output += "${functionCalls.last().name}<${functionCalls.last().parameters}> "
                     functionCalls.removeAt(functionCalls.size - 1)
                 }
@@ -133,8 +137,10 @@ internal fun convertToPostfix(input: String): String {
             }
             else {
                 if(operand != Operand.OPEN_BRACKET && operand != Operand.FUNCTION_CALL) {
-                    if(operand == Operand.MINUS && followingOperand)
+                    if(operand == Operand.MINUS && followingOperand) {
                         operand = Operand.NEGATIVE
+                        operator = operands[Operand.NEGATIVE]
+                    }
 
                     if(operand == Operand.FUNCTION_SEPARATOR && functionCalls.isNotEmpty())
                         functionCalls[functionCalls.size-1].parameters++
@@ -146,7 +152,7 @@ internal fun convertToPostfix(input: String): String {
                                 break
 
                             if((lastOperator.precedence == operator.precedence)
-                                    && lastOperator.associativity != Associativity.RIGHT)
+                                    && operator.associativity == Associativity.RIGHT)
                                 break
 
                             output += lastOperator.symbol + " "

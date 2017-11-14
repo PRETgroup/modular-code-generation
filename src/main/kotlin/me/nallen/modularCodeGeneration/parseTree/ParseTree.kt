@@ -137,7 +137,11 @@ private fun getTypeFromLiteral(literal: String): VariableType? {
 }
 
 fun ParseTreeItem.padOperand(operand: ParseTreeItem): String {
-    if(this.getPrecedence() < operand.getPrecedence())
+    var precedence = this.getPrecedence()
+    if((!operand.getCommutative() || !this.getCommutative()) && operand.getChildren().size > 1) {
+        precedence--;
+    }
+    if(precedence < operand.getPrecedence())
         return "(" + operand.generateString() + ")"
 
     return operand.generateString()
@@ -171,6 +175,36 @@ fun ParseTreeItem.getPrecedence(): Int {
         return operator.precedence
 
     return 0
+}
+
+fun ParseTreeItem.getCommutative(): Boolean {
+    val operand = when(this) {
+        is And -> Operand.AND
+        is Or -> Operand.OR
+        is Not -> Operand.NOT
+        is GreaterThan -> Operand.GREATER_THAN
+        is GreaterThanOrEqual -> Operand.GREATER_THAN_OR_EQUAL
+        is LessThanOrEqual -> Operand.LESS_THAN_OR_EQUAL
+        is LessThan -> Operand.LESS_THAN
+        is Equal -> Operand.EQUAL
+        is NotEqual -> Operand.NOT_EQUAL
+        is FunctionCall -> return false
+        is Literal -> return false
+        is Variable -> return false
+        is Plus -> Operand.PLUS
+        is Minus -> Operand.MINUS
+        is Negative -> Operand.NEGATIVE
+        is Multiply -> Operand.MULTIPLY
+        is Divide -> Operand.DIVIDE
+        is SquareRoot -> Operand.SQUARE_ROOT
+        is Exponential -> Operand.EXPONENTIAL
+    }
+
+    val operator = operands[operand]
+    if(operator != null)
+        return operator.commutative
+
+    return false
 }
 
 fun ParseTreeItem.generateString(): String {
