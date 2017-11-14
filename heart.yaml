@@ -61,6 +61,9 @@ definitions:
       V_R:
         type: REAL
         default: 30
+      v_n_R_max:
+        type: REAL
+        default: 0.04
     locations:
       q0:
         invariant: v < V_T && g < V_T
@@ -115,25 +118,15 @@ definitions:
           - to: q0
             guard: v <= V_R
     functions:
-      a:
-        inputs:
-          test: BOOLEAN
-          value: REAL
-        logic: |
-          return test && (value > 5)
       f:
         inputs:
           theta: REAL
         logic: |
-          x = 5 > C15
-          z = a(x, C10)
-          if(z) {
-            y = 10 * C14
-            if(y < 2) {
-              return 5
-            }
+          if(theta >= v_n_R_max) {
+            return 4.03947
           }
-          return x * theta
+
+          return 0.29*exp(62.89*theta) + 0.70*exp(-10.99*theta)
     initialisation:
       state: q0
       valuations:
