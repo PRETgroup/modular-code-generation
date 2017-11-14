@@ -73,7 +73,11 @@ object Utils {
     }
 
     private fun padOperand(item: ParseTreeItem, operand: ParseTreeItem, prefixData: PrefixData): String {
-        if(item.getPrecedence() < operand.getPrecedence())
+        var precedence = item.getPrecedence()
+        if((!operand.getCommutative() || !item.getCommutative()) && operand.getChildren().size > 1) {
+            precedence--;
+        }
+        if(precedence < operand.getPrecedence())
             return "(" + generateCodeForParseTreeItem(operand, prefixData) + ")"
 
         return generateCodeForParseTreeItem(operand, prefixData, item)
