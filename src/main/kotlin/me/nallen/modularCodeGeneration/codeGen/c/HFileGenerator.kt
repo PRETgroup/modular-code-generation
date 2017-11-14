@@ -49,6 +49,11 @@ object HFileGenerator {
         // TODO: Check if FSM uses a math.h function (sqrt, pow, etc.)
 
         result.appendln()
+        result.appendln("typedef int bool;")
+        result.appendln("#define false 0")
+        result.appendln("#define true 1")
+
+        result.appendln()
         if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME)
             result.appendln("#include \"../${CCodeGenerator.CONFIG_FILE}\"")
         else
