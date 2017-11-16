@@ -115,13 +115,22 @@ object RunnableGenerator {
             result.append(",$machine.$variable")
         }
         result.appendln("\\n\");")
+        result.append("${config.getIndent(1)}fprintf(fp, \"%f")
+        for((_, _, type) in toLog) {
+            result.append(",${Utils.generatePrintfType(type)}")
+        }
+        result.append("\\n\", 0.0")
+        for((machine, variable, _) in toLog) {
+            result.append(", ${Utils.createVariableName(machine, "data")}.${Utils.createVariableName(variable)}")
+        }
+        result.appendln(");")
         result.appendln("${config.getIndent(1)}unsigned int last_log = 0;")
         result.appendln("#endif")
         result.appendln()
 
         // Loop
         result.appendln("${config.getIndent(1)}unsigned int i = 0;")
-        result.appendln("${config.getIndent(1)}for(i=0; i < (SIMULATION_TIME / STEP_SIZE); i++) {")
+        result.appendln("${config.getIndent(1)}for(i=1; i <= (SIMULATION_TIME / STEP_SIZE); i++) {")
 
         // I/O Mappings
         result.appendln("${config.getIndent(2)}/* Mappings */")
