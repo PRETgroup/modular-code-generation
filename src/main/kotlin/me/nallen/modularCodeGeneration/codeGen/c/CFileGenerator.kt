@@ -2,10 +2,7 @@ package me.nallen.modularCodeGeneration.codeGen.c
 
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
-import me.nallen.modularCodeGeneration.hybridAutomata.FunctionDefinition
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
-import me.nallen.modularCodeGeneration.hybridAutomata.Locality
-import me.nallen.modularCodeGeneration.hybridAutomata.Variable
+import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.Literal
 import me.nallen.modularCodeGeneration.parseTree.Multiply
 import me.nallen.modularCodeGeneration.parseTree.Plus
@@ -190,30 +187,17 @@ object CFileGenerator {
 
         result.appendln("${config.getIndent(defaultIndent)}switch(me->state) {")
 
-        for((name, invariant, flow, update) in automata.locations) {
-            result.appendln("${config.getIndent(defaultIndent+1)}case ${Utils.createMacroName(automata.name, name)}: // Logic for state $name")
+        for(location in automata.locations) {
+            result.appendln("${config.getIndent(defaultIndent+1)}case ${Utils.createMacroName(automata.name, location.name)}: // Logic for state ${location.name}")
 
             var atLeastOneIf = false
             if(!config.requireOneIntraTransitionPerTick) {
-                result.appendln("${config.getIndent(defaultIndent+2)}if(${Utils.generateCodeForParseTreeItem(invariant, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))}) {")
+                result.appendln("${config.getIndent(defaultIndent+2)}if(${Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))}) {")
 
-                for((variable, equation) in flow) {
-                    val euler_solution = Plus(ParseTreeVariable(variable), Multiply(equation, ParseTreeVariable("STEP_SIZE")))
-                    result.appendln("${config.getIndent(defaultIndent+3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(euler_solution, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};")
-                }
-
-                if(flow.isNotEmpty())
-                    result.appendln()
-
-                for((variable, equation) in update) {
-                    result.appendln("${config.getIndent(defaultIndent+3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};")
-                }
-
-                if(update.isNotEmpty())
-                    result.appendln()
+                result.append(generateCodeForIntraLogic(location, defaultIndent+3))
 
                 result.appendln("${config.getIndent(defaultIndent+3)}// Remain in this state")
-                result.appendln("${config.getIndent(defaultIndent+3)}state_u = ${Utils.createMacroName(automata.name, name)};")
+                result.appendln("${config.getIndent(defaultIndent+3)}state_u = ${Utils.createMacroName(automata.name, location.name)};")
 
                 if(countTransitions) {
                     result.appendln()
@@ -226,7 +210,7 @@ object CFileGenerator {
                 atLeastOneIf = true
             }
 
-            for((_, toLocation, guard, update) in automata.edges.filter{it.fromLocation == name }) {
+            for((_, toLocation, guard, update) in automata.edges.filter{it.fromLocation == location.name }) {
                 result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))}) {")
 
                 for((variable, equation) in update) {
@@ -265,23 +249,10 @@ object CFileGenerator {
         result.appendln("${config.getIndent(1)}// Intra-location logic for every state")
         result.appendln("${config.getIndent(1)}switch(me->state) {")
 
-        for((name, _, flow, update) in automata.locations) {
-            result.appendln("${config.getIndent(2)}case ${Utils.createMacroName(automata.name, name)}: // Intra-location logic for state $name")
+        for(location in automata.locations) {
+            result.appendln("${config.getIndent(2)}case ${Utils.createMacroName(automata.name, location.name)}: // Intra-location logic for state ${location.name}")
 
-            for((variable, equation) in flow) {
-                val euler_solution = Plus(ParseTreeVariable(variable), Multiply(equation, ParseTreeVariable("STEP_SIZE")))
-                result.appendln("${config.getIndent(3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(euler_solution, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};")
-            }
-
-            if(flow.isNotEmpty())
-                result.appendln()
-
-            for((variable, equation) in update) {
-                result.appendln("${config.getIndent(3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};")
-            }
-
-            if(update.isNotEmpty())
-                result.appendln()
+            result.append(generateCodeForIntraLogic(location, 3))
 
             result.appendln("${config.getIndent(3)}break;")
         }
@@ -290,11 +261,30 @@ object CFileGenerator {
         result.appendln()
 
         result.appendln("${config.getIndent(1)}// Update from intermediary variables")
-        result.appendln("${config.getIndent(1)}me->state = state_u;")
-
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.EXTERNAL_OUTPUT, CFileGenerator::updateFromIntermediateVariable, config))
 
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, CFileGenerator::updateFromIntermediateVariable, config))
+
+        return result.toString()
+    }
+
+    private fun generateCodeForIntraLogic(location: Location, indent: Int): String {
+        val result = StringBuilder()
+
+        for((variable, equation) in location.flow) {
+            val eulerSolution = Plus(ParseTreeVariable(variable), Multiply(equation, ParseTreeVariable("STEP_SIZE")))
+            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};")
+        }
+
+        if(location.flow.isNotEmpty())
+            result.appendln()
+
+        for((variable, equation) in location.update) {
+            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};")
+        }
+
+        if(location.update.isNotEmpty())
+            result.appendln()
 
         return result.toString()
     }
