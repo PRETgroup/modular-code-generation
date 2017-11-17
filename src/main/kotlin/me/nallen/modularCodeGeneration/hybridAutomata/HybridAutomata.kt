@@ -16,8 +16,7 @@ data class HybridAutomata(
 
         val functions: ArrayList<FunctionDefinition> = ArrayList<FunctionDefinition>(),
 
-        val continuousVariables: ArrayList<Variable> = ArrayList<Variable>(),
-        val events: ArrayList<Variable> = ArrayList<Variable>()
+        val variables: ArrayList<Variable> = ArrayList<Variable>()
 ) {
     fun addLocation(location: Location): HybridAutomata {
         /*if(locations.any({it.name == location.name}))
@@ -80,8 +79,8 @@ data class HybridAutomata(
     }
 
     fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null): HybridAutomata {
-        if(!continuousVariables.any({it.name == item})) {
-            continuousVariables.add(Variable(item, locality, default))
+        if(!variables.any({it.name == item})) {
+            variables.add(Variable(item, VariableType.REAL, locality, default))
 
             if(default != null)
                 checkParseTreeForNewContinuousVariable(default)
@@ -91,11 +90,67 @@ data class HybridAutomata(
     }
 
     fun addEvent(item: String, locality: Locality = Locality.INTERNAL): HybridAutomata {
-        if(!events.any({it.name == item})) {
-            events.add(Variable(item, locality))
+        if(!variables.any({it.name == item})) {
+            variables.add(Variable(item, VariableType.BOOLEAN, locality))
         }
 
         return this
+    }
+
+    fun setParameterValue(key: String, value: ParseTreeItem) {
+        // Check parameter exists
+        if(!variables.any({it.locality == Locality.PARAMETER && it.name == key}))
+            return
+
+        // Remove parameter from list
+        variables.removeIf({it.locality == Locality.PARAMETER && it.name == key})
+
+        // Parametrise all transitions
+        for(edge in edges) {
+            // Guards
+            edge.guard.setParameterValue(key, value)
+
+            // Updates
+            for((_, update) in edge.update) {
+                update.setParameterValue(key, value)
+            }
+        }
+
+        // Parametrise all locations
+        for(location in locations) {
+            // Invariant
+            location.invariant.setParameterValue(key, value)
+
+            // Flows
+            for((_, flow) in location.flow) {
+                flow.setParameterValue(key, value)
+            }
+
+            // Updates
+            for((_, update) in location.update) {
+                update.setParameterValue(key, value)
+            }
+        }
+
+        // Parametrise initialisation
+        for((_, valuation) in init.valuations) {
+            valuation.setParameterValue(key, value)
+        }
+
+        // Parametrise functions
+        for(function in functions) {
+            for(input in function.inputs) {
+                input.defaultValue?.setParameterValue(key, value)
+            }
+
+            function.logic.setParameterValue(key, value)
+        }
+    }
+
+    fun setDefaultParametrisation() {
+        for(variable in variables.filter({it.locality == Locality.PARAMETER && it.defaultValue != null})) {
+            this.setParameterValue(variable.name, variable.defaultValue!!)
+        }
     }
 
     /* Private Methods */
@@ -144,12 +199,22 @@ data class Initialisation(
 
 data class Variable(
         var name: String,
+        var type: VariableType,
         var locality: Locality,
         var defaultValue: ParseTreeItem? = null
 )
 
 enum class Locality {
-    INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT, PARAMETER
+    INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT, PARAMETER;
+
+    fun getTextualName(): String {
+        return when(this) {
+            Locality.INTERNAL -> "Internal Variables"
+            Locality.EXTERNAL_INPUT -> "Inputs"
+            Locality.EXTERNAL_OUTPUT -> "Outputs"
+            Locality.PARAMETER -> "Parameters"
+        }
+    }
 }
 
 data class FunctionDefinition(

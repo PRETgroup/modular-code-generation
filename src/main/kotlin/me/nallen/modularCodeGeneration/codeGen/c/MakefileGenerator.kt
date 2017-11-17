@@ -2,14 +2,13 @@ package me.nallen.modularCodeGeneration.codeGen.c
 
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
-import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteInstance
-import me.nallen.modularCodeGeneration.finiteStateMachine.MachineVariablePair
+import me.nallen.modularCodeGeneration.hybridAutomata.AutomataInstance
 
 object MakefileGenerator {
-    private var instances: Map<String, FiniteInstance> = LinkedHashMap<String, FiniteInstance>()
+    private var instances: Map<String, AutomataInstance> = LinkedHashMap<String, AutomataInstance>()
     private var config: Configuration = Configuration()
 
-    fun generate(name: String, instances: Map<String, FiniteInstance>, config: Configuration = Configuration()): String {
+    fun generate(name: String, instances: Map<String, AutomataInstance>, config: Configuration = Configuration()): String {
         this.instances = instances
         this.config = config
 
@@ -30,7 +29,7 @@ object MakefileGenerator {
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 for((name, instance) in instances) {
                     val deliminatedName = Utils.createFileName(name)
-                    val deliminatedFolder = Utils.createFolderName(instance.machine)
+                    val deliminatedFolder = Utils.createFolderName(instance.automata)
                     result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedFolder/$deliminatedName.c"), listOf("$deliminatedFolder/$deliminatedName.h", CCodeGenerator.CONFIG_FILE)))
                     result.appendln()
                     sources.add("Objects/$deliminatedName")
@@ -39,10 +38,10 @@ object MakefileGenerator {
             else {
                 val generated = ArrayList<String>()
                 for((_, instance) in instances) {
-                    if (!generated.contains(instance.machine)) {
-                        generated.add(instance.machine)
+                    if (!generated.contains(instance.automata)) {
+                        generated.add(instance.automata)
 
-                        val deliminatedName = Utils.createFileName(instance.machine)
+                        val deliminatedName = Utils.createFileName(instance.automata)
                         result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedName.c"), listOf("$deliminatedName.h", CCodeGenerator.CONFIG_FILE)))
                         result.appendln()
                         sources.add("Objects/$deliminatedName")

@@ -4,17 +4,17 @@ import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.LoggingField
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
-import me.nallen.modularCodeGeneration.finiteStateMachine.*
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 
 object RunnableGenerator {
-    private var network: FiniteNetwork = FiniteNetwork()
+    private var network: HybridNetwork = HybridNetwork()
     private var config: Configuration = Configuration()
 
     private var requireSelfReferenceInFunctionCalls: Boolean = false
     private var objects: ArrayList<CodeObject> = ArrayList<CodeObject>()
     private var toLog: List<LoggingField> = ArrayList<LoggingField>()
 
-    fun generate(network: FiniteNetwork, config: Configuration = Configuration()): String {
+    fun generate(network: HybridNetwork, config: Configuration = Configuration()): String {
         this.network = network
         this.config = config
 
@@ -26,7 +26,7 @@ object RunnableGenerator {
                 objects.add(CodeObject(name, name))
             }
             else {
-                objects.add(CodeObject(name, instance.machine))
+                objects.add(CodeObject(name, instance.automata))
             }
         }
 
@@ -56,16 +56,16 @@ object RunnableGenerator {
 
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 for((name, instance) in network.instances) {
-                    result.appendln("#include \"${Utils.createFolderName(instance.machine)}/${Utils.createFileName(name)}.h\"")
+                    result.appendln("#include \"${Utils.createFolderName(instance.automata)}/${Utils.createFileName(name)}.h\"")
                 }
             }
             else {
                 val generated = ArrayList<String>()
                 for((_, instance) in network.instances) {
-                    if (!generated.contains(instance.machine)) {
-                        generated.add(instance.machine)
+                    if (!generated.contains(instance.automata)) {
+                        generated.add(instance.automata)
 
-                        result.appendln("#include \"${Utils.createFileName(instance.machine)}.h\"")
+                        result.appendln("#include \"${Utils.createFileName(instance.automata)}.h\"")
                     }
                 }
             }
@@ -134,16 +134,16 @@ object RunnableGenerator {
 
         // I/O Mappings
         result.appendln("${config.getIndent(2)}/* Mappings */")
-        val keys = network.ioMapping.keys.sortedWith(compareBy({it.machine}, {it.variable}))
+        val keys = network.ioMapping.keys.sortedWith(compareBy({it.automata}, {it.variable}))
 
         var prev = ""
         for(key in keys) {
-            if(prev != "" && prev != key.machine)
+            if(prev != "" && prev != key.automata)
                 result.appendln()
 
-            prev = key.machine
+            prev = key.automata
             val from = network.ioMapping[key]!!
-            result.appendln("${config.getIndent(2)}${Utils.createVariableName(key.machine, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.createVariableName(from.machine, "data")}.${Utils.createVariableName(from.variable)};")
+            result.appendln("${config.getIndent(2)}${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.createVariableName(from.automata, "data")}.${Utils.createVariableName(from.variable)};")
         }
 
         result.appendln()

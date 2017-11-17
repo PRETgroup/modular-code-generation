@@ -3,10 +3,9 @@ package me.nallen.modularCodeGeneration.codeGen.c
 import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
-import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteInstance
-import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteNetwork
-import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
-import me.nallen.modularCodeGeneration.finiteStateMachine.MachineVariablePair
+import me.nallen.modularCodeGeneration.hybridAutomata.AutomataInstance
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 import java.io.File
 
 class CCodeGenerator() {
@@ -15,17 +14,17 @@ class CCodeGenerator() {
         val MAKEFILE = "Makefile"
         val CONFIG_FILE = "config.h"
 
-        private fun generateFsm(fsm: FiniteStateMachine, dir: String, config: Configuration = Configuration()) {
+        private fun generateFsm(automata: HybridAutomata, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
                 outputDir.mkdir()
 
-            File(outputDir, "${Utils.createFileName(fsm.name)}.h").writeText(HFileGenerator.generate(fsm, config))
-            File(outputDir, "${Utils.createFileName(fsm.name)}.c").writeText(CFileGenerator.generate(fsm, config))
+            File(outputDir, "${Utils.createFileName(automata.name)}.h").writeText(HFileGenerator.generate(automata, config))
+            File(outputDir, "${Utils.createFileName(automata.name)}.c").writeText(CFileGenerator.generate(automata, config))
         }
 
-        private fun generateRunnable(network: FiniteNetwork, dir: String, config: Configuration = Configuration()) {
+        private fun generateRunnable(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
@@ -34,7 +33,7 @@ class CCodeGenerator() {
             File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(network, config))
         }
 
-        private fun generateMakefile(name: String, instances: Map<String, FiniteInstance>, dir: String, config: Configuration = Configuration()) {
+        private fun generateMakefile(name: String, instances: Map<String, AutomataInstance>, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
@@ -60,7 +59,7 @@ class CCodeGenerator() {
             File(outputDir, CONFIG_FILE).writeText(content.toString())
         }
 
-        fun generateNetwork(network: FiniteNetwork, dir: String, config: Configuration = Configuration()) {
+        fun generateNetwork(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
@@ -69,24 +68,24 @@ class CCodeGenerator() {
             // Generate FSM files
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 for((name, instance) in network.instances) {
-                    val fsm = CodeGenManager.createParametrisedFsm(network, name, instance)
+                    val automata = CodeGenManager.createParametrisedFsm(network, name, instance)
 
-                    if(fsm == null)
+                    if(automata == null)
                         throw IllegalArgumentException("Unable to find base machine $name to instantiate!")
 
-                    generateFsm(fsm, File(outputDir, Utils.createFolderName(instance.machine)).absolutePath, config)
+                    generateFsm(automata, File(outputDir, Utils.createFolderName(instance.automata)).absolutePath, config)
                 }
             }
             else  {
                 val generated = ArrayList<String>()
 
                 for((_, instance) in network.instances) {
-                    if (!generated.contains(instance.machine)) {
-                        generated.add(instance.machine)
+                    if (!generated.contains(instance.automata)) {
+                        generated.add(instance.automata)
 
-                        val fsm = network.definitions.first({ it.name == instance.machine })
+                        val automata = network.definitions.first({ it.name == instance.automata })
 
-                        generateFsm(fsm, outputDir.absolutePath, config)
+                        generateFsm(automata, outputDir.absolutePath, config)
                     }
                 }
             }

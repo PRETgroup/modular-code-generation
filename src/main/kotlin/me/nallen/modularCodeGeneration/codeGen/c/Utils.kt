@@ -1,9 +1,9 @@
 package me.nallen.modularCodeGeneration.codeGen.c
 
 import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
-import me.nallen.modularCodeGeneration.finiteStateMachine.Locality
-import me.nallen.modularCodeGeneration.finiteStateMachine.Variable
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
+import me.nallen.modularCodeGeneration.hybridAutomata.Locality
+import me.nallen.modularCodeGeneration.hybridAutomata.Variable
 import me.nallen.modularCodeGeneration.parseTree.*
 import me.nallen.modularCodeGeneration.utils.NamingConvention
 import me.nallen.modularCodeGeneration.utils.convertWordDelimiterConvention
@@ -28,15 +28,15 @@ object Utils {
         }
     }
 
-    fun performVariableFunctionForLocality(fsm: FiniteStateMachine, locality: Locality, function: (v: Variable) -> String, config: Configuration = Configuration(), comment: String? = null, depth: Int = 1): String {
+    fun performVariableFunctionForLocality(automata: HybridAutomata, locality: Locality, function: (v: Variable) -> String, config: Configuration = Configuration(), comment: String? = null, depth: Int = 1): String {
         val result = StringBuilder()
 
-        if(fsm.variables.any{it.locality == locality}) {
+        if(automata.variables.any{it.locality == locality}) {
             result.appendln()
             if(comment != null)
                 result.appendln("${config.getIndent(depth)}// $comment ${locality.getTextualName()}")
 
-            for(variable in fsm.variables
+            for(variable in automata.variables
                     .filter{it.locality == locality}
                     .sortedBy { it.type }) {
                 val output = function(variable)
@@ -78,6 +78,10 @@ object Utils {
             precedence--;
         }
         if(precedence < operand.getPrecedence())
+            return "(" + generateCodeForParseTreeItem(operand, prefixData) + ")"
+
+        // Special cases
+        if(item is Or && operand is And)
             return "(" + generateCodeForParseTreeItem(operand, prefixData) + ")"
 
         return generateCodeForParseTreeItem(operand, prefixData, item)

@@ -2,22 +2,22 @@ package me.nallen.modularCodeGeneration.codeGen.c
 
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
-import me.nallen.modularCodeGeneration.finiteStateMachine.FiniteStateMachine
-import me.nallen.modularCodeGeneration.finiteStateMachine.Locality
-import me.nallen.modularCodeGeneration.finiteStateMachine.Variable
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
+import me.nallen.modularCodeGeneration.hybridAutomata.Locality
+import me.nallen.modularCodeGeneration.hybridAutomata.Variable
 
 object HFileGenerator {
-    private var fsm: FiniteStateMachine = FiniteStateMachine("Temp")
+    private var automata: HybridAutomata = HybridAutomata("Temp")
     private var config: Configuration = Configuration()
 
-    fun generate(fsm: FiniteStateMachine, config: Configuration = Configuration()): String {
-        this.fsm = fsm
+    fun generate(automata: HybridAutomata, config: Configuration = Configuration()): String {
+        this.automata = automata
         this.config = config
 
         val result = StringBuilder()
 
-        result.appendln("#ifndef ${Utils.createMacroName(fsm.name)}_H_")
-        result.appendln("#define ${Utils.createMacroName(fsm.name)}_H_")
+        result.appendln("#ifndef ${Utils.createMacroName(automata.name)}_H_")
+        result.appendln("#define ${Utils.createMacroName(automata.name)}_H_")
         result.appendln()
 
         result.appendln(generateIncludes())
@@ -26,15 +26,15 @@ object HFileGenerator {
 
         result.appendln(generateStruct())
 
-        result.appendln("// ${fsm.name} Initialisation function")
-        result.appendln("void ${Utils.createFunctionName(fsm.name, "Init")}(${Utils.createTypeName(fsm.name)}* me);")
+        result.appendln("// ${automata.name} Initialisation function")
+        result.appendln("void ${Utils.createFunctionName(automata.name, "Init")}(${Utils.createTypeName(automata.name)}* me);")
         result.appendln()
 
-        result.appendln("// ${fsm.name} Execution function")
-        result.appendln("void ${Utils.createFunctionName(fsm.name, "Run")}(${Utils.createTypeName(fsm.name)}* me);")
+        result.appendln("// ${automata.name} Execution function")
+        result.appendln("void ${Utils.createFunctionName(automata.name, "Run")}(${Utils.createTypeName(automata.name)}* me);")
         result.appendln()
 
-        result.appendln("#endif // ${Utils.createMacroName(fsm.name)}_H_")
+        result.appendln("#endif // ${Utils.createMacroName(automata.name)}_H_")
 
         return result.toString().trim()
     }
@@ -65,10 +65,10 @@ object HFileGenerator {
     private fun generateEnum(): String {
         val result = StringBuilder()
 
-        result.appendln("// ${fsm.name} States")
-        result.appendln("enum ${Utils.createTypeName(fsm.name, "States")} {")
-        for((name) in fsm.states) {
-            result.appendln("${config.getIndent(1)}${Utils.createMacroName(fsm.name, name)},")
+        result.appendln("// ${automata.name} States")
+        result.appendln("enum ${Utils.createTypeName(automata.name, "States")} {")
+        for((name) in automata.locations) {
+            result.appendln("${config.getIndent(1)}${Utils.createMacroName(automata.name, name)},")
         }
         result.appendln("};")
 
@@ -78,18 +78,18 @@ object HFileGenerator {
     private fun generateStruct(): String {
         val result = StringBuilder()
 
-        result.appendln("// ${fsm.name} Data Struct")
+        result.appendln("// ${automata.name} Data Struct")
         result.appendln("typedef struct {")
 
         result.appendln("${config.getIndent(1)}// State")
-        result.appendln("${config.getIndent(1)}enum ${Utils.createTypeName(fsm.name, "States")} state;")
+        result.appendln("${config.getIndent(1)}enum ${Utils.createTypeName(automata.name, "States")} state;")
 
-        result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_INPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
-        result.append(Utils.performVariableFunctionForLocality(fsm, Locality.EXTERNAL_OUTPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
-        result.append(Utils.performVariableFunctionForLocality(fsm, Locality.INTERNAL, HFileGenerator::generateVariableDeclaration, config, "Declare"))
-        result.append(Utils.performVariableFunctionForLocality(fsm, Locality.PARAMETER, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+        result.append(Utils.performVariableFunctionForLocality(automata, Locality.EXTERNAL_INPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+        result.append(Utils.performVariableFunctionForLocality(automata, Locality.EXTERNAL_OUTPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+        result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+        result.append(Utils.performVariableFunctionForLocality(automata, Locality.PARAMETER, HFileGenerator::generateVariableDeclaration, config, "Declare"))
 
-        result.appendln("} ${Utils.createTypeName(fsm.name)};")
+        result.appendln("} ${Utils.createTypeName(automata.name)};")
 
         return result.toString()
     }

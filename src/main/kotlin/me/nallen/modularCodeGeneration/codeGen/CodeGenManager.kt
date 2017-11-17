@@ -2,7 +2,10 @@ package me.nallen.modularCodeGeneration.codeGen
 
 import com.fasterxml.jackson.module.kotlin.*
 import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenerator
-import me.nallen.modularCodeGeneration.finiteStateMachine.*
+import me.nallen.modularCodeGeneration.hybridAutomata.AutomataInstance
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
+import me.nallen.modularCodeGeneration.hybridAutomata.Locality
 import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
 import me.nallen.modularCodeGeneration.parseTree.VariableType
 import java.io.File
@@ -12,7 +15,7 @@ typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
 object CodeGenManager {
     private val mapper = jacksonObjectMapper()
     
-    fun generateForNetwork(network: FiniteNetwork, language: CodeGenLanguage, dir: String, config: Configuration = Configuration()) {
+    fun generateForNetwork(network: HybridNetwork, language: CodeGenLanguage, dir: String, config: Configuration = Configuration()) {
         val outputDir = File(dir)
 
         if(outputDir.exists() && !outputDir.isDirectory)
@@ -26,20 +29,20 @@ object CodeGenManager {
         }
     }
 
-    fun createParametrisedFsm(network: FiniteNetwork, name: String, instance: FiniteInstance): FiniteStateMachine? {
-        if(network.definitions.any({it.name == instance.machine})) {
+    fun createParametrisedFsm(network: HybridNetwork, name: String, instance: AutomataInstance): HybridAutomata? {
+        if(network.definitions.any({it.name == instance.automata})) {
             // This is currently a really hacky way to do a deep copy, JSON serialize it and then deserialize.
             // Bad for performance, but easy to do. Hopefully can be fixed later?
-            val json = mapper.writeValueAsString(network.definitions.first({ it.name == instance.machine }))
+            val json = mapper.writeValueAsString(network.definitions.first({ it.name == instance.automata }))
 
-            val fsm = mapper.readValue<FiniteStateMachine>(json)
-            fsm.name = name
+            val automata = mapper.readValue<HybridAutomata>(json)
+            automata.name = name
 
             val functionTypes = LinkedHashMap<String, VariableType?>()
 
-            for(function in fsm.functions) {
+            for(function in automata.functions) {
                 val inputs = ArrayList(function.inputs)
-                inputs.addAll(fsm.variables.filter({it.locality == Locality.PARAMETER}).map({ VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) }))
+                inputs.addAll(automata.variables.filter({it.locality == Locality.PARAMETER}).map({ VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) }))
                 function.logic.collectVariables(inputs, functionTypes)
 
                 function.returnType = function.logic.getReturnType(functionTypes)
@@ -47,25 +50,25 @@ object CodeGenManager {
             }
 
             for ((key, value) in instance.parameters) {
-                fsm.setParameterValue(key, value)
+                automata.setParameterValue(key, value)
             }
 
-            fsm.setDefaultParametrisation()
+            automata.setDefaultParametrisation()
 
-            return fsm
+            return automata
         }
 
         return null
     }
 
-    fun collectFieldsToLog(network: FiniteNetwork, config: Configuration): List<LoggingField> {
+    fun collectFieldsToLog(network: HybridNetwork, config: Configuration): List<LoggingField> {
         val toLog = ArrayList<LoggingField>()
 
         if(config.logging.fields == null) {
             // Collect all "outputs" and log them
             for((name, instance) in network.instances) {
-                if(network.definitions.any({it.name == instance.machine})) {
-                    val definition = network.definitions.first({it.name == instance.machine})
+                if(network.definitions.any({it.name == instance.automata})) {
+                    val definition = network.definitions.first({it.name == instance.automata})
 
                     val outputs = definition.variables.filter({it.locality == Locality.EXTERNAL_OUTPUT})
                     for(output in outputs) {
@@ -83,8 +86,8 @@ object CodeGenManager {
 
                     if(network.instances.containsKey(machine)) {
                         val instance = network.instances[machine]!!
-                        if(network.definitions.any({it.name == instance.machine})) {
-                            val definition = network.definitions.first({it.name == instance.machine})
+                        if(network.definitions.any({it.name == instance.automata})) {
+                            val definition = network.definitions.first({it.name == instance.automata})
 
                             if(definition.variables.any({it.locality == Locality.EXTERNAL_OUTPUT && it.name == variable})) {
                                 val output = definition.variables.first({it.locality == Locality.EXTERNAL_OUTPUT && it.name == variable})
