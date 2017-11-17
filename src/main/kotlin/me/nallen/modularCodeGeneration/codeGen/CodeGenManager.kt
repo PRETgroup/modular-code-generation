@@ -2,10 +2,8 @@ package me.nallen.modularCodeGeneration.codeGen
 
 import com.fasterxml.jackson.module.kotlin.*
 import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenerator
-import me.nallen.modularCodeGeneration.hybridAutomata.AutomataInstance
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
-import me.nallen.modularCodeGeneration.hybridAutomata.Locality
+import me.nallen.modularCodeGeneration.hybridAutomata.*
+import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
 import me.nallen.modularCodeGeneration.parseTree.VariableType
 import java.io.File
@@ -102,6 +100,32 @@ object CodeGenManager {
 
         return toLog
     }
+
+    fun collectSaturationLimits(location: Location, edges: List<Edge>): Map<SaturationPoint, List<String>> {
+        val limits = HashMap<SaturationPoint, List<String>>()
+
+        for(edge in edges) {
+            // Find variables that may require saturation
+            //   These are variables that have a closure within the invariant of the location
+            //   e.g. guard has v >= 100, invariant v <= 130 -- saturate v at 100 falling
+            //   e.g. guard has v == 100, invariant v <= 130 -- saturate v at 100 both
+            //   e.g. guard has v >= 100 && v <= 120, invariant v <= 130 -- saturate v at 100 falling + 120 rising
+
+            // Check if they are written to by this location
+
+            // Check if amenable to saturation (can only use PLUS or MINUS operators)
+
+            // Add to map
+        }
+
+        return limits
+    }
+}
+
+data class SaturationPoint(val variable: String, val value: ParseTreeItem, val direction: SaturationDirection)
+
+enum class SaturationDirection {
+    RISING, FALLING, BOTH
 }
 
 data class LoggingField(val machine: String, val variable: String, val type: VariableType)

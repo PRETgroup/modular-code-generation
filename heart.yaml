@@ -6,25 +6,26 @@ definitions:
       g: REAL
     outputs:
       v: REAL
+      t_auto: REAL
     parameters:
       C1:
         type: REAL
         default: -8.7
       C2:
         type: REAL
-        default: -23.6
+        default: -190.9
       C3:
         type: REAL
-        default: -6.9
+        default: -190.4
       C4:
         type: REAL
-        default: -33.2
+        default: -23.6
       C5:
         type: REAL
-        default: -190.9
+        default: -45.5
       C6:
         type: REAL
-        default: -45.5
+        default: -12.9
       C7:
         type: REAL
         default: 777200
@@ -36,19 +37,19 @@ definitions:
         default: 276600
       C10:
         type: REAL
-        default: 75.9
+        default: -6.9
       C11:
         type: REAL
-        default: 11
+        default: 75.9
       C12:
         type: REAL
-        default: -190.4
+        default: 6826.5
       C13:
         type: REAL
-        default: -12.9
+        default: -33.2
       C14:
         type: REAL
-        default: 6826.5
+        default: 20
       C15:
         type: REAL
         default: 2
@@ -64,18 +65,31 @@ definitions:
       v_n_R_max:
         type: REAL
         default: 0.04
+      autorhythmic_rate:
+        type: REAL
+        default: 0
     locations:
       q0:
-        invariant: v < V_T && g < V_T
+        invariant: v < V_T && g < V_T && (pacing_rate <= 0 || t_auto < pacing_rate)
         flow:
           v_x: C1 * v_x
           v_y: C2 * v_y
           v_z: C3 * v_z
+          t_auto: 1
         update:
           v: v_x - v_y + v_z
         transitions:
           - to: q1
-            guard: g >= V_T
+            guard: pacing_rate > 0 && t_auto >= pacing_rate
+            update:
+              v_x: V_T * C7 / (C7 - C8 + C9)
+              v_y: V_T * C8 / (C7 - C8 + C9)
+              v_z: V_T * C9 / (C7 - C8 + C9)
+              v: V_T
+              theta: 0
+              f_theta: f(0)
+          - to: q1
+            guard: g >= V_T && (pacing_rate <= 0 || t_auto < pacing_rate)
             update:
               v_x: 0.3 * v
               v_y: 0.0 * v
@@ -83,24 +97,28 @@ definitions:
               theta: v / 44.5
               f_theta: f(v / 44.5)
       q1:
-        invariant: v < V_T && g > 0
+        invariant: v < V_T && g > 0 && (pacing_rate <= 0 || t_auto < pacing_rate)
         flow:
           v_x: C4 * v_x + C7 * g
           v_y: C5 * v_y + C8 * g
           v_z: C6 * v_z + C9 * g
+          t_auto: 1
         update:
           v: v_x - v_y + v_z
         transitions:
           - to: q2
-            guard: v >= V_T
+            guard: v >= V_T || (pacing_rate > 0 && t_auto >= pacing_rate)
+            update:
+              t_auto: 0
           - to: q0
-            guard: g <= 0 && v < V_T
+            guard: g <= 0 && v < V_T && t_auto < pacing_rate
       q2:
         invariant: v < V_O - 80.1 * sqrt(theta)
         flow:
           v_x: C10 * v_x
           v_y: C11 * v_y
           v_z: C12 * v_z
+          t_auto: 1
         update:
           v: v_x - v_y + v_z
         transitions:
@@ -112,6 +130,7 @@ definitions:
           v_x: C13 * v_x * f_theta
           v_y: C14 * v_y * f_theta
           v_z: C15 * v_z
+          t_auto: 1
         update:
           v: v_x - v_y + v_z
         transitions:
@@ -127,153 +146,168 @@ definitions:
           }
 
           return 0.29*exp(62.89*theta) + 0.70*exp(-10.99*theta)
+      calculate_pacing_rate:
+        logic: |
+          if(autorhythmic_rate > 0) {
+            return 1 / (autorhythmic_rate / 60.0)
+          }
+
+          return 0
     initialisation:
       state: q0
       valuations:
-        v_x: 0
-        v_y: 0
-        v_z: 0
-        v: 0
-        theta: 0
-        f_theta: 0
+        pacing_rate: calculate_pacing_rate()
+
+  Path:
+    inputs:
+      cell1_v: REAL
+      cell2_v: REAL
+    outputs:
+      cell1_v_out: REAL
+      cell2_v_out: REAL
+    locations:
+      q0:
+        invariant: true
+    initialisation:
+      state: q0
+
 
 instances:
   SA:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
+      autorhythmic_rate: 100
   BB:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   LA:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   LA1:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   RA:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   RA1:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   CS:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   CT:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   CT1:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   OS:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   Fast:
     type: Cell
     parameters:
-      C11: 18
+      C14: 18
   Fast1:
     type: Cell
     parameters:
-      C11: 18
+      C14: 18
   Slow:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   Slow1:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   AV:
     type: Cell
     parameters:
-      C11: 20
+      C14: 20
   BH:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   BH1:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   BH2:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   LBB:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   LBB1:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   LVA:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   LV:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   LV1:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   LVS:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   LVS1:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   CSLV:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   RBB:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   RBB1:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   RVA:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   RV:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   RV1:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   RVS:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
   RVS1:
     type: Cell
     parameters:
-      C11: 11
+      C14: 11
 
 mappings:
-  SA.g: RV.v
-  RV.g: SA.v
 
 codegenConfig:
   execution:

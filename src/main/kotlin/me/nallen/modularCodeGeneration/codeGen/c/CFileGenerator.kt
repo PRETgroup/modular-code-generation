@@ -1,7 +1,9 @@
 package me.nallen.modularCodeGeneration.codeGen.c
 
+import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
+import me.nallen.modularCodeGeneration.codeGen.SaturationDirection
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.Literal
 import me.nallen.modularCodeGeneration.parseTree.Multiply
@@ -284,6 +286,37 @@ object CFileGenerator {
         }
 
         if(location.update.isNotEmpty())
+            result.appendln()
+
+        val saturationLimits = CodeGenManager.collectSaturationLimits(location, automata.edges)
+
+        for((point, dependencies) in saturationLimits) {
+            val variable = Utils.createVariableName(point.variable)
+            val limit = Utils.generateCodeForParseTreeItem(point.value)
+            val condition = when(point.direction) {
+                SaturationDirection.RISING -> "${variable}_u > $limit && me->$variable < $limit"
+                SaturationDirection.FALLING -> "${variable}_u < $limit && me->$variable > $limit"
+                SaturationDirection.BOTH -> "(${variable}_u > $limit && me->$variable < $limit) || (${variable}_u < $limit && me->$variable > $limit)"
+            }
+            result.appendln("${config.getIndent(indent)}if($condition) {")
+            result.appendln("${config.getIndent(indent+1)}// Need to saturate ${point.variable} to $limit")
+
+            if(dependencies.isNotEmpty()) {
+                result.appendln("${config.getIndent(indent+1)}// Also some dependencies that need saturating")
+                result.appendln("${config.getIndent(indent+1)}double frac = ($limit - me->$variable) / (${variable}_u - me->$variable);")
+                result.appendln()
+                for(dependency in dependencies) {
+                    val dependencyVariable = Utils.createVariableName(dependency)
+                    result.appendln("${config.getIndent(indent+1)}${dependencyVariable}_u = me->$dependencyVariable + frac * (${dependencyVariable}_u - me->$dependencyVariable);")
+                }
+                result.appendln()
+            }
+
+            result.appendln("${config.getIndent(indent+1)}${variable}_u = $limit;")
+            result.appendln("${config.getIndent(indent)}}")
+        }
+
+        if(saturationLimits.isNotEmpty())
             result.appendln()
 
         return result.toString()
