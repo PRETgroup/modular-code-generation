@@ -273,16 +273,19 @@ object CFileGenerator {
     private fun generateCodeForIntraLogic(location: Location, indent: Int): String {
         val result = StringBuilder()
 
+        val customVars = HashMap<String, String>(Utils.DEFAULT_CUSTOM_VARIABLES)
+
         for((variable, equation) in location.flow) {
             val eulerSolution = Plus(ParseTreeVariable(variable), Multiply(equation, ParseTreeVariable("STEP_SIZE")))
             result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};")
+            customVars.put(variable, "${Utils.createVariableName(variable)}_u")
         }
 
         if(location.flow.isNotEmpty())
             result.appendln()
 
         for((variable, equation) in location.update) {
-            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};")
+            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVars))};")
         }
 
         if(location.update.isNotEmpty())
