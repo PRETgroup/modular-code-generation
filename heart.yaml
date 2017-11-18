@@ -107,7 +107,7 @@ definitions:
           v: v_x - v_y + v_z
         transitions:
           - to: q2
-            guard: v >= V_T || (pacing_rate > 0 && t_auto >= pacing_rate)
+            guard: v == V_T || (pacing_rate > 0 && t_auto >= pacing_rate)
             update:
               t_auto: 0
           - to: q0
@@ -123,7 +123,7 @@ definitions:
           v: v_x - v_y + v_z
         transitions:
           - to: q3
-            guard: v >= V_O - 80.1 * sqrt(theta)
+            guard: v == V_O - 80.1 * sqrt(theta)
       q3:
         invariant: v > V_R
         flow:
@@ -135,7 +135,7 @@ definitions:
           v: v_x - v_y + v_z
         transitions:
           - to: q0
-            guard: v <= V_R
+            guard: v == V_R
     functions:
       f:
         inputs:
