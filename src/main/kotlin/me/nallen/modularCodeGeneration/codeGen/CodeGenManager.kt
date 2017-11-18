@@ -114,7 +114,7 @@ object CodeGenManager {
 
             val saturationPoints = ArrayList<SaturationPoint>()
             for(comparison in comparisons) {
-                var variable = ""
+                var variable: String
                 var value: ParseTreeItem
 
                 if(comparison.getChildren()[0] is Variable) {
