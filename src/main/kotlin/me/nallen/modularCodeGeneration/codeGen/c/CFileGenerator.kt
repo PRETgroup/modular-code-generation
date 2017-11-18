@@ -292,7 +292,7 @@ object CFileGenerator {
 
         for((point, dependencies) in saturationLimits) {
             val variable = Utils.createVariableName(point.variable)
-            val limit = Utils.generateCodeForParseTreeItem(point.value)
+            val limit = Utils.generateCodeForParseTreeItem(point.value, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))
             val condition = when(point.direction) {
                 SaturationDirection.RISING -> "${variable}_u > $limit && me->$variable < $limit"
                 SaturationDirection.FALLING -> "${variable}_u < $limit && me->$variable > $limit"
