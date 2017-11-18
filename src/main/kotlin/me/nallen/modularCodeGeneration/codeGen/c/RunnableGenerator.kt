@@ -97,13 +97,16 @@ object RunnableGenerator {
                 result.appendln()
             first = false
             result.appendln("${config.getIndent(1)}(void) memset((void *)&${Utils.createVariableName(name, "data")}, 0, sizeof(${Utils.createTypeName(instance)}));")
-            result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Init")}(&${Utils.createVariableName(name, "data")});")
+            if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME)
+                result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Parametrise")}(&${Utils.createVariableName(name, "data")});")
 
             if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
                 for((key, value) in network.instances[name]!!.parameters) {
                     result.appendln("${config.getIndent(1)}${Utils.createVariableName(name, "data")}.${Utils.createVariableName(key)} = ${Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("${Utils.createVariableName(name, "data")}.", requireSelfReferenceInFunctionCalls))};")
                 }
             }
+
+            result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Init")}(&${Utils.createVariableName(name, "data")});")
         }
 
         result.appendln()

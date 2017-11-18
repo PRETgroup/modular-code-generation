@@ -32,6 +32,9 @@ object CFileGenerator {
         if(automata.functions.size > 0)
             result.appendln(generateCustomFunctions())
 
+        if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME)
+            result.appendln(generateParametrisationFunction())
+
         result.appendln(generateInitialisationFunction())
 
         result.appendln(generateExecutionFunction())
@@ -79,6 +82,20 @@ object CFileGenerator {
         return result.toString()
     }
 
+    private fun generateParametrisationFunction(): String {
+        val result = StringBuilder()
+
+        result.appendln("// ${automata.name} Default Parametrisation function")
+        result.appendln("void ${Utils.createFunctionName(automata.name, "Parametrise")}(${Utils.createTypeName(automata.name)}* me) {")
+
+        if(automata.variables.any({it.locality == Locality.PARAMETER && it.defaultValue != null}))
+            result.append(Utils.performVariableFunctionForLocality(automata, Locality.PARAMETER, CFileGenerator::generateParameterInitialisation, config, "Initialise Default"))
+
+        result.appendln("}")
+
+        return result.toString()
+    }
+
     private fun generateInitialisationFunction(): String {
         val result = StringBuilder()
 
@@ -91,11 +108,6 @@ object CFileGenerator {
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.EXTERNAL_OUTPUT, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
 
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
-
-        if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
-            if(automata.variables.any({it.locality == Locality.PARAMETER && it.defaultValue != null}))
-                result.append(Utils.performVariableFunctionForLocality(automata, Locality.PARAMETER, CFileGenerator::generateParameterInitialisation, config, "Initialise Default"))
-        }
 
         result.appendln("}")
 

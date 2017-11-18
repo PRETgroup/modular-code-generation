@@ -26,6 +26,12 @@ object HFileGenerator {
 
         result.appendln(generateStruct())
 
+        if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
+            result.appendln("// ${automata.name} Default Parametrisation function")
+            result.appendln("void ${Utils.createFunctionName(automata.name, "Parametrise")}(${Utils.createTypeName(automata.name)}* me);")
+            result.appendln()
+        }
+
         result.appendln("// ${automata.name} Initialisation function")
         result.appendln("void ${Utils.createFunctionName(automata.name, "Init")}(${Utils.createTypeName(automata.name)}* me);")
         result.appendln()
