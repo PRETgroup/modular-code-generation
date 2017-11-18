@@ -234,6 +234,7 @@ instances:
     type: Cell
     parameters:
       C14: 20
+      autorhythmic_rate: 60
   BH:
     type: Cell
     parameters:
@@ -250,10 +251,12 @@ instances:
     type: Cell
     parameters:
       C14: 11
+      autorhythmic_rate: 32
   LBB1:
     type: Cell
     parameters:
       C14: 11
+      autorhythmic_rate: 32
   LVA:
     type: Cell
     parameters:
@@ -282,10 +285,12 @@ instances:
     type: Cell
     parameters:
       C14: 11
+      autorhythmic_rate: 32
   RBB1:
     type: Cell
     parameters:
       C14: 11
+      autorhythmic_rate: 32
   RVA:
     type: Cell
     parameters:
