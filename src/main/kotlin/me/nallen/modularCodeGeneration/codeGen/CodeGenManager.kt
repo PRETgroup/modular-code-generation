@@ -3,9 +3,9 @@ package me.nallen.modularCodeGeneration.codeGen
 import com.fasterxml.jackson.module.kotlin.*
 import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenerator
 import me.nallen.modularCodeGeneration.hybridAutomata.*
-import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
-import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
-import me.nallen.modularCodeGeneration.parseTree.VariableType
+import me.nallen.modularCodeGeneration.hybridAutomata.Locality
+import me.nallen.modularCodeGeneration.parseTree.*
+import me.nallen.modularCodeGeneration.parseTree.Variable
 import java.io.File
 
 typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
@@ -104,21 +104,132 @@ object CodeGenManager {
     fun collectSaturationLimits(location: Location, edges: List<Edge>): Map<SaturationPoint, List<String>> {
         val limits = HashMap<SaturationPoint, List<String>>()
 
-        for(edge in edges) {
+        for(edge in edges.filter({it.fromLocation == location.name})) {
             // Find variables that may require saturation
-            //   These are variables that have a closure within the invariant of the location
-            //   e.g. guard has v >= 100, invariant v <= 130 -- saturate v at 100 falling
-            //   e.g. guard has v == 100, invariant v <= 130 -- saturate v at 100 both
-            //   e.g. guard has v >= 100 && v <= 120, invariant v <= 130 -- saturate v at 100 falling + 120 rising
+            //   e.g. guard has v >= 100 -- saturate v at 100 falling
+            //   e.g. guard has v == 100 -- saturate v at 100 both
+            //   e.g. guard has v >= 100 && v <= 120 -- saturate v at 100 falling + 120 rising
 
-            // Check if they are written to by this location
+            val comparisons = collectComparisonsFromParseTree(edge.guard)
 
-            // Check if amenable to saturation (can only use PLUS or MINUS operators)
+            val saturationPoints = ArrayList<SaturationPoint>()
+            for(comparison in comparisons) {
+                var variable = ""
+                var value: ParseTreeItem
 
-            // Add to map
+                if(comparison.getChildren()[0] is Variable) {
+                    variable = comparison.getChildren()[0].generateString()
+                    value = comparison.getChildren()[1]
+                }
+                else if(comparison.getChildren()[1] is Variable) {
+                    variable = comparison.getChildren()[1].generateString()
+                    value = comparison.getChildren()[0]
+                }
+                else {
+                    continue;
+                }
+
+                val saturationDirection = if (comparison is LessThan || comparison is GreaterThanOrEqual) {
+                    SaturationDirection.FALLING
+                }
+                else if(comparison is GreaterThan || comparison is LessThanOrEqual) {
+                    SaturationDirection.RISING
+                }
+                else {
+                    SaturationDirection.BOTH
+                }
+
+                saturationPoints.add(SaturationPoint(variable, value, saturationDirection))
+            }
+
+            for(saturationPoint in saturationPoints) {
+                val variableName = saturationPoint.variable
+                if(location.flow.containsKey(variableName) || location.update.containsKey(variableName))
+                    limits.put(saturationPoint, getDependenciesForSaturation(variableName, location))
+            }
         }
 
         return limits
+    }
+
+    private fun getDependenciesForSaturation(variable: String, location: Location, updateStack: ArrayList<String> = ArrayList()): List<String> {
+        val dependencies = ArrayList<String>()
+
+        if(updateStack.contains(variable))
+            return dependencies
+
+        updateStack.add(variable)
+
+        // Check if they are written to by this location
+        if(location.flow.containsKey(variable)) {
+            return dependencies
+        }
+
+        if(location.update.containsKey(variable)) {
+            // Written as an update means we need to do more work
+
+            // Check if amenable to saturation (can only use PLUS MINUS, NEGATIVE operators)
+            val operations = collectOperationsFromParseTree(location.update[variable]!!)
+
+            if(operations.any({it != "plus" && it != "minus" && it != "negative"})) {
+                // Can't saturate
+                throw IllegalArgumentException("Unable to saturate update formula ${location.update[variable]!!.generateString()}")
+            }
+
+            // Get Dependencies
+            val subDependencies = collectVariablesFromParseTree(location.update[variable]!!)
+            dependencies.addAll(subDependencies.filter({!dependencies.contains(it)}))
+
+            for(subDependency in subDependencies) {
+                dependencies.addAll(getDependenciesForSaturation(subDependency, location, updateStack).filter({!dependencies.contains(it)}))
+            }
+        }
+
+        return dependencies
+    }
+
+    private fun collectVariablesFromParseTree(item: ParseTreeItem): List<String> {
+        val variables = ArrayList<String>()
+
+        if(item is Variable) {
+            if(!variables.contains(item.name))
+                variables.add(item.name)
+        }
+
+        for(child in item.getChildren())
+            variables.addAll(collectVariablesFromParseTree(child))
+
+        return variables
+    }
+
+    private fun collectOperationsFromParseTree(item: ParseTreeItem): List<String> {
+        val operands = ArrayList<String>()
+
+        if(item !is Literal && item !is Variable) {
+            if(!operands.contains(item.type))
+                operands.add(item.type)
+        }
+
+        for(child in item.getChildren()) {
+            operands.addAll(collectOperationsFromParseTree(child))
+        }
+
+        return operands
+    }
+
+    private fun collectComparisonsFromParseTree(item: ParseTreeItem): List<ParseTreeItem> {
+        val comparisons = ArrayList<ParseTreeItem>()
+
+        if(item is Equal || item is GreaterThan || item is GreaterThanOrEqual || item is LessThan || item is LessThanOrEqual) {
+            comparisons.add(item)
+        }
+        else {
+            for(child in item.getChildren()) {
+                comparisons.addAll(collectComparisonsFromParseTree(child))
+            }
+        }
+
+        return comparisons
     }
 }
 
