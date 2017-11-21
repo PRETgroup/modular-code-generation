@@ -19,15 +19,12 @@ typealias HybridLocation = me.nallen.modularCodeGeneration.hybridAutomata.Locati
 class Importer() {
     companion object Factory {
         fun import(path: String): Pair<HybridNetwork, Configuration> {
-            val file = File(path)
-
-            if(!file.exists() || !file.isFile)
-                throw Exception("Whoops")
+            val parsedFile = parseIncludes(path)
 
             val mapper = ObjectMapper(YAMLFactory())
             mapper.registerModule(KotlinModule())
 
-            val schema = mapper.readValue(file, Schema::class.java)
+            val schema = mapper.readValue(parsedFile, Schema::class.java)
 
             val network = HybridNetwork()
 
@@ -42,6 +39,36 @@ class Importer() {
             val config = schema.codegenConfig ?: Configuration()
 
             return Pair(network, config)
+        }
+
+        private fun parseIncludes(path: String): String {
+            val file = File(path)
+
+            if(!file.exists() || !file.isFile)
+                throw Exception("Whoops")
+
+            val builder = StringBuilder()
+            val lines = file.readLines()
+
+            val includeRegex = Regex("!include\\s+([^\\s]+)")
+            val indentRegex = Regex("^([\\s]*)[^\\s]+")
+
+            for(line in lines) {
+                val match = includeRegex.find(line)
+                if(match != null) {
+                    val includedFile = File(file.parentFile.absolutePath, match.groupValues[1]).absolutePath
+                    val indent = indentRegex.find(line)?.groupValues?.get(1) ?: ""
+
+
+                    builder.appendln(line.substring(0 until match.range.first))
+                    builder.appendln(parseIncludes(includedFile).trim().prependIndent(indent + "  "))
+                }
+                else {
+                    builder.appendln(line)
+                }
+            }
+
+            return builder.toString()
         }
     }
 }

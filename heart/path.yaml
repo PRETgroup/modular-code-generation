@@ -1,0 +1,161 @@
+inputs:
+  cell1_v:
+    type: REAL
+    delayableBy: 1
+  cell1_resting:
+    type: BOOLEAN
+    delayableBy: 1
+  cell1_stimulated:
+    type: BOOLEAN
+    delayableBy: 1
+  cell2_v:
+    type: REAL
+    delayableBy: 1
+  cell2_resting:
+    type: BOOLEAN
+    delayableBy: 1
+  cell2_stimulated:
+    type: BOOLEAN
+    delayableBy: 1
+outputs:
+  cell1_v_out: REAL
+  cell2_v_out: REAL
+parameters:
+  cell1_conduction_time:
+    type: REAL
+    default: 0.02
+  cell1_charge_time:
+    type: REAL
+    default: 0.01
+  cell2_conduction_time:
+    type: REAL
+    default: 0.02
+  cell2_charge_time:
+    type: REAL
+    default: 0.01
+locations:
+  idle:
+    invariant: '!cell1_stimulated && !cell2_stimulated'
+    update:
+      cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+      cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+      cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+    transitions:
+      - to: annihilate
+        guard: cell1_stimulated && cell2_stimulated
+      - to: previous_direction1
+        guard: cell1_stimulated && !cell2_stimulated
+      - to: previous_direction2
+        guard: '!cell1_stimulated && cell2_stimulated'
+  previous_direction1:
+    invariant: false
+    update:
+      cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+      cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+      cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+    transitions:
+      - to: annihilate
+        guard: from_cell == 2 && !delayed(cell2_resting, cell2_conduction_time)
+      - to: wait_cell1
+        guard: from_cell == 0 || from_cell == 1 || (from_cell == 2 && delayed(cell2_resting, cell2_conduction_time))
+  wait_cell1:
+    invariant: t < cell1_conduction_time && !cell2_stimulated
+    flow:
+      t: 1
+    update:
+      cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+      cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+      cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+    transitions:
+      - to: annihilate
+        guard: cell2_stimulated
+      - to: replay_cell1
+        guard: t >= cell1_conduction_time
+        update:
+          t: 0
+          from_cell: 1
+          cell1_replay: true
+  replay_cell1:
+    invariant: t < cell1_charge_time
+    flow:
+      t: 1
+    update:
+      cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+      cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+      cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+    transitions:
+      - to: idle
+        guard: t >= cell1_charge_time
+        update:
+          t: 0
+  previous_direction2:
+    invariant: false
+    update:
+      cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+      cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+      cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+    transitions:
+      - to: annihilate
+        guard: from_cell == 1 && !delayed(cell1_resting, cell1_conduction_time)
+      - to: wait_cell1
+        guard: from_cell == 0 || from_cell == 2 || (from_cell == 1 && delayed(cell1_resting, cell1_conduction_time))
+  wait_cell2:
+    invariant: t < cell2_conduction_time && !cell1_stimulated
+    flow:
+      t: 1
+    update:
+      cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+      cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+      cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+    transitions:
+      - to: annihilate
+        guard: cell1_stimulated
+      - to: replay_cell2
+        guard: t >= cell2_conduction_time
+        update:
+          t: 0
+          from_cell: 2
+          cell2_replay: true
+  replay_cell2:
+    invariant: t < cell2_charge_time
+    flow:
+      t: 1
+    update:
+      cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+      cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+      cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+    transitions:
+      - to: idle
+        guard: t >= cell2_charge_time
+        update:
+          t: 0
+  annihilate:
+    invariant: cell1_stimulated || cell2_stimulated
+    update:
+      cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+      cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+      cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+    transitions:
+      - to: idle
+        guard: '!cell1_stimulated && !cell2_stimulated'
+functions:
+  output_if_true:
+    inputs:
+      test: BOOLEAN
+      value: REAL
+    logic: |
+      if(test) {
+        return value
+      }
+
+      return 0
+initialisation:
+  state: idle

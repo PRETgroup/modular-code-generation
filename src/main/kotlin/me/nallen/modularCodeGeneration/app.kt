@@ -5,7 +5,7 @@ import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.description.Importer
 
 fun main(args: Array<String>) {
-    val (network, config) = Importer.import("heart.yaml")
+    val (network, config) = Importer.import("heart/main.yaml")
 
     CodeGenManager.generateForNetwork(network, CodeGenLanguage.C, "Generated", config)
 }
