@@ -8,7 +8,7 @@ object MakefileGenerator {
     private var instances: Map<String, AutomataInstance> = LinkedHashMap<String, AutomataInstance>()
     private var config: Configuration = Configuration()
 
-    fun generate(name: String, instances: Map<String, AutomataInstance>, config: Configuration = Configuration()): String {
+    fun generate(name: String, instances: Map<String, AutomataInstance>, needsDelayed: Boolean, config: Configuration = Configuration()): String {
         this.instances = instances
         this.config = config
 
@@ -48,6 +48,12 @@ object MakefileGenerator {
                     }
                 }
             }
+        }
+
+        if(needsDelayed) {
+            result.append(generateCompileCommand("delayable", listOf(CCodeGenerator.DELAYABLE_SOURCE), listOf(CCodeGenerator.DELAYABLE_HEADER, CCodeGenerator.CONFIG_FILE)))
+            result.appendln()
+            sources.add("Objects/delayable")
         }
 
         result.append(generateCompileCommand("runnable", listOf("runnable.c"), listOf(CCodeGenerator.CONFIG_FILE)))

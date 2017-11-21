@@ -99,6 +99,19 @@ object Utils {
             is Equal -> padOperand(item, item.operandA, prefixData) + " == " + padOperand(item, item.operandB, prefixData)
             is NotEqual -> padOperand(item, item.operandA, prefixData) + " != " + padOperand(item, item.operandB, prefixData)
             is FunctionCall -> {
+                if(item.functionName == "delayed") {
+                    if(item.arguments.size == 2) {
+                        if(item.arguments[0] is me.nallen.modularCodeGeneration.parseTree.Variable) {
+                            val varName = item.arguments[0].getString()
+                            if(prefixData.delayedVariableTypes.containsKey(varName)) {
+                                return "${createFunctionName("Delayable", generateCType(prefixData.delayedVariableTypes[varName]), "Get")}(" +
+                                        "&${generateCodeForParseTreeItem(item.arguments[0], prefixData)}_delayed, " +
+                                        "${generateCodeForParseTreeItem(item.arguments[1], prefixData)})"
+                            }
+                        }
+                    }
+                }
+
                 val builder = StringBuilder()
 
                 if(prefixData.requireSelfReferenceInFunctionCalls)
@@ -160,6 +173,7 @@ object Utils {
     data class PrefixData(
             val prefix: String,
             val requireSelfReferenceInFunctionCalls: Boolean = false,
+            val delayedVariableTypes: Map<String, VariableType> = HashMap<String, VariableType>(),
             val customVariableNames: Map<String, String> = DEFAULT_CUSTOM_VARIABLES
     )
 }

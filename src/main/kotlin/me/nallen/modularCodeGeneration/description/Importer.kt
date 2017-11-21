@@ -74,16 +74,16 @@ private fun HybridAutomata.loadLocations(locations: Map<String, Location>?) {
     }
 }
 
-private fun HybridAutomata.loadLocation(name: String, location: Location) {
+private fun HybridAutomata.loadLocation(name: String, location: Location?) {
     val hybridLocation = HybridLocation(name)
 
-    hybridLocation.invariant = location.invariant ?: Literal("true")
+    hybridLocation.invariant = location?.invariant ?: Literal("true")
 
-    hybridLocation.flow.loadParseTreeItems(location.flow)
+    hybridLocation.flow.loadParseTreeItems(location?.flow)
 
-    hybridLocation.update.loadParseTreeItems(location.update)
+    hybridLocation.update.loadParseTreeItems(location?.update)
 
-    this.loadTransitions(name, location.transitions)
+    this.loadTransitions(name, location?.transitions)
 
     this.addLocation(hybridLocation)
 }
@@ -190,9 +190,9 @@ private fun HybridAutomata.loadVariables(variables: Map<String, VariableDefiniti
 
 private fun HybridAutomata.loadVariable(name: String, value: VariableDefinition, type: Locality) {
     if(value.type == VariableType.REAL) {
-        this.addContinuousVariable(name, type, value.default)
+        this.addContinuousVariable(name, type, value.default, value.delayableBy)
     }
     else if(value.type == VariableType.BOOLEAN) {
-        this.addEvent(name, type)
+        this.addEvent(name, type, value.delayableBy)
     }
 }

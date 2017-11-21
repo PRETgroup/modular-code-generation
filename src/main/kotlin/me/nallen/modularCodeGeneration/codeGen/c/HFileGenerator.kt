@@ -54,6 +54,9 @@ object HFileGenerator {
         result.appendln("#include <math.h>") // This may not be needed in all cases
         // TODO: Check if FSM uses a math.h function (sqrt, pow, etc.)
 
+        if(automata.variables.any({it.delayableBy > 0}))
+            result.appendln("#include <string.h>")
+
         result.appendln()
         result.appendln("typedef int bool;")
         result.appendln("#define false 0")
@@ -64,6 +67,13 @@ object HFileGenerator {
             result.appendln("#include \"../${CCodeGenerator.CONFIG_FILE}\"")
         else
             result.appendln("#include \"${CCodeGenerator.CONFIG_FILE}\"")
+
+        if(automata.variables.any({it.delayableBy > 0})) {
+            if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME)
+                result.appendln("#include \"../${CCodeGenerator.DELAYABLE_HEADER}\"")
+            else
+                result.appendln("#include \"${CCodeGenerator.DELAYABLE_HEADER}\"")
+        }
 
         return result.toString()
     }
@@ -94,6 +104,16 @@ object HFileGenerator {
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.EXTERNAL_OUTPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, HFileGenerator::generateVariableDeclaration, config, "Declare"))
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.PARAMETER, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+
+        if(automata.variables.any({it.delayableBy > 0})) {
+            result.appendln()
+            result.appendln("${config.getIndent(1)}// Declare Delayed Variables")
+
+            for(variable in automata.variables
+                    .filter{it.delayableBy > 0}) {
+                result.appendln("${config.getIndent(1)}${Utils.createTypeName("Delayable", Utils.generateCType(variable.type))} ${Utils.createVariableName(variable.name, "delayed")};")
+            }
+        }
 
         result.appendln("} ${Utils.createTypeName(automata.name)};")
 

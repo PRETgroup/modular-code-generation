@@ -17,12 +17,16 @@ object CFileGenerator {
     private var config: Configuration = Configuration()
 
     private var requireSelfReferenceInFunctionCalls: Boolean = false
+    private val delayedVariableTypes: HashMap<String, VariableType> = HashMap<String, VariableType>()
 
     fun generate(automata: HybridAutomata, config: Configuration = Configuration()): String {
         this.automata = automata
         this.config = config
 
         this.requireSelfReferenceInFunctionCalls = config.parametrisationMethod == ParametrisationMethod.RUN_TIME
+        this.delayedVariableTypes.clear()
+        for(variable in automata.variables.filter({it.delayableBy > 0}))
+            this.delayedVariableTypes.put(variable.name, variable.type)
 
         val result = StringBuilder()
 
@@ -75,7 +79,7 @@ object CFileGenerator {
             customDefinedVariables.put(parameter.name, "me->${Utils.createVariableName(parameter.name)}")
         }
 
-        result.appendln(Utils.generateCodeForProgram(function.logic, config, 1, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, customDefinedVariables)))
+        result.appendln(Utils.generateCodeForProgram(function.logic, config, 1, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customDefinedVariables)))
 
         result.appendln("}")
 
@@ -109,6 +113,18 @@ object CFileGenerator {
 
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
 
+        if(automata.variables.any({it.delayableBy > 0})) {
+            result.appendln()
+            result.append("${config.getIndent(1)}// Initialise Delayed Variables")
+
+            for(variable in automata.variables
+                    .filter{it.delayableBy > 0}) {
+                result.appendln()
+                result.appendln("${config.getIndent(1)}(void) memset((void *)&me->${Utils.createVariableName(variable.name, "delayed")}, 0, sizeof(${Utils.createTypeName("Delayable", Utils.generateCType(variable.type))}));")
+                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Init")}(&me->${Utils.createVariableName(variable.name, "delayed")}, ${variable.delayableBy});")
+            }
+        }
+
         result.appendln("}")
 
         return result.toString()
@@ -118,7 +134,7 @@ object CFileGenerator {
         var initValue: String = generateDefaultInitForType(variable.type)
 
         if(automata.init.valuations.containsKey(variable.name)) {
-            initValue = Utils.generateCodeForParseTreeItem(automata.init.valuations[variable.name] !!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))
+            initValue = Utils.generateCodeForParseTreeItem(automata.init.valuations[variable.name] !!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))
         }
 
         return "me->${Utils.createVariableName(variable.name)} = $initValue;"
@@ -133,7 +149,7 @@ object CFileGenerator {
 
     private fun generateParameterInitialisation(variable: Variable): String {
         if(variable.defaultValue != null) {
-            return "me->${Utils.createVariableName(variable.name)} = ${Utils.generateCodeForParseTreeItem(variable.defaultValue!!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};"
+            return "me->${Utils.createVariableName(variable.name)} = ${Utils.generateCodeForParseTreeItem(variable.defaultValue!!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))};"
         }
 
         return ""
@@ -206,7 +222,7 @@ object CFileGenerator {
 
             var atLeastOneIf = false
             if(!config.requireOneIntraTransitionPerTick) {
-                result.appendln("${config.getIndent(defaultIndent+2)}if(${Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))}) {")
+                result.appendln("${config.getIndent(defaultIndent+2)}if(${Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
 
                 result.append(generateCodeForIntraLogic(location, defaultIndent+3))
 
@@ -225,10 +241,10 @@ object CFileGenerator {
             }
 
             for((_, toLocation, guard, update) in automata.edges.filter{it.fromLocation == location.name }) {
-                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))}) {")
+                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
 
                 for((variable, equation) in update) {
-                    result.appendln("${config.getIndent(defaultIndent+3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};")
+                    result.appendln("${config.getIndent(defaultIndent+3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))};")
                 }
 
                 if(update.isNotEmpty())
@@ -289,7 +305,7 @@ object CFileGenerator {
 
         for((variable, equation) in location.flow) {
             val eulerSolution = Plus(ParseTreeVariable(variable), Multiply(equation, ParseTreeVariable("STEP_SIZE")))
-            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))};")
+            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))};")
             customVars.put(variable, "${Utils.createVariableName(variable)}_u")
         }
 
@@ -297,7 +313,7 @@ object CFileGenerator {
             result.appendln()
 
         for((variable, equation) in location.update) {
-            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVars))};")
+            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customVars))};")
         }
 
         if(location.update.isNotEmpty())
@@ -307,7 +323,7 @@ object CFileGenerator {
 
         for((point, dependencies) in saturationLimits) {
             val variable = Utils.createVariableName(point.variable)
-            val limit = Utils.generateCodeForParseTreeItem(point.value, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls))
+            val limit = Utils.generateCodeForParseTreeItem(point.value, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))
             val condition = when(point.direction) {
                 SaturationDirection.RISING -> "${variable}_u > $limit && me->$variable < $limit"
                 SaturationDirection.FALLING -> "${variable}_u < $limit && me->$variable > $limit"

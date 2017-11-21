@@ -78,9 +78,9 @@ data class HybridAutomata(
         return this
     }
 
-    fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null): HybridAutomata {
+    fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null, delayableBy: Double = 0.0): HybridAutomata {
         if(!variables.any({it.name == item})) {
-            variables.add(Variable(item, VariableType.REAL, locality, default))
+            variables.add(Variable(item, VariableType.REAL, locality, default, delayableBy))
 
             if(default != null)
                 checkParseTreeForNewContinuousVariable(default)
@@ -89,9 +89,9 @@ data class HybridAutomata(
         return this
     }
 
-    fun addEvent(item: String, locality: Locality = Locality.INTERNAL): HybridAutomata {
+    fun addEvent(item: String, locality: Locality = Locality.INTERNAL, delayableBy: Double = 0.0): HybridAutomata {
         if(!variables.any({it.name == item})) {
-            variables.add(Variable(item, VariableType.BOOLEAN, locality))
+            variables.add(Variable(item, VariableType.BOOLEAN, locality, delayableBy = delayableBy))
         }
 
         return this
@@ -201,7 +201,8 @@ data class Variable(
         var name: String,
         var type: VariableType,
         var locality: Locality,
-        var defaultValue: ParseTreeItem? = null
+        var defaultValue: ParseTreeItem? = null,
+        var delayableBy: Double = 0.0
 )
 
 enum class Locality {
