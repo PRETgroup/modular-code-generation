@@ -6,7 +6,8 @@ definitions:
       g: REAL
     outputs:
       v: REAL
-      t_auto: REAL
+      resting: BOOLEAN
+      stimulated: BOOLEAN
     parameters:
       C1:
         type: REAL
@@ -78,6 +79,7 @@ definitions:
           t_auto: 1
         update:
           v: v_x - v_y + v_z
+          resting: true
         transitions:
           - to: q1
             guard: pacing_rate > 0 && t_auto >= pacing_rate
@@ -110,6 +112,7 @@ definitions:
             guard: v == V_T || (pacing_rate > 0 && t_auto >= pacing_rate)
             update:
               t_auto: 0
+              resting: false
           - to: q0
             guard: g <= 0 && v < V_T && t_auto < pacing_rate
       q2:
@@ -121,9 +124,12 @@ definitions:
           t_auto: 1
         update:
           v: v_x - v_y + v_z
+          stimulated: true
         transitions:
           - to: q3
             guard: v == V_O - 80.1 * sqrt(theta)
+            update:
+              stimulated: false
       q3:
         invariant: v > V_R
         flow:
@@ -157,19 +163,170 @@ definitions:
       state: q0
       valuations:
         pacing_rate: calculate_pacing_rate()
+        resting: true
 
   Path:
     inputs:
-      cell1_v: REAL
-      cell2_v: REAL
+      cell1_v:
+        type: REAL
+        delayableBy: 1
+      cell1_resting:
+        type: BOOLEAN
+        delayableBy: 1
+      cell1_stimulated:
+        type: BOOLEAN
+        delayableBy: 1
+      cell2_v:
+        type: REAL
+        delayableBy: 1
+      cell2_resting:
+        type: BOOLEAN
+        delayableBy: 1
+      cell2_stimulated:
+        type: BOOLEAN
+        delayableBy: 1
     outputs:
       cell1_v_out: REAL
       cell2_v_out: REAL
+    parameters:
+      cell1_conduction_time:
+        type: REAL
+        default: 0.02
+      cell1_charge_time:
+        type: REAL
+        default: 0.01
+      cell2_conduction_time:
+        type: REAL
+        default: 0.02
+      cell2_charge_time:
+        type: REAL
+        default: 0.01
     locations:
-      q0:
-        invariant: true
+      idle:
+        invariant: '!cell1_stimulated && !cell2_stimulated'
+        update:
+          cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+          cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+          cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+          cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+        transitions:
+          - to: annihilate
+            guard: cell1_stimulated && cell2_stimulated
+          - to: previous_direction1
+            guard: cell1_stimulated && !cell2_stimulated
+          - to: previous_direction2
+            guard: '!cell1_stimulated && cell2_stimulated'
+      previous_direction1:
+        invariant: false
+        update:
+          cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+          cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+          cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+          cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+        transitions:
+          - to: annihilate
+            guard: from_cell == 2 && !delayed(cell2_resting, cell2_conduction_time)
+          - to: wait_cell1
+            guard: from_cell == 0 || from_cell == 1 || (from_cell == 2 && delayed(cell2_resting, cell2_conduction_time))
+      wait_cell1:
+        invariant: t < cell1_conduction_time && !cell2_stimulated
+        flow:
+          t: 1
+        update:
+          cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+          cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+          cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+          cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+        transitions:
+          - to: annihilate
+            guard: cell2_stimulated
+          - to: replay_cell1
+            guard: t >= cell1_conduction_time
+            update:
+              t: 0
+              from_cell: 1
+              cell1_replay: true
+      replay_cell1:
+        invariant: t < cell1_charge_time
+        flow:
+          t: 1
+        update:
+          cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+          cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+          cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+          cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+        transitions:
+          - to: idle
+            guard: t >= cell1_charge_time
+            update:
+              t: 0
+      previous_direction2:
+        invariant: false
+        update:
+          cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+          cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+          cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+          cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+        transitions:
+          - to: annihilate
+            guard: from_cell == 1 && !delayed(cell1_resting, cell1_conduction_time)
+          - to: wait_cell1
+            guard: from_cell == 0 || from_cell == 2 || (from_cell == 1 && delayed(cell1_resting, cell1_conduction_time))
+      wait_cell2:
+        invariant: t < cell2_conduction_time && !cell1_stimulated
+        flow:
+          t: 1
+        update:
+          cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+          cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+          cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+          cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+        transitions:
+          - to: annihilate
+            guard: cell1_stimulated
+          - to: replay_cell2
+            guard: t >= cell2_conduction_time
+            update:
+              t: 0
+              from_cell: 2
+              cell2_replay: true
+      replay_cell2:
+        invariant: t < cell2_charge_time
+        flow:
+          t: 1
+        update:
+          cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+          cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+          cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+          cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+        transitions:
+          - to: idle
+            guard: t >= cell2_charge_time
+            update:
+              t: 0
+      annihilate:
+        invariant: cell1_stimulated || cell2_stimulated
+        update:
+          cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
+          cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+          cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
+          cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
+        transitions:
+          - to: idle
+            guard: '!cell1_stimulated && !cell2_stimulated'
+    functions:
+      output_if_true:
+        inputs:
+          test: BOOLEAN
+          value: REAL
+        logic: |
+          if(test) {
+            return value
+          }
+
+          return 0
     initialisation:
-      state: q0
+      state: idle
 
 
 instances:
@@ -312,7 +469,130 @@ instances:
     parameters:
       C14: 11
 
+  SA_BB:
+    type: Path
+  SA_OS:
+    type: Path
+  SA_RA:
+    type: Path
+  SA_CT:
+    type: Path
+  BB_LA:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.03
+      cell2_conduction_time: 0.03
+  LA_LA1:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.04
+      cell2_conduction_time: 0.04
+  RA_RA1:
+    type: Path
+  RA1_CS:
+    type: Path
+  CT_CT1:
+    type: Path
+  OS_Fast:
+    type: Path
+  Fast_Fast1:
+    type: Path
+  Fast1_AV:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.01
+      cell2_conduction_time: 0.01
+  OS_Slow:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.03
+      cell2_conduction_time: 0.03
+  Slow_Slow1:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.03
+      cell2_conduction_time: 0.03
+  Slow1_AV:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.015
+      cell2_conduction_time: 0.015
+  AV_His:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.03
+      cell2_conduction_time: 0.03
+  His_His1:
+    type: Path
+  His1_His2:
+    type: Path
+  His2_LBB:
+    type: Path
+  LBB_LBB1:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.005
+      cell2_conduction_time: 0.005
+  LBB1_LVA:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.005
+      cell2_conduction_time: 0.005
+  His2_RBB:
+    type: Path
+  RBB_RBB1:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.005
+      cell2_conduction_time: 0.005
+  RBB1_RVA:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.005
+      cell2_conduction_time: 0.005
+  LVA_RVA:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.005
+      cell2_conduction_time: 0.005
+  LVA_LV:
+    type: Path
+  LV_LV1:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.03
+      cell2_conduction_time: 0.03
+  LVA_LVS:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.015
+      cell2_conduction_time: 0.015
+  LVS_LVS1:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.015
+      cell2_conduction_time: 0.015
+  LVS1_CSLV:
+    type: Path
+  RVA_RV:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.01
+      cell2_conduction_time: 0.01
+  RV_RV1:
+    type: Path
+  RVA_RVS:
+    type: Path
+    parameters:
+      cell1_conduction_time: 0.015
+      cell2_conduction_time: 0.015
+  RVS_RVS1:
+    type: Path
+
 mappings:
+  SA_BB.cell1_v: SA.v
+  SA_BB.cell1_resting: SA.resting
+  SA_BB.cell1_stimulated: SA.stimulated
 
 codegenConfig:
   execution:
@@ -320,6 +600,16 @@ codegenConfig:
     simulationTime: 10
   logging:
     file: out.csv
-  parametrisationMethod: COMPILE_TIME
+    fields:
+      - SA.v
+      - RA.v
+      - OS.v
+      - Fast.v
+      - AV.v
+      - His.v
+      - RBB.v
+      - RVA.v
+      - RV.v
+  parametrisationMethod: RUN_TIME
   maximumInterTransitions: 1
   requireOneIntraTransitionPerTick: false
