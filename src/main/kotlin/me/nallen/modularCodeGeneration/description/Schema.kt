@@ -22,9 +22,6 @@ data class Definition(
         var initialisation: Initialisation
 )
 
-// Plan for delayableBy:
-// - Update delayed value each tick
-
 data class VariableDefinition(
         var type: VariableType,
         var default: ParseTreeItem? = null,
