@@ -170,6 +170,11 @@ object CFileGenerator {
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, CFileGenerator::generateIntermediateVariable, config))
         result.appendln()
 
+        if(automata.variables.any({it.delayableBy > 0})) {
+            for(variable in automata.variables.filter({it.delayableBy > 0}))
+                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
+            result.appendln()
+        }
 
         val needsTransitionCounting = config.maximumInterTransitions > 1
         val defaultIndent = if(needsTransitionCounting) 2 else 1
