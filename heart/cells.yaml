@@ -1,0 +1,138 @@
+SA:
+  type: Cell
+  parameters:
+    C14: 20
+    autorhythmic_rate: 100
+BB:
+  type: Cell
+  parameters:
+    C14: 20
+LA:
+  type: Cell
+  parameters:
+    C14: 20
+LA1:
+  type: Cell
+  parameters:
+    C14: 20
+RA:
+  type: Cell
+  parameters:
+    C14: 20
+RA1:
+  type: Cell
+  parameters:
+    C14: 20
+CS:
+  type: Cell
+  parameters:
+    C14: 20
+CT:
+  type: Cell
+  parameters:
+    C14: 20
+CT1:
+  type: Cell
+  parameters:
+    C14: 20
+OS:
+  type: Cell
+  parameters:
+    C14: 20
+Fast:
+  type: Cell
+  parameters:
+    C14: 18
+Fast1:
+  type: Cell
+  parameters:
+    C14: 18
+Slow:
+  type: Cell
+  parameters:
+    C14: 20
+Slow1:
+  type: Cell
+  parameters:
+    C14: 20
+AV:
+  type: Cell
+  parameters:
+    C14: 20
+    autorhythmic_rate: 60
+BH:
+  type: Cell
+  parameters:
+    C14: 11
+BH1:
+  type: Cell
+  parameters:
+    C14: 11
+BH2:
+  type: Cell
+  parameters:
+    C14: 11
+LBB:
+  type: Cell
+  parameters:
+    C14: 11
+    autorhythmic_rate: 32
+LBB1:
+  type: Cell
+  parameters:
+    C14: 11
+    autorhythmic_rate: 32
+LVA:
+  type: Cell
+  parameters:
+    C14: 11
+LV:
+  type: Cell
+  parameters:
+    C14: 11
+LV1:
+  type: Cell
+  parameters:
+    C14: 11
+LVS:
+  type: Cell
+  parameters:
+    C14: 11
+LVS1:
+  type: Cell
+  parameters:
+    C14: 11
+CSLV:
+  type: Cell
+  parameters:
+    C14: 11
+RBB:
+  type: Cell
+  parameters:
+    C14: 11
+    autorhythmic_rate: 32
+RBB1:
+  type: Cell
+  parameters:
+    C14: 11
+    autorhythmic_rate: 32
+RVA:
+  type: Cell
+  parameters:
+    C14: 11
+RV:
+  type: Cell
+  parameters:
+    C14: 11
+RV1:
+  type: Cell
+  parameters:
+    C14: 11
+RVS:
+  type: Cell
+  parameters:
+    C14: 11
+RVS1:
+  type: Cell
+  parameters:
+    C14: 11

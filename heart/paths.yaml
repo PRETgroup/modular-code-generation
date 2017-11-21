@@ -1,0 +1,119 @@
+SA_BB:
+  type: Path
+SA_OS:
+  type: Path
+SA_RA:
+  type: Path
+SA_CT:
+  type: Path
+BB_LA:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.03
+    cell2_conduction_time: 0.03
+LA_LA1:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.04
+    cell2_conduction_time: 0.04
+RA_RA1:
+  type: Path
+RA1_CS:
+  type: Path
+CT_CT1:
+  type: Path
+OS_Fast:
+  type: Path
+Fast_Fast1:
+  type: Path
+Fast1_AV:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.01
+    cell2_conduction_time: 0.01
+OS_Slow:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.03
+    cell2_conduction_time: 0.03
+Slow_Slow1:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.03
+    cell2_conduction_time: 0.03
+Slow1_AV:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.015
+    cell2_conduction_time: 0.015
+AV_His:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.03
+    cell2_conduction_time: 0.03
+His_His1:
+  type: Path
+His1_His2:
+  type: Path
+His2_LBB:
+  type: Path
+LBB_LBB1:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.005
+    cell2_conduction_time: 0.005
+LBB1_LVA:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.005
+    cell2_conduction_time: 0.005
+His2_RBB:
+  type: Path
+RBB_RBB1:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.005
+    cell2_conduction_time: 0.005
+RBB1_RVA:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.005
+    cell2_conduction_time: 0.005
+LVA_RVA:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.005
+    cell2_conduction_time: 0.005
+LVA_LV:
+  type: Path
+LV_LV1:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.03
+    cell2_conduction_time: 0.03
+LVA_LVS:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.015
+    cell2_conduction_time: 0.015
+LVS_LVS1:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.015
+    cell2_conduction_time: 0.015
+LVS1_CSLV:
+  type: Path
+RVA_RV:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.01
+    cell2_conduction_time: 0.01
+RV_RV1:
+  type: Path
+RVA_RVS:
+  type: Path
+  parameters:
+    cell1_conduction_time: 0.015
+    cell2_conduction_time: 0.015
+RVS_RVS1:
+  type: Path

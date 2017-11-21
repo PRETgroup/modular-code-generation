@@ -57,11 +57,16 @@ class Importer() {
                 val match = includeRegex.find(line)
                 if(match != null) {
                     val includedFile = File(file.parentFile.absolutePath, match.groupValues[1]).absolutePath
-                    val indent = indentRegex.find(line)?.groupValues?.get(1) ?: ""
+                    var indent = indentRegex.find(line)?.groupValues?.get(1) ?: ""
 
+                    val pretext = line.substring(0 until match.range.first)
 
-                    builder.appendln(line.substring(0 until match.range.first))
-                    builder.appendln(parseIncludes(includedFile).trim().prependIndent(indent + "  "))
+                    if(pretext.isNotBlank()) {
+                        builder.appendln(line.substring(0 until match.range.first))
+                        indent += "  "
+                    }
+
+                    builder.appendln(parseIncludes(includedFile).trim().prependIndent(indent))
                 }
                 else {
                     builder.appendln(line)
