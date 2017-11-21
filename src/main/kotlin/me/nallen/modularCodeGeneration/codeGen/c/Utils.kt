@@ -23,7 +23,7 @@ object Utils {
 
     fun generatePrintfType(type: VariableType): String {
         return when(type) {
-            VariableType.BOOLEAN -> "%c"
+            VariableType.BOOLEAN -> "%d"
             VariableType.REAL -> "%f"
         }
     }
