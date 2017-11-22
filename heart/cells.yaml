@@ -60,15 +60,15 @@ AV:
   parameters:
     C14: 20
     autorhythmic_rate: 60
-BH:
+His:
   type: Cell
   parameters:
     C14: 11
-BH1:
+His1:
   type: Cell
   parameters:
     C14: 11
-BH2:
+His2:
   type: Cell
   parameters:
     C14: 11
