@@ -20,6 +20,8 @@ inputs:
 outputs:
   cell1_v_out: REAL
   cell2_v_out: REAL
+  cell1_g_out: REAL
+  cell2_g_out: REAL
 parameters:
   cell1_conduction_time:
     type: REAL
@@ -33,12 +35,20 @@ parameters:
   cell2_charge_time:
     type: REAL
     default: 0.01
+  cell1_g_factor:
+    type: REAL
+    default: 1
+  cell2_g_factor:
+    type: REAL
+    default: 1
 locations:
   idle:
     invariant: '!cell1_stimulated && !cell2_stimulated'
     update:
       cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
       cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_g_out: cell1_g_factor * (output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time)) - cell2_v)
+      cell2_g_out: cell2_g_factor * (output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time)) - cell1_v)
       cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
       cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
     transitions:
@@ -53,6 +63,8 @@ locations:
     update:
       cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
       cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_g_out: cell1_g_factor * (output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time)) - cell2_v)
+      cell2_g_out: cell2_g_factor * (output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time)) - cell1_v)
       cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
       cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
     transitions:
@@ -67,6 +79,8 @@ locations:
     update:
       cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
       cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_g_out: cell1_g_factor * (output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time)) - cell2_v)
+      cell2_g_out: cell2_g_factor * (output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time)) - cell1_v)
       cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
       cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
     transitions:
@@ -85,6 +99,8 @@ locations:
     update:
       cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
       cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_g_out: cell1_g_factor * (output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time)) - cell2_v)
+      cell2_g_out: cell2_g_factor * (output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time)) - cell1_v)
       cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
       cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
     transitions:
@@ -97,6 +113,8 @@ locations:
     update:
       cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
       cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_g_out: cell1_g_factor * (output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time)) - cell2_v)
+      cell2_g_out: cell2_g_factor * (output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time)) - cell1_v)
       cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
       cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
     transitions:
@@ -111,6 +129,8 @@ locations:
     update:
       cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
       cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_g_out: cell1_g_factor * (output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time)) - cell2_v)
+      cell2_g_out: cell2_g_factor * (output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time)) - cell1_v)
       cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
       cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
     transitions:
@@ -129,6 +149,8 @@ locations:
     update:
       cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
       cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_g_out: cell1_g_factor * (output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time)) - cell2_v)
+      cell2_g_out: cell2_g_factor * (output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time)) - cell1_v)
       cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
       cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
     transitions:
@@ -141,6 +163,8 @@ locations:
     update:
       cell1_v_out: output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time))
       cell2_v_out: output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time))
+      cell1_g_out: cell1_g_factor * (output_if_true(cell1_replay, delayed(cell1_v, cell1_conduction_time)) - cell2_v)
+      cell2_g_out: cell2_g_factor * (output_if_true(cell2_replay, delayed(cell2_v, cell2_conduction_time)) - cell1_v)
       cell1_replay: cell1_replay && !delayed(cell1_resting, cell1_conduction_time)
       cell2_replay: cell2_replay && !delayed(cell2_resting, cell2_conduction_time)
     transitions:
