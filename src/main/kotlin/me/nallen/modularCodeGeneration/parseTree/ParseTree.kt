@@ -32,7 +32,7 @@ data class GreaterThanOrEqual(var operandA: ParseTreeItem, var operandB: ParseTr
 data class GreaterThan(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("greaterThan")
 data class LessThanOrEqual(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("lessThanOrEqualTo")
 data class LessThan(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("lessThan")
-data class Equal(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("euqal")
+data class Equal(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("equal")
 data class NotEqual(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("notEqual")
 
 data class FunctionCall(var functionName: String, var arguments: List<ParseTreeItem>): ParseTreeItem("functionCall")
