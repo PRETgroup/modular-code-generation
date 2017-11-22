@@ -169,7 +169,7 @@ class CCodeGenerator() {
                     if(automata == null)
                         throw IllegalArgumentException("Unable to find base machine $name to instantiate!")
 
-                    delayedTypes.addAll(automata.variables.filter({it.delayableBy > 0}).map({it.type}))
+                    delayedTypes.addAll(automata.variables.filter({it.canBeDelayed()}).map({it.type}))
 
                     generateFsm(automata, File(outputDir, Utils.createFolderName(instance.automata)).absolutePath, config)
                 }
@@ -183,7 +183,7 @@ class CCodeGenerator() {
 
                         val automata = network.definitions.first({ it.name == instance.automata })
 
-                        delayedTypes.addAll(automata.variables.filter({it.delayableBy > 0}).map({it.type}))
+                        delayedTypes.addAll(automata.variables.filter({it.canBeDelayed()}).map({it.type}))
 
                         generateFsm(automata, outputDir.absolutePath, config)
                     }

@@ -1,22 +1,22 @@
 inputs:
   cell1_v:
     type: REAL
-    delayableBy: 1
+    delayableBy: cell1_conduction_time
   cell1_resting:
     type: BOOLEAN
-    delayableBy: 1
+    delayableBy: cell1_conduction_time
   cell1_stimulated:
     type: BOOLEAN
-    delayableBy: 1
+    delayableBy: cell1_conduction_time
   cell2_v:
     type: REAL
-    delayableBy: 1
+    delayableBy: cell2_conduction_time
   cell2_resting:
     type: BOOLEAN
-    delayableBy: 1
+    delayableBy: cell2_conduction_time
   cell2_stimulated:
     type: BOOLEAN
-    delayableBy: 1
+    delayableBy: cell2_conduction_time
 outputs:
   cell1_v_out: REAL
   cell2_v_out: REAL

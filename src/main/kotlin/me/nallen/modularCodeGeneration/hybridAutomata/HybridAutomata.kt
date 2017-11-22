@@ -78,7 +78,7 @@ data class HybridAutomata(
         return this
     }
 
-    fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null, delayableBy: Double = 0.0): HybridAutomata {
+    fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null, delayableBy: ParseTreeItem? = null): HybridAutomata {
         if(!variables.any({it.name == item})) {
             variables.add(Variable(item, VariableType.REAL, locality, default, delayableBy))
 
@@ -89,7 +89,7 @@ data class HybridAutomata(
         return this
     }
 
-    fun addEvent(item: String, locality: Locality = Locality.INTERNAL, delayableBy: Double = 0.0): HybridAutomata {
+    fun addEvent(item: String, locality: Locality = Locality.INTERNAL, delayableBy: ParseTreeItem? = null): HybridAutomata {
         if(!variables.any({it.name == item})) {
             variables.add(Variable(item, VariableType.BOOLEAN, locality, delayableBy = delayableBy))
         }
@@ -144,6 +144,11 @@ data class HybridAutomata(
             }
 
             function.logic.setParameterValue(key, value)
+        }
+
+        // Parametrise delayables
+        for(variable in variables.filter({it.canBeDelayed()})) {
+            variable.delayableBy!!.setParameterValue(key, value)
         }
     }
 
@@ -202,8 +207,10 @@ data class Variable(
         var type: VariableType,
         var locality: Locality,
         var defaultValue: ParseTreeItem? = null,
-        var delayableBy: Double = 0.0
-)
+        var delayableBy: ParseTreeItem? = null
+) {
+    fun canBeDelayed(): Boolean = delayableBy != null
+}
 
 enum class Locality {
     INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT, PARAMETER;

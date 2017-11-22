@@ -54,7 +54,7 @@ object HFileGenerator {
         result.appendln("#include <math.h>") // This may not be needed in all cases
         // TODO: Check if FSM uses a math.h function (sqrt, pow, etc.)
 
-        if(automata.variables.any({it.delayableBy > 0}))
+        if(automata.variables.any({it.canBeDelayed()}))
             result.appendln("#include <string.h>")
 
         result.appendln()
@@ -68,7 +68,7 @@ object HFileGenerator {
         else
             result.appendln("#include \"${CCodeGenerator.CONFIG_FILE}\"")
 
-        if(automata.variables.any({it.delayableBy > 0})) {
+        if(automata.variables.any({it.canBeDelayed()})) {
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME)
                 result.appendln("#include \"../${CCodeGenerator.DELAYABLE_HEADER}\"")
             else
@@ -105,12 +105,12 @@ object HFileGenerator {
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, HFileGenerator::generateVariableDeclaration, config, "Declare"))
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.PARAMETER, HFileGenerator::generateVariableDeclaration, config, "Declare"))
 
-        if(automata.variables.any({it.delayableBy > 0})) {
+        if(automata.variables.any({it.canBeDelayed()})) {
             result.appendln()
             result.appendln("${config.getIndent(1)}// Declare Delayed Variables")
 
             for(variable in automata.variables
-                    .filter{it.delayableBy > 0}) {
+                    .filter{it.canBeDelayed()}) {
                 result.appendln("${config.getIndent(1)}${Utils.createTypeName("Delayable", Utils.generateCType(variable.type))} ${Utils.createVariableName(variable.name, "delayed")};")
             }
         }

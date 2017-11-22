@@ -25,7 +25,7 @@ object CFileGenerator {
 
         this.requireSelfReferenceInFunctionCalls = config.parametrisationMethod == ParametrisationMethod.RUN_TIME
         this.delayedVariableTypes.clear()
-        for(variable in automata.variables.filter({it.delayableBy > 0}))
+        for(variable in automata.variables.filter({it.canBeDelayed()}))
             this.delayedVariableTypes.put(variable.name, variable.type)
 
         val result = StringBuilder()
@@ -113,15 +113,15 @@ object CFileGenerator {
 
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
 
-        if(automata.variables.any({it.delayableBy > 0})) {
+        if(automata.variables.any({it.canBeDelayed()})) {
             result.appendln()
             result.append("${config.getIndent(1)}// Initialise Delayed Variables")
 
             for(variable in automata.variables
-                    .filter{it.delayableBy > 0}) {
+                    .filter{it.canBeDelayed()}) {
                 result.appendln()
                 result.appendln("${config.getIndent(1)}(void) memset((void *)&me->${Utils.createVariableName(variable.name, "delayed")}, 0, sizeof(${Utils.createTypeName("Delayable", Utils.generateCType(variable.type))}));")
-                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Init")}(&me->${Utils.createVariableName(variable.name, "delayed")}, ${variable.delayableBy});")
+                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Init")}(&me->${Utils.createVariableName(variable.name, "delayed")}, ${Utils.generateCodeForParseTreeItem(variable.delayableBy!!, Utils.PrefixData("me->"))});")
             }
         }
 
@@ -170,8 +170,8 @@ object CFileGenerator {
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, CFileGenerator::generateIntermediateVariable, config))
         result.appendln()
 
-        if(automata.variables.any({it.delayableBy > 0})) {
-            for(variable in automata.variables.filter({it.delayableBy > 0}))
+        if(automata.variables.any({it.canBeDelayed()})) {
+            for(variable in automata.variables.filter({it.canBeDelayed()}))
                 result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
             result.appendln()
         }

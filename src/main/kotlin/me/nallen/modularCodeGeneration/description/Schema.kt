@@ -25,7 +25,7 @@ data class Definition(
 data class VariableDefinition(
         var type: VariableType,
         var default: ParseTreeItem? = null,
-        var delayableBy: Double = 0.0
+        var delayableBy: ParseTreeItem? = null
 ) {
     companion object Factory {
         @JsonCreator @JvmStatic
