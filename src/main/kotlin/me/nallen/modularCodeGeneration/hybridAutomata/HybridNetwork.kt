@@ -11,7 +11,7 @@ data class HybridNetwork(
 ) {
     val definitions = ArrayList<HybridAutomata>()
     val instances = LinkedHashMap<String, AutomataInstance>()
-    val ioMapping = LinkedHashMap<AutomataVariablePair, AutomataVariablePair>()
+    val ioMapping = LinkedHashMap<AutomataVariablePair, ParseTreeItem>()
 
     fun addDefinition(
             ha: HybridAutomata
@@ -49,7 +49,7 @@ data class HybridNetwork(
 
     fun addMapping(
             to: AutomataVariablePair,
-            from: AutomataVariablePair
+            from: ParseTreeItem
     ): HybridNetwork {
         /*if(!instances.containsKey(to.automata))
             throw IllegalArgumentException("Unknown instance for 'to' connection ${to.automata}!")

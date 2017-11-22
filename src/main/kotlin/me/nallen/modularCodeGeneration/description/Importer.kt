@@ -188,14 +188,13 @@ private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
     }
 }
 
-private fun HybridNetwork.importMappings(mappings: Map<String, String>?) {
+private fun HybridNetwork.importMappings(mappings: Map<String, ParseTreeItem>?) {
     if(mappings != null) {
         for((to, from) in mappings) {
-            if(to.contains(".") && from.contains(".")) {
+            if(to.contains(".")) {
                 val toPair = AutomataVariablePair(to.substringBeforeLast("."), to.substringAfterLast("."))
-                val fromPair = AutomataVariablePair(from.substringBeforeLast("."), from.substringAfterLast("."))
 
-                this.ioMapping.put(toPair, fromPair)
+                this.ioMapping.put(toPair, from)
             }
             else {
                 throw IOException("Invalid IO Mapping provided for $from -> $to")

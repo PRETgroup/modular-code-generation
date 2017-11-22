@@ -139,6 +139,8 @@ object RunnableGenerator {
         result.appendln("${config.getIndent(2)}/* Mappings */")
         val keys = network.ioMapping.keys.sortedWith(compareBy({it.automata}, {it.variable}))
 
+        val customVariableNames = network.instances.mapValues({Utils.createVariableName(it.key, "data")})
+
         var prev = ""
         for(key in keys) {
             if(prev != "" && prev != key.automata)
@@ -146,7 +148,7 @@ object RunnableGenerator {
 
             prev = key.automata
             val from = network.ioMapping[key]!!
-            result.appendln("${config.getIndent(2)}${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.createVariableName(from.automata, "data")}.${Utils.createVariableName(from.variable)};")
+            result.appendln("${config.getIndent(2)}${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
         }
 
         result.appendln()

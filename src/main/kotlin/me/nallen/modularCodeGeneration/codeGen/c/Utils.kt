@@ -127,12 +127,21 @@ object Utils {
             is Literal -> item.value
             is me.nallen.modularCodeGeneration.parseTree.Variable -> {
                 if(item.value != null)
-                    padOperand(parent ?: item, item.value!!, prefixData)
-                else
-                    if(prefixData.customVariableNames.containsKey(item.name))
-                        prefixData.customVariableNames[item.name]!!
-                    else
-                        "${prefixData.prefix}${Utils.createVariableName(item.name)}"
+                    return padOperand(parent ?: item, item.value!!, prefixData)
+                else {
+                    val parts = item.name.split(".")
+                    val builder = StringBuilder()
+
+                    for(part in parts) {
+                        if(builder.isNotEmpty()) builder.append(".")
+                        if(prefixData.customVariableNames.containsKey(part))
+                            builder.append(prefixData.customVariableNames[part]!!)
+                        else
+                            builder.append("${prefixData.prefix}${Utils.createVariableName(part)}")
+                    }
+
+                    return builder.toString()
+                }
             }
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
             is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)

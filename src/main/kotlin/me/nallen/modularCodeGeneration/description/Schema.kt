@@ -9,7 +9,7 @@ data class Schema(
         var name: String,
         var definitions: Map<String, Definition>,
         var instances: Map<String, Instance>,
-        var mappings: Map<String, String>?,
+        var mappings: Map<String, ParseTreeItem>?,
         var codegenConfig: Configuration?
 )
 
