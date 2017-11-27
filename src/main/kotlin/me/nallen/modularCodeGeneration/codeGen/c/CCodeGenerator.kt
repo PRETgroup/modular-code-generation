@@ -36,13 +36,13 @@ class CCodeGenerator() {
             File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(network, config))
         }
 
-        private fun generateMakefile(name: String, instances: Map<String, AutomataInstance>, needsDelayed: Boolean, dir: String, config: Configuration = Configuration()) {
+        private fun generateMakefile(name: String, instances: Map<String, AutomataInstance>, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
                 outputDir.mkdir()
 
-            File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(name, instances, needsDelayed, config))
+            File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(name, instances, config))
         }
 
         private fun generateConfigFile(dir: String, config: Configuration = Configuration()) {
@@ -97,30 +97,7 @@ class CCodeGenerator() {
                 content.appendln()
 
                 content.appendln("// Initialisation function")
-                content.appendln("void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Init")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double max_delay);")
-                content.appendln()
-
-                content.appendln("// Add function")
-                content.appendln("void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Add")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, ${Utils.generateCType(type)} value);")
-                content.appendln()
-
-                content.appendln("// Get function")
-                content.appendln("${Utils.generateCType(type)} ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Get")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double delay);")
-                content.appendln()
-            }
-
-            content.appendln("#endif // DELAYABLE_H_")
-
-            File(outputDir, DELAYABLE_HEADER).writeText(content.toString())
-
-            content.setLength(0)
-
-            content.appendln("#include \"$DELAYABLE_HEADER\"")
-            content.appendln()
-
-            for(type in types) {
-                content.appendln("// Initialisation function")
-                content.appendln("void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Init")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double max_delay) {")
+                content.appendln("inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Init")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double max_delay) {")
                 content.appendln("${config.getIndent(1)}me->index = 0;")
                 content.appendln("${config.getIndent(1)}me->max_length = (unsigned int) (max_delay / STEP_SIZE);")
                 content.appendln("${config.getIndent(1)}me->buffer = malloc(sizeof(${Utils.generateCType(type)}) * me->max_length);")
@@ -128,7 +105,7 @@ class CCodeGenerator() {
                 content.appendln()
 
                 content.appendln("// Add function")
-                content.appendln("void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Add")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, ${Utils.generateCType(type)} value) {")
+                content.appendln("inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Add")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, ${Utils.generateCType(type)} value) {")
                 content.appendln("${config.getIndent(1)}me->index++;")
                 content.appendln("${config.getIndent(1)}if(me->index >= me->max_length)")
                 content.appendln("${config.getIndent(2)}me->index = 0;")
@@ -138,7 +115,7 @@ class CCodeGenerator() {
                 content.appendln()
 
                 content.appendln("// Get function")
-                content.appendln("${Utils.generateCType(type)} ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Get")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double delay) {")
+                content.appendln("inline ${Utils.generateCType(type)} ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Get")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double delay) {")
                 content.appendln("${config.getIndent(1)}int steps = (int) (delay / STEP_SIZE);")
                 content.appendln("${config.getIndent(1)}if(steps > me->max_length)")
                 content.appendln("${config.getIndent(2)}return 0; // This is an error")
@@ -151,7 +128,9 @@ class CCodeGenerator() {
                 content.appendln()
             }
 
-            File(outputDir, DELAYABLE_SOURCE).writeText(content.toString())
+            content.appendln("#endif // DELAYABLE_H_")
+
+            File(outputDir, DELAYABLE_HEADER).writeText(content.toString())
         }
 
         fun generateNetwork(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
@@ -194,7 +173,7 @@ class CCodeGenerator() {
             generateRunnable(network, outputDir.absolutePath, config)
 
             // Generate Makfile
-            generateMakefile(network.name, network.instances, delayedTypes.isNotEmpty(), outputDir.absolutePath, config)
+            generateMakefile(network.name, network.instances, outputDir.absolutePath, config)
 
             // Generate Config file
             generateConfigFile(outputDir.absolutePath, config)
