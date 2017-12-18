@@ -1,5 +1,7 @@
 # Hybrid Automata Modelling Language (HAML)
 
+#### Version: 0.1.0
+
 ## Introduction
 
 HAML is a modelling language for describing hybrid systems that are compositions of a series of Hybrid Automata.
@@ -14,6 +16,18 @@ This specification allows for the describing of hybrid systems in a formal manne
     - [HAML Document Root](#haml-document-root)
     - [Definition](#definition)
     - [Variable Definition](#variable-definition)
+    - [Variable Type](#variable-type)
+    - [Location](#location)
+    - [Transition](#transition)
+    - [Function](#function)
+    - [Initialisation](#initialisation)
+    - [Instance](#instance)
+    - [Program](#program)
+    - [Formula](#formula)
+    - [Codegen Configuration](#codegen-configuration)
+    - [Execution Settings](#execution-settings)
+    - [Logging Settings](#logging-settings)
+    - [Parametrisation Method](#parametrisation-method)
 
 ## Specification
 
@@ -201,3 +215,105 @@ Introduction
 ```
 example
 ```
+
+
+### Program
+
+Introduction
+
+- Inherits String
+- Each line is a [Formula](#formula)
+
+#### Example
+
+```
+example
+```
+
+
+### Formula
+
+Introduction
+
+- Inherits String
+- Subset of math operations
+
+#### Example
+
+```
+example
+```
+
+
+### Codegen Configuration
+
+Introduction
+
+#### Fields
+
+| Name | Type | Description |
+|---|---|---|
+| indentSize? | Int | The indentation size (in spaces) for the generated code. Use negative numbers for tabs. |
+| execution? | [Execution Settings](#execution-settings) | The settings for the execution properties of the generated code. |
+| logging? | [Logging Settings](#logging-settings) | The settings for the execution properties of the generated code. |
+| parametrisationMethod? | [Parametrisation Method](#parametrisation-method) | The method to use for parametrisation when code is generated. |
+| maximumInterTransitions? | Int | The maximum number of inter-location transitions that can be taken within each "step". In Hybrid Automata semantics these transitions should be instantaneous and this aims to replicate that to some degree. |
+| requireOneIntraTransitionPerTick? | Boolean | Whether or not to require an intra-location transition (i.e. ODEs) within each "step". The evolution of ODEs is the only aspect of Hybrid Automata that should take any time.
+
+#### Example
+
+```
+example
+```
+
+
+### Execution Settings
+
+Introduction
+
+#### Fields
+
+| Name | Type | Description |
+|---|---|---|
+| stepSize? | Double | The step size that is used for discretising the ODEs during execution. |
+| simulationTime | Double | The time that will be simulated when the generated code is executed. |
+
+#### Example
+
+```
+example
+```
+
+
+### Logging Settings
+
+Introduction
+
+#### Fields
+
+| Name | Type | Description |
+|---|---|---|
+| enable? | Boolean | Whether or not to enable logging of outputs. |
+| interval? | Double | The interval at which to output log results to the file. For best results this should be an integer multiple of the step size. |
+| file? | String | The file where the logging output should be placed. |
+| fields? | String[] | The list of fields to output when logging. By default this will contain every output from every [Instance](#instance). |
+
+#### Example
+
+```
+example
+```
+
+
+### Parametrisation Method
+
+Introduction
+
+This is an enum!
+
+#### Enum Values
+
+| Value | Description |
+|---|---|
+| `COMPILE_TIME` | Parameters will be set at the point of code generation. A file will be created for each [Instance](#instance) which results in a larger code size, but potentially faster execution. |
+| `RUN_TIME` | Parameters will be set dynamically when the generated code is executed. Only one file will be created for each [Definition](#definition) which results in smaller code size, but likely slower execution. |
