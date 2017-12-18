@@ -36,13 +36,14 @@ This specification allows for the describing of hybrid systems in a formal manne
 ## Definitions
 
 #### Hybrid Automata
-What are HA
+A form of automata that supports both continuous and discrete parts.
+Continuous aspects of the automata are specified through [ODEs](#ordinary-differential-equations), while discrete aspects are captured through locations and transitions between them.
 
 #### Hybrid Network
 What are Networks
 
 #### Ordinary Differential Equation
-What are ODEs
+Shortened to ODE, these are equations which describe how a continuous variable evolves over time by specifying its rate of change or gradient.
 
 ## Specification
 
