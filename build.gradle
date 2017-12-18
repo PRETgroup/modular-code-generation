@@ -1,7 +1,7 @@
 version '0.1.0'
 
 buildscript {
-  ext.kotlin_version = '1.1.2-2'
+  ext.kotlin_version = '1.1.60'
   repositories {
     mavenCentral()
   }
@@ -19,6 +19,7 @@ defaultTasks 'run'
 
 repositories {
   mavenCentral()
+  jcenter()
 }
 
 dependencies {
@@ -28,11 +29,12 @@ dependencies {
   compile "com.fasterxml.jackson.core:jackson-databind:2.8.9"
   compile "com.fasterxml.jackson.module:jackson-module-kotlin:2.8.9"
   compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.8.9"
+  compile "com.xenomachina:kotlin-argparser:2.0.3"
 }
 
 jar {
   manifest {
-    attributes 'Main-Class': mainClassName
+    attributes 'Main-Class': 'me.nallen.modularCodeGeneration.CliKt'
   }
 
   from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
