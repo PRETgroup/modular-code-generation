@@ -92,3 +92,112 @@ Introduction
 ```
 example
 ```
+
+
+### Variable Type
+
+Introduction
+
+This is an enum!
+
+#### Enum Values
+
+| Value | Description |
+|---|---|
+| `BOOLEAN` | A boolean variable. |
+| `REAL` | A real-numbered variable. |
+
+
+### Location
+
+Introduction
+
+#### Fields
+
+| Name | Type | Description |
+|---|---|---|
+| invariant? | [Formula](#formula) | The invariant that exists on this location. For control to remain in this location the invariant must hold true. |
+| flow? | Map[String, [Formula](#formula)] | The set of flow constraints that exist for each ODE, these constraints will transform the values of the variables while control remains in this location. |
+| update? | Map[String, [Formula](#formula)] | A set of discrete operations that are done while inside this location. |
+| transitions? | [Transition](#transition)[] | A set of transitions that exist out of this location. |
+
+#### Example
+
+```
+example
+```
+
+
+### Transition
+
+Introduction
+
+#### Fields
+
+| Name | Type | Description |
+|---|---|---|
+| to | String | The destination location of this transition. |
+| guard? | [Formula](#formula) | The guard that protects when this transition is "active" and can be taken. |
+| update? | Map[String, [Formula](#formula)] | A set of discrete operations that are done when this transition is taken. |
+
+#### Example
+
+```
+example
+```
+
+
+### Function
+
+Introduction
+
+The return type (if any) is automatically generated from the logic
+
+#### Fields
+
+| Name | Type | Description |
+|---|---|---|
+| inputs? | Map[String, [Variable Definition](#variable-definition)] | The set of inputs that this function accepts. |
+| logic | [Program](#program) | The code that this function will perform when invoked. |
+
+#### Example
+
+```
+example
+```
+
+
+### Initialisation
+
+Introduction
+
+#### Fields
+
+| Name | Type | Description |
+|---|---|---|
+| state | String | The initial state that the Hybrid Automata will start in. |
+| valuations? | Map[String, [Formula](#formula)] | The initial set of valuations for variables in the Hybrid Automata. |
+
+#### Example
+
+```
+example
+```
+
+
+### Instance
+
+Introduction
+
+#### Fields
+
+| Name | Type | Description |
+|---|---|---|
+| type | String | The previously declared definition that this instance instantiates. |
+| parameters? | Map[String, [Formula](#formula)] | The values of any parameters inside the previous declaration. Any parameters which do not have an entry here will inherit their default value (if any). |
+
+#### Example
+
+```
+example
+```
