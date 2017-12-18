@@ -10,6 +10,10 @@ This specification allows for the describing of hybrid systems in a formal manne
 
 ## Table of Contents
 
+- [Definitions](#definitions)
+    - [Hybrid Automata](#hybrid-automata)
+    - [Hybrid Network](#hybrid-network)
+    - [Ordinary Differential Equation](#ordinary-differerential-equation)
 - [Specification](#specification)
     - [Includes](#includes)
 - [Schema](#schema)
@@ -28,6 +32,17 @@ This specification allows for the describing of hybrid systems in a formal manne
     - [Execution Settings](#execution-settings)
     - [Logging Settings](#logging-settings)
     - [Parametrisation Method](#parametrisation-method)
+
+## Definitions
+
+#### Hybrid Automata
+What are HA
+
+#### Hybrid Network
+What are Networks
+
+#### Ordinary Differential Equation
+What are ODEs
 
 ## Specification
 
