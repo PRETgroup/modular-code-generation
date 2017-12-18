@@ -1,3 +1,5 @@
+version '0.1.0'
+
 buildscript {
   ext.kotlin_version = '1.1.2-2'
   repositories {
@@ -26,6 +28,14 @@ dependencies {
   compile "com.fasterxml.jackson.core:jackson-databind:2.8.9"
   compile "com.fasterxml.jackson.module:jackson-module-kotlin:2.8.9"
   compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.8.9"
+}
+
+jar {
+  manifest {
+    attributes 'Main-Class': mainClassName
+  }
+
+  from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
 }
 
 task wrapper(type: Wrapper) {
