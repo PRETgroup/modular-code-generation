@@ -380,8 +380,12 @@ Introduction
 
 #### Example
 
-```yaml
-example
+```c
+if(theta >= v_n_R_max) {
+  return 4.03947
+}
+
+return 0.29*exp(62.89*theta) + 0.70*exp(-10.99*theta)
 ```
 
 
@@ -394,8 +398,8 @@ Introduction
 
 #### Example
 
-```yaml
-example
+```c
+v < V_O - 80.1 * sqrt(theta)
 ```
 
 
