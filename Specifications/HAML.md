@@ -78,7 +78,7 @@ The following table lists all the possible fields for the HAML Document Root:
 
 #### Example
 
-```
+```yaml
 name: heart
 
 definitions:
@@ -111,7 +111,6 @@ codegenConfig:
   parametrisationMethod: COMPILE_TIME
   maximumInterTransitions: 1
   requireOneIntraTransitionPerTick: false
-
 ```
 
 
@@ -132,7 +131,7 @@ Introduction
 
 #### Example
 
-```
+```yaml
 inputs:
   g: REAL
 outputs:
@@ -212,7 +211,6 @@ initialisation:
   state: q0
   valuations:
     resting: true
-
 ```
 
 
@@ -230,7 +228,7 @@ Introduction
 
 #### Example
 
-```
+```yaml
 type: REAL
 default: -8.7
 ```
@@ -265,7 +263,7 @@ Introduction
 
 #### Example
 
-```
+```yaml
 invariant: v > V_R
 flow:
   v_x: C13 * v_x * f_theta
@@ -293,7 +291,7 @@ Introduction
 
 #### Example
 
-```
+```yaml
 to: q1
 guard: g >= V_T
 update:
@@ -320,7 +318,7 @@ The return type (if any) is automatically generated from the logic
 
 #### Example
 
-```
+```yaml
 inputs:
   theta: REAL
 logic: |
@@ -345,7 +343,7 @@ Introduction
 
 #### Example
 
-```
+```yaml
 state: q0
 valuations:
   resting: true
@@ -365,7 +363,7 @@ Introduction
 
 #### Example
 
-```
+```yaml
 type: Cell
 parameters:
   C14: 20
@@ -382,7 +380,7 @@ Introduction
 
 #### Example
 
-```
+```yaml
 example
 ```
 
@@ -396,7 +394,7 @@ Introduction
 
 #### Example
 
-```
+```yaml
 example
 ```
 
@@ -418,7 +416,7 @@ Introduction
 
 #### Example
 
-```
+```yaml
 indentSize: 4
 execution:
   stepSize: 0.00001
@@ -444,7 +442,7 @@ Introduction
 
 #### Example
 
-```
+```yaml
 stepSize: 0.00001
 simulationTime: 10
 ```
@@ -465,7 +463,7 @@ Introduction
 
 #### Example
 
-```
+```yaml
 enable: true
 interval: 0.005
 file: out.csv
