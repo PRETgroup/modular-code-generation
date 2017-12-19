@@ -72,8 +72,8 @@ The following table lists all the possible fields for the HAML Document Root:
 | name | String | **Required** The name of this Hybrid Network. |
 | definitions | Map[String, [Definition](#definition)] | **Required** A set of definitions of Hybrid Automata that can be instantiated. |
 | instances | Map[String, [Instance](#instance)] | **Required** A set of instances of previously defined Hybrid Automata. |
-| mappings | Map[String, [Formula](#formula)] | A set of mappings that determine the value of each input of each Instance. Default is no mappings. |
-| codegenConfig | [Codegen Configuration](#codegen-configuration) | A list of settings available for the default code generation logic in this tool. Default is an instance with default values as defined in [Codegen Configuration](#codegen-configuration). |
+| mappings | Map[String, [Formula](#formula)] | A set of mappings that determine the value of each input of each Instance. |
+| codegenConfig | [Codegen Configuration](#codegen-configuration) | A list of settings available for the default code generation logic in this tool.<br/><br/> **Default:** A default instance of [Codegen Configuration](#codegen-configuration). |
 
 
 #### Example
@@ -122,11 +122,11 @@ Introduction
 
 | Name | Type | Description |
 |---|---|---|
-| inputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Automata accepts as inputs. Default is no inputs. |
-| outputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Automata emits as outputs. Default is no outputs. |
-| parameters | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The parameters that are available for configuration of this Hybrid Automata. Default is no parameters. |
+| inputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Automata accepts as inputs. |
+| outputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Automata emits as outputs. |
+| parameters | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The parameters that are available for configuration of this Hybrid Automata. |
 | locations | Map[String, [Location](#location)] | **Required** The locations that exist inside this Hybrid Automata. |
-| functions | Map[String, [Function](#function)] | A set of functions that exist inside this Hybrid Automata. Default is no functions. |
+| functions | Map[String, [Function](#function)] | A set of functions that exist inside this Hybrid Automata. |
 | initialisation | [Initialisation](#initialisation) | **Required** Sets the initialisation options for the Hybrid Automata (location, variable states, etc.). |
 
 #### Example
@@ -223,8 +223,8 @@ Introduction
 | Name | Type | Description |
 |---|---|---|
 | type | [Variable Type](#variable-type) | **Required** The type of the variable. |
-| default | [Formula](#formula) | The default value for the variable. Default is no default value. |
-| delayableBy | [Formula](#formula) | An amount of time that this variable could possibly be delayed by. Used in code generation. Default is `0`. |
+| default | [Formula](#formula) | The default value for the variable. |
+| delayableBy | [Formula](#formula) | An amount of time that this variable could possibly be delayed by. Used in code generation.<br/><br/> **Default:** `0` |
 
 #### Example
 
@@ -256,10 +256,10 @@ Introduction
 
 | Name | Type | Description |
 |---|---|---|
-| invariant | [Formula](#formula) | The invariant that exists on this location. For control to remain in this location the invariant must hold true. Default is `true`. |
-| flow | Map[String, [Formula](#formula)] | The set of flow constraints that exist for each ODE, these constraints will transform the values of the variables while control remains in this location. Default is no flow constraints. |
-| update | Map[String, [Formula](#formula)] | A set of discrete operations that are done while inside this location. Default is no updates. |
-| transitions | [Transition](#transition)[] | A set of transitions that exist out of this location. Default is no exiting transitions. |
+| invariant | [Formula](#formula) | The invariant that exists on this location. For control to remain in this location the invariant must hold true.<br/><br/> **Default:** `true` |
+| flow | Map[String, [Formula](#formula)] | The set of flow constraints that exist for each ODE, these constraints will transform the values of the variables while control remains in this location. |
+| update | Map[String, [Formula](#formula)] | A set of discrete operations that are done while inside this location. |
+| transitions | [Transition](#transition)[] | A set of transitions that exist out of this location. |
 
 #### Example
 
@@ -286,8 +286,8 @@ Introduction
 | Name | Type | Description |
 |---|---|---|
 | to | String | **Required** The destination location of this transition. |
-| guard | [Formula](#formula) | The guard that protects when this transition is "active" and can be taken. Default is `true`. |
-| update | Map[String, [Formula](#formula)] | A set of discrete operations that are done when this transition is taken. Default is no updates. |
+| guard | [Formula](#formula) | The guard that protects when this transition is "active" and can be taken.<br/><br/> **Default:** `true` |
+| update | Map[String, [Formula](#formula)] | A set of discrete operations that are done when this transition is taken. |
 
 #### Example
 
@@ -313,7 +313,7 @@ The return type (if any) is automatically generated from the logic
 
 | Name | Type | Description |
 |---|---|---|
-| inputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The set of inputs that this function accepts. Default is no inputs |
+| inputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The set of inputs that this function accepts. |
 | logic | [Program](#program) | **Required** The code that this function will perform when invoked. |
 
 #### Example
@@ -339,7 +339,7 @@ Introduction
 | Name | Type | Description |
 |---|---|---|
 | state | String | **Required** The initial state that the Hybrid Automata will start in. |
-| valuations | Map[String, [Formula](#formula)] | The initial set of valuations for variables in the Hybrid Automata. Default is no variable initialisations. |
+| valuations | Map[String, [Formula](#formula)] | The initial set of valuations for variables in the Hybrid Automata. |
 
 #### Example
 
@@ -359,7 +359,7 @@ Introduction
 | Name | Type | Description |
 |---|---|---|
 | type | String | **Required** The previously declared definition that this instance instantiates. |
-| parameters | Map[String, [Formula](#formula)] | The values of any parameters inside the previous declaration. Any parameters which do not have an entry here will inherit their default value (if any). Default is no custom parameters to be set. |
+| parameters | Map[String, [Formula](#formula)] | The values of any parameters inside the previous declaration. Any parameters which do not have an entry here will inherit their default value (if any). |
 
 #### Example
 
@@ -407,12 +407,12 @@ Introduction
 
 | Name | Type | Description |
 |---|---|---|
-| indentSize | Int | The indentation size (in spaces) for the generated code. Use negative numbers for tabs. Default is `4`. |
-| execution | [Execution Settings](#execution-settings) | The settings for the execution properties of the generated code. Default is an instance with default values as defined in [Execution Settings](#execution-settings). |
-| logging | [Logging Settings](#logging-settings) | The settings for the execution properties of the generated code. Default is an instance with default values as defined in [Logging Settings](#logging-settings). |
-| parametrisationMethod | [Parametrisation Method](#parametrisation-method) | The method to use for parametrisation when code is generated. Default is `COMPILE_TIME`. |
-| maximumInterTransitions | Int | The maximum number of inter-location transitions that can be taken within each "step". In Hybrid Automata semantics these transitions should be instantaneous and this aims to replicate that to some degree. Default is `1`. |
-| requireOneIntraTransitionPerTick | Boolean | Whether or not to require an intra-location transition (i.e. ODEs) within each "step". The evolution of ODEs is the only aspect of Hybrid Automata that should take any time. Default is `false`. |
+| indentSize | Int | The indentation size (in spaces) for the generated code. Use negative numbers for tabs.<br/><br/> **Default:** `4` |
+| execution | [Execution Settings](#execution-settings) | The settings for the execution properties of the generated code.<br/><br/> **Default:** A default instance of [Execution Settings](#execution-settings). |
+| logging | [Logging Settings](#logging-settings) | The settings for the execution properties of the generated code.<br/><br/> **Default:** A default instance of [Logging Settings](#logging-settings). |
+| parametrisationMethod | [Parametrisation Method](#parametrisation-method) | The method to use for parametrisation when code is generated.<br/><br/> **Default:** `COMPILE_TIME` |
+| maximumInterTransitions | Int | The maximum number of inter-location transitions that can be taken within each "step". In Hybrid Automata semantics these transitions should be instantaneous and this aims to replicate that to some degree.<br/><br/> **Default:** `1` |
+| requireOneIntraTransitionPerTick | Boolean | Whether or not to require an intra-location transition (i.e. ODEs) within each "step". The evolution of ODEs is the only aspect of Hybrid Automata that should take any time.<br/><br/> **Default:** `false` |
 
 #### Example
 
@@ -437,8 +437,8 @@ Introduction
 
 | Name | Type | Description |
 |---|---|---|
-| stepSize | Double | The step size that is used for discretising the ODEs during execution, in seconds. Default is `0.001`. |
-| simulationTime | Double | The time that will be simulated when the generated code is executed, in seconds. Default is `10.0`. |
+| stepSize | Double | The step size that is used for discretising the ODEs during execution, in seconds.<br/><br/> **Default:** `0.001` |
+| simulationTime | Double | The time that will be simulated when the generated code is executed, in seconds.<br/><br/> **Default:** `10.0` |
 
 #### Example
 
@@ -456,10 +456,10 @@ Introduction
 
 | Name | Type | Description |
 |---|---|---|
-| enable | Boolean | Whether or not to enable logging of outputs. Default is `true`. |
-| interval | Double | The interval at which to output log results to the file. For best results this should be an integer multiple of the step size. Default is the same as the value of `stepSize` declared in [Execution Settings](#execution-settings). |
-| file | String | The file where the logging output should be placed. Default is `out.csv`. |
-| fields | String[] | The list of fields to output when logging. Default is every output variable of every [Instance](#instance). |
+| enable | Boolean | Whether or not to enable logging of outputs.<br/><br/> **Default:** `true` |
+| interval | Double | The interval at which to output log results to the file. For best results this should be an integer multiple of the step size.<br/><br/> **Default:** The same as the value of `stepSize` declared in [Execution Settings](#execution-settings). |
+| file | String | The file where the logging output should be placed.<br/><br/> **Default:** `out.csv` |
+| fields | String[] | The list of fields to output when logging.<br/><br/>**Default:** Every output variable of every [Instance](#instance). |
 
 #### Example
 
