@@ -8,6 +8,7 @@ HAML is a modelling language for describing hybrid systems that are compositions
 This document acts as the HAML specification, built on top of the [YAML 1.2 specification](http://yaml.org/spec/1.2/spec.html).
 This specification allows for the describing of hybrid systems in a formal manner, which can then be used for aspects such as code generation, documentation, or any other purpose.
 
+
 ## Table of Contents
 
 - [Definitions](#definitions)
@@ -35,6 +36,7 @@ This specification allows for the describing of hybrid systems in a formal manne
 - [Example Documents](#example-documents)
     - [Water Heater](#water-heater)
 
+
 ## Definitions
 
 #### Hybrid Automata
@@ -47,6 +49,7 @@ A network of [Hybrid Automata](#hybrid-automata) that can be connected through t
 #### Ordinary Differential Equation
 Shortened to ODE, these are equations which describe how a continuous variable evolves over time by specifying its rate of change or gradient.
 
+
 ## Specification
 
 Idk, talk about something
@@ -55,7 +58,16 @@ Uses YAML 1.2 as its base
 
 ### Includes
 
-Adds support for `!include` statements
+HAML adds the concept of a `!include` tag, which allows for external files to have their content included into the specification.
+The purpose of this tag is to allow for smaller and easier to understand specification files, as well as catering for code re-use if possible.
+
+The `!include` tag in a HAML document acts as a "copy and paste" tool which purely inserts the content in the included file under the current node.
+An included file does not need to be a valid HAML document, or even part of a HAML document, it can represent any aspect of the specification (e.g. a string).
+
+The `!include` tag only takes a single argument, which is the location of the file to be included.
+This location can be either be an absolute path (beginning with a `/`), or a relative path (beginning with any other character).
+In each case, the location is relative to the file location where the `!include` tag is located.
+
 
 ## Schema
 
@@ -66,8 +78,6 @@ Required vs Optional
 Intro to the Root
 
 #### Fields
-
-The following table lists all the possible fields for the HAML Document Root:
 
 | Name | Type | Description |
 |---|---|---|
