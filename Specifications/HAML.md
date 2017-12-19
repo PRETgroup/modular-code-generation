@@ -69,9 +69,9 @@ The following table lists all the possible fields for the HAML Document Root:
 
 | Name | Type | Description |
 |---|---|---|
-| name | String | **Required** The name of this Hybrid Network. |
-| definitions | Map[String, [Definition](#definition)] | **Required** A set of definitions of Hybrid Automata that can be instantiated. |
-| instances | Map[String, [Instance](#instance)] | **Required** A set of instances of previously defined Hybrid Automata. |
+| name | String | **Required.** The name of this Hybrid Network. |
+| definitions | Map[String, [Definition](#definition)] | **Required.** A set of definitions of Hybrid Automata that can be instantiated. |
+| instances | Map[String, [Instance](#instance)] | **Required.** A set of instances of previously defined Hybrid Automata. |
 | mappings | Map[String, [Formula](#formula)] | A set of mappings that determine the value of each input of each Instance. |
 | codegenConfig | [Codegen Configuration](#codegen-configuration) | A list of settings available for the default code generation logic in this tool.<br/><br/> **Default:** A default instance of [Codegen Configuration](#codegen-configuration). |
 
@@ -125,9 +125,9 @@ Introduction
 | inputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Automata accepts as inputs. |
 | outputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Automata emits as outputs. |
 | parameters | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The parameters that are available for configuration of this Hybrid Automata. |
-| locations | Map[String, [Location](#location)] | **Required** The locations that exist inside this Hybrid Automata. |
+| locations | Map[String, [Location](#location)] | **Required.** The locations that exist inside this Hybrid Automata. |
 | functions | Map[String, [Function](#function)] | A set of functions that exist inside this Hybrid Automata. |
-| initialisation | [Initialisation](#initialisation) | **Required** Sets the initialisation options for the Hybrid Automata (location, variable states, etc.). |
+| initialisation | [Initialisation](#initialisation) | **Required.** Sets the initialisation options for the Hybrid Automata (location, variable states, etc.). |
 
 #### Example
 
@@ -222,7 +222,7 @@ Introduction
 
 | Name | Type | Description |
 |---|---|---|
-| type | [Variable Type](#variable-type) | **Required** The type of the variable. |
+| type | [Variable Type](#variable-type) | **Required.** The type of the variable. |
 | default | [Formula](#formula) | The default value for the variable. |
 | delayableBy | [Formula](#formula) | An amount of time that this variable could possibly be delayed by. Used in code generation.<br/><br/> **Default:** `0` |
 
@@ -285,7 +285,7 @@ Introduction
 
 | Name | Type | Description |
 |---|---|---|
-| to | String | **Required** The destination location of this transition. |
+| to | String | **Required.** The destination location of this transition. |
 | guard | [Formula](#formula) | The guard that protects when this transition is "active" and can be taken.<br/><br/> **Default:** `true` |
 | update | Map[String, [Formula](#formula)] | A set of discrete operations that are done when this transition is taken. |
 
@@ -314,7 +314,7 @@ The return type (if any) is automatically generated from the logic
 | Name | Type | Description |
 |---|---|---|
 | inputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The set of inputs that this function accepts. |
-| logic | [Program](#program) | **Required** The code that this function will perform when invoked. |
+| logic | [Program](#program) | **Required.** The code that this function will perform when invoked. |
 
 #### Example
 
@@ -338,7 +338,7 @@ Introduction
 
 | Name | Type | Description |
 |---|---|---|
-| state | String | **Required** The initial state that the Hybrid Automata will start in. |
+| state | String | **Required.** The initial state that the Hybrid Automata will start in. |
 | valuations | Map[String, [Formula](#formula)] | The initial set of valuations for variables in the Hybrid Automata. |
 
 #### Example
@@ -358,7 +358,7 @@ Introduction
 
 | Name | Type | Description |
 |---|---|---|
-| type | String | **Required** The previously declared definition that this instance instantiates. |
+| type | String | **Required.** The previously declared definition that this instance instantiates. |
 | parameters | Map[String, [Formula](#formula)] | The values of any parameters inside the previous declaration. Any parameters which do not have an entry here will inherit their default value (if any). |
 
 #### Example
