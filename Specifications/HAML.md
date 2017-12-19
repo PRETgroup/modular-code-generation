@@ -32,6 +32,8 @@ This specification allows for the describing of hybrid systems in a formal manne
     - [Execution Settings](#execution-settings)
     - [Logging Settings](#logging-settings)
     - [Parametrisation Method](#parametrisation-method)
+- [Example Documents](#example-documents)
+    - [Water Heater](#water-heater)
 
 ## Definitions
 
@@ -495,3 +497,12 @@ This is an enum!
 |---|---|
 | `COMPILE_TIME` | Parameters will be set at the point of code generation. A file will be created for each [Instance](#instance) which results in a larger code size, but potentially faster execution. |
 | `RUN_TIME` | Parameters will be set dynamically when the generated code is executed. Only one file will be created for each [Definition](#definition) which results in smaller code size, but likely slower execution. |
+
+
+## Example documents
+
+Here I'll put some example Documents
+
+### Water Heater
+
+Water heater example
