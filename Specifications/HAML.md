@@ -40,7 +40,7 @@ A form of automata that supports both continuous and discrete parts.
 Continuous aspects of the automata are specified through [ODEs](#ordinary-differential-equations), while discrete aspects are captured through locations and transitions between them.
 
 #### Hybrid Network
-What are Networks
+A network of [Hybrid Automata](#hybrid-automata) that can be connected through their inputs and outputs in order to create a complete system.
 
 #### Ordinary Differential Equation
 Shortened to ODE, these are equations which describe how a continuous variable evolves over time by specifying its rate of change or gradient.
@@ -79,7 +79,39 @@ The following table lists all the possible fields for the HAML Document Root:
 #### Example
 
 ```
-example
+name: heart
+
+definitions:
+  Cell: !include cell.yaml
+  Path: !include path.yaml
+
+instances:
+  !include cells.yaml
+  !include paths.yaml
+
+mappings:
+  !include mappings.yaml
+
+codegenConfig:
+  execution:
+    stepSize: 0.00001
+    simulationTime: 10
+  logging:
+    file: out.csv
+    fields:
+      - SA.v
+      - RA.v
+      - OS.v
+      - Fast.v
+      - AV.v
+      - His.v
+      - RBB.v
+      - RVA.v
+      - RV.v
+  parametrisationMethod: COMPILE_TIME
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: false
+
 ```
 
 
@@ -91,9 +123,9 @@ Introduction
 
 | Name | Type | Description |
 |---|---|---|
-| inputs? | Map[String, [Variable Definition](#variable-definition)] | The variables that this Hybrid Automata accepts as inputs. |
-| outputs? | Map[String, [Variable Definition](#variable-definition)] | The variables that this Hybrid Automata emits as outputs. |
-| parameters? | Map[String, [Variable Definition](#variable-definition)] | The parameters that are available for configuration of this Hybrid Automata. |
+| inputs? | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Automata accepts as inputs. |
+| outputs? | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Automata emits as outputs. |
+| parameters? | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The parameters that are available for configuration of this Hybrid Automata. |
 | locations? | Map[String, [Location](#location)] | The locations that exist inside this Hybrid Automata. |
 | functions? | Map[String, [Function](#function)] | A set of functions that exist inside this Hybrid Automata. |
 | initialisation | [Initialisation](#initialisation) | Sets the initialisation options for the Hybrid Automata (location, variable states, etc.). |
@@ -101,7 +133,86 @@ Introduction
 #### Example
 
 ```
-example
+inputs:
+  g: REAL
+outputs:
+  v: REAL
+  resting: BOOLEAN
+  stimulated: BOOLEAN
+locations:
+  q0:
+    invariant: v < V_T && g < V_T
+    flow:
+      v_x: C1 * v_x
+      v_y: C2 * v_y
+      v_z: C3 * v_z
+    update:
+      v: v_x - v_y + v_z
+      resting: true
+    transitions:
+      - to: q1
+        guard: g >= V_T
+        update:
+          v_x: 0.3 * v
+          v_y: 0.0 * v
+          v_z: 0.7 * v
+          theta: v / 44.5
+          f_theta: f(v / 44.5)
+  q1:
+    invariant: v < V_T && g > 0
+    flow:
+      v_x: C4 * v_x + C7 * g
+      v_y: C5 * v_y + C8 * g
+      v_z: C6 * v_z + C9 * g
+    update:
+      v: v_x - v_y + v_z
+    transitions:
+      - to: q2
+        guard: v == V_T
+        update:
+          resting: false
+      - to: q0
+        guard: g <= 0 && v < V_T
+  q2:
+    invariant: v < V_O - 80.1 * sqrt(theta)
+    flow:
+      v_x: C10 * v_x
+      v_y: C11 * v_y
+      v_z: C12 * v_z
+    update:
+      v: v_x - v_y + v_z
+      stimulated: true
+    transitions:
+      - to: q3
+        guard: v == V_O - 80.1 * sqrt(theta)
+        update:
+          stimulated: false
+  q3:
+    invariant: v > V_R
+    flow:
+      v_x: C13 * v_x * f_theta
+      v_y: C14 * v_y * f_theta
+      v_z: C15 * v_z
+    update:
+      v: v_x - v_y + v_z
+    transitions:
+      - to: q0
+        guard: v == V_R
+functions:
+  f:
+    inputs:
+      theta: REAL
+    logic: |
+      if(theta >= v_n_R_max) {
+        return 4.03947
+      }
+
+      return 0.29*exp(62.89*theta) + 0.70*exp(-10.99*theta)
+initialisation:
+  state: q0
+  valuations:
+    resting: true
+
 ```
 
 
@@ -120,7 +231,8 @@ Introduction
 #### Example
 
 ```
-example
+type: REAL
+default: -8.7
 ```
 
 
@@ -154,7 +266,16 @@ Introduction
 #### Example
 
 ```
-example
+invariant: v > V_R
+flow:
+  v_x: C13 * v_x * f_theta
+  v_y: C14 * v_y * f_theta
+  v_z: C15 * v_z
+update:
+  v: v_x - v_y + v_z
+transitions:
+  - to: q0
+    guard: v == V_R
 ```
 
 
@@ -173,7 +294,14 @@ Introduction
 #### Example
 
 ```
-example
+to: q1
+guard: g >= V_T
+update:
+  v_x: 0.3 * v
+  v_y: 0.0 * v
+  v_z: 0.7 * v
+  theta: v / 44.5
+  f_theta: f(v / 44.5)
 ```
 
 
@@ -187,13 +315,20 @@ The return type (if any) is automatically generated from the logic
 
 | Name | Type | Description |
 |---|---|---|
-| inputs? | Map[String, [Variable Definition](#variable-definition)] | The set of inputs that this function accepts. |
+| inputs? | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The set of inputs that this function accepts. |
 | logic | [Program](#program) | The code that this function will perform when invoked. |
 
 #### Example
 
 ```
-example
+inputs:
+  theta: REAL
+logic: |
+  if(theta >= v_n_R_max) {
+    return 4.03947
+  }
+
+  return 0.29*exp(62.89*theta) + 0.70*exp(-10.99*theta)
 ```
 
 
@@ -211,7 +346,9 @@ Introduction
 #### Example
 
 ```
-example
+state: q0
+valuations:
+  resting: true
 ```
 
 
@@ -229,7 +366,10 @@ Introduction
 #### Example
 
 ```
-example
+type: Cell
+parameters:
+  C14: 20
+  autorhythmic_rate: 100
 ```
 
 
@@ -279,7 +419,15 @@ Introduction
 #### Example
 
 ```
-example
+indentSize: 4
+execution:
+  stepSize: 0.00001
+  simulationTime: 10
+logging:
+  enable: false
+parametrisationMethod: COMPILE_TIME
+maximumInterTransitions: 1
+requireOneIntraTransitionPerTick: false
 ```
 
 
@@ -297,7 +445,8 @@ Introduction
 #### Example
 
 ```
-example
+stepSize: 0.00001
+simulationTime: 10
 ```
 
 
@@ -317,7 +466,19 @@ Introduction
 #### Example
 
 ```
-example
+enable: true
+interval: 0.005
+file: out.csv
+fields:
+  - SA.v
+  - RA.v
+  - OS.v
+  - Fast.v
+  - AV.v
+  - His.v
+  - RBB.v
+  - RVA.v
+  - RV.v
 ```
 
 
