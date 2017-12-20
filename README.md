@@ -7,7 +7,7 @@ Aka. Modular Code Generation
 This is a tool to automatically generate code for the execution of networks of Hybrid Automata.
 Networks are described using the [HAML Spec](specs/HAML.md) (also part of this project).
 
-This tool is developed by the PRETzel Research Group at The University of Auckland in New Zealand.
+This tool is developed by the [PRETzel Research Group](http://pretzel.ece.auckland.ac.nz/) at The University of Auckland in New Zealand.
 As such, it is currently to be treated more as a research project, and bugs may be present or features may be missing.
 
 
@@ -18,7 +18,12 @@ The procedure for each of these is outlined below.
 
 ### From Source
 
-**To add: How to compile from source.**
+This tool is written in [Kotlin](https://kotlinlang.org/), and uses [Gradle](https://gradle.org/) for its build system.
+
+To run the debug program (`app.kt`) simply run `gradle run` (or `gradlew run` to use the bundled Gradle version).
+
+To build a new executable JAR file for distribution, run `gradle build` (or `gradlew build`).
+This will create a "fat" JAR file (includes all Kotlin runtime dependencies) whose main file on execution is defined in `Cli.kt`.
 
 ### Pre-generated File
 
@@ -53,4 +58,4 @@ A README exists in this `examples` directory that gives a brief explanation of e
 
 ## Publications
 
-The initial design of this tool was described in a Design, Automation and Test in Europe (DATE) 2016 paper titled **INSERT PAPER WITH LINK**
+The initial design of this tool was described in a *Design, Automation and Test in Europe (DATE) 2016* paper titled *Modular Code Generation for Emulating the Electrical Conduction System of the Human Heart*.
