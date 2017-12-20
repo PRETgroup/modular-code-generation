@@ -5,7 +5,7 @@ Aka. Modular Code Generation
 ## What is this?
 
 This is a tool to automatically generate code for the execution of networks of Hybrid Automata.
-Networks are described using the HAML spec (also part of this project).
+Networks are described using the [HAML Spec](specs/HAML.md) (also part of this project).
 
 This tool is developed by the PRETzel Research Group at The University of Auckland in New Zealand.
 As such, it is currently to be treated more as a research project, and bugs may be present or features may be missing.
