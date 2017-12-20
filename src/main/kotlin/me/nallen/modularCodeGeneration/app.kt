@@ -13,7 +13,7 @@ fun main(args: Array<String>) {
     var time: Long
 
     time = measureTimeMillis {
-        val imported = Importer.import("heart/main.yaml")
+        val imported = Importer.import("examples/heart/main.yaml")
         network = imported.first
         config = imported.second
     }
