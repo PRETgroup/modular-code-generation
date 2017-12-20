@@ -52,9 +52,13 @@ Shortened to ODE, these are equations which describe how a continuous variable e
 
 ## Specification
 
-Idk, talk about something
+This specification builds on top of the [YAML 1.2 specification](http://yaml.org/spec/1.2/spec.html).
 
-Uses YAML 1.2 as its base
+All field names are **case sensitive**.
+Fields which are marked as **required** must be present in the specification.
+Otherwise, the field can be assumed to be optional, and the default value (if present) will be used.
+
+The complete document may be split up into multiple individual files through the use of [Includes](#includes).
 
 ### Includes
 
@@ -71,11 +75,9 @@ In each case, the location is relative to the file location where the `!include`
 
 ## Schema
 
-Required vs Optional
-
 ### HAML Document Root
 
-Intro to the Root
+The root object for the HAML Document.
 
 #### Fields
 
@@ -128,7 +130,7 @@ codegenConfig:
 
 ### Definition
 
-Introduction
+The object that captures a Hybrid Automata and its logic.
 
 #### Fields
 
@@ -228,7 +230,7 @@ initialisation:
 
 ### Variable Definition
 
-Introduction
+Information about a variable that exists within a Hybrid Automata.
 
 #### Fields
 
@@ -248,9 +250,7 @@ default: -8.7
 
 ### Variable Type
 
-Introduction
-
-This is an enum!
+An **enum** that represents the type of a variable.
 
 #### Enum Values
 
@@ -262,7 +262,7 @@ This is an enum!
 
 ### Location
 
-Introduction
+A single location within a Hybrid Automata.
 
 #### Fields
 
@@ -291,7 +291,7 @@ transitions:
 
 ### Transition
 
-Introduction
+A transition to another location within a Hybrid Automata
 
 #### Fields
 
@@ -317,9 +317,8 @@ update:
 
 ### Function
 
-Introduction
-
-The return type (if any) is automatically generated from the logic
+A function that exists within a Hybrid Automata and can be invoked.
+The return type (if any) is automatically generated from the logic.
 
 #### Fields
 
@@ -344,7 +343,7 @@ logic: |
 
 ### Initialisation
 
-Introduction
+Initialisation of a Hybrid Automata, including its initial state and variable valuations.
 
 #### Fields
 
@@ -364,7 +363,7 @@ valuations:
 
 ### Instance
 
-Introduction
+An instantiation of a Hybrid Automata Definition.
 
 #### Fields
 
@@ -417,7 +416,7 @@ v < V_O - 80.1 * sqrt(theta)
 
 ### Codegen Configuration
 
-Introduction
+A set of options that determine how the generate code will look and behave.
 
 #### Fields
 
@@ -447,7 +446,7 @@ requireOneIntraTransitionPerTick: false
 
 ### Execution Settings
 
-Introduction
+A set of options that determine the execution time and fidelity of the generated code.
 
 #### Fields
 
@@ -466,7 +465,7 @@ simulationTime: 10
 
 ### Logging Settings
 
-Introduction
+A set of options that determine which information is logged when the generated code is executed.
 
 #### Fields
 
@@ -497,9 +496,7 @@ fields:
 
 ### Parametrisation Method
 
-Introduction
-
-This is an enum!
+An **enum** that represents the method used for parametrising the Hybrid Automata Definitions.
 
 #### Enum Values
 
