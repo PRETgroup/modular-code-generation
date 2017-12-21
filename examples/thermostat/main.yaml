@@ -1,0 +1,50 @@
+name: thermostat
+
+definitions:
+  Thermostat:
+    outputs:
+      temperature: REAL
+    parameters:
+      lowTemp:
+        type: REAL
+        default: 22.78
+      highTemp:
+        type: REAL
+        default: 25
+    locations:
+      t1:
+        invariant: temperature > lowTemp
+        flow:
+          temperature: 10 - temperature
+        transitions:
+          - to: t2
+            guard: temperature <= lowTemp
+      t2:
+        invariant: temperature < highTemp
+        flow:
+          temperature: 37.78 - temperature
+        transitions:
+          - to: t1
+            guard: temperature >= highTemp
+    initialisation:
+      state: t1
+      valuations:
+        temperature: 20
+
+
+instances:
+  Thermostat: Thermostat
+
+
+codegenConfig:
+  execution:
+    stepSize: 0.0001
+    simulationTime: 100
+  logging:
+    enable: true
+    file: out.csv
+    fields:
+      - Thermostat.temperature
+  parametrisationMethod: COMPILE_TIME
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: false
