@@ -56,7 +56,8 @@ object RunnableGenerator {
 
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 for((name, instance) in network.instances) {
-                    result.appendln("#include \"${Utils.createFolderName(instance.automata)}/${Utils.createFileName(name)}.h\"")
+                    val subfolder = if(instance.automata.equals(network.name, true)) { instance.automata + " Files" } else { instance.automata }
+                    result.appendln("#include \"${Utils.createFolderName(subfolder)}/${Utils.createFileName(name)}.h\"")
                 }
             }
             else {

@@ -8,13 +8,13 @@ object MakefileGenerator {
     private var instances: Map<String, AutomataInstance> = LinkedHashMap<String, AutomataInstance>()
     private var config: Configuration = Configuration()
 
-    fun generate(name: String, instances: Map<String, AutomataInstance>, config: Configuration = Configuration()): String {
+    fun generate(networkName: String, instances: Map<String, AutomataInstance>, config: Configuration = Configuration()): String {
         this.instances = instances
         this.config = config
 
         val result = StringBuilder()
 
-        result.appendln("TARGET = $name")
+        result.appendln("TARGET = $networkName")
         result.appendln("CC = gcc")
         result.appendln("CFLAGS = -c -O2 -lm -Wall")
         result.appendln("LDFLAGS = -g -Wall -lm")
@@ -29,7 +29,9 @@ object MakefileGenerator {
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 for((name, instance) in instances) {
                     val deliminatedName = Utils.createFileName(name)
-                    val deliminatedFolder = Utils.createFolderName(instance.automata)
+
+                    val subfolder = if(instance.automata.equals(networkName, true)) { instance.automata + " Files" } else { instance.automata }
+                    val deliminatedFolder = Utils.createFolderName(subfolder)
                     result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedFolder/$deliminatedName.c"), listOf("$deliminatedFolder/$deliminatedName.h", CCodeGenerator.CONFIG_FILE)))
                     result.appendln()
                     sources.add("Objects/$deliminatedName")

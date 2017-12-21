@@ -150,7 +150,9 @@ class CCodeGenerator() {
 
                     delayedTypes.addAll(automata.variables.filter({it.canBeDelayed()}).map({it.type}))
 
-                    generateFsm(automata, File(outputDir, Utils.createFolderName(instance.automata)).absolutePath, config)
+                    val subfolder = if(instance.automata.equals(network.name, true)) { instance.automata + " Files" } else { instance.automata }
+
+                    generateFsm(automata, File(outputDir, Utils.createFolderName(subfolder)).absolutePath, config)
                 }
             }
             else  {
