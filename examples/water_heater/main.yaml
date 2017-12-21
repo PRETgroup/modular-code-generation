@@ -1,0 +1,106 @@
+name: water_heater
+
+definitions:
+  Watertank:
+    inputs:
+      burnerOn: BOOLEAN
+      burnerOff: BOOLEAN
+    outputs:
+      temperature: REAL
+    parameters:
+      trainSpeed:
+        type: REAL
+        default: 1
+    locations:
+      t1:
+        invariant: temperature >= 20 && temperature < 100 && !burnerOff
+        flow:
+          temperature: 0.075 * (150 - temperature)
+        transitions:
+          - to: t2
+            guard: temperature == 100 && !burnerOff
+          - to: t3
+            guard: burnerOff
+      t2:
+        invariant: '!burnerOff'
+        transitions:
+          - to: t3
+            guard: burnerOff
+      t3:
+        invariant: temperature > 20 && temperature <= 100 && !burnerOn
+        flow:
+          temperature: -0.075 * temperature
+        transitions:
+          - to: t4
+            guard: temperature == 20 && !burnerOn
+          - to: t1
+            guard: burnerOn
+      t4:
+        invariant: '!burnerOn'
+        transitions:
+          - to: t1
+            guard: burnerOn
+    initialisation:
+      state: t1
+      valuations:
+        temperature: 20
+
+  Burner:
+    outputs:
+      burnerOn: BOOLEAN
+      burnerOff: BOOLEAN
+    parameters:
+      cycleTime:
+        type: REAL
+        default: 20
+    locations:
+      b1:
+        invariant: y < cycleTime
+        flow:
+          y: 1
+        update:
+          burnerOn: true
+          burnerOff: false
+        transitions:
+          - to: b2
+            guard: y == cycleTime
+            update:
+              y: 0
+      b2:
+        invariant: y < cycleTime
+        flow:
+          y: 1
+        update:
+          burnerOn: false
+          burnerOff: true
+        transitions:
+          - to: b1
+            guard: y == cycleTime
+            update:
+              y: 0
+    initialisation:
+      state: b1
+      valuations:
+        y: 0
+
+instances:
+  Watertank: Watertank
+  Burner: Burner
+
+
+mappings:
+  Watertank.burnerOn: Burner.burnerOn
+  Watertank.burnerOff: Burner.burnerOff
+
+codegenConfig:
+  execution:
+    stepSize: 0.0001
+    simulationTime: 100
+  logging:
+    enable: true
+    file: out.csv
+    fields:
+      - Watertank.temperature
+  parametrisationMethod: COMPILE_TIME
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: false
