@@ -2,6 +2,16 @@
 
 Aka. Modular Code Generation
 
+## Table of Contents
+
+- [What is this?](#what-is-this)
+- [How to use](#how-to-use)
+    - [From Source](#from-source)
+    - [Pre-generated File](#pre-generated-file)
+        - [Example Commands](#example-commands)
+- [Examples](#examples)
+- [Publications](#publications)
+
 ## What is this?
 
 This is a tool to automatically generate code for the execution of networks of Hybrid Automata.
