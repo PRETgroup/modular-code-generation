@@ -93,7 +93,7 @@ private fun HybridNetwork.importAutomata(definitions: Map<String, Definition>) {
 
         automata.loadFunctions(definition.functions)
 
-        this.addDefinition(automata)
+        this.definitions.add(automata)
     }
 }
 
@@ -183,7 +183,7 @@ private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
 
         automataInstance.parameters.loadParseTreeItems(instance.parameters)
 
-        this.addInstance(name, automataInstance)
+        this.instances.put(name, automataInstance)
     }
 }
 
