@@ -291,13 +291,13 @@ transitions:
 
 ### Transition
 
-A transition to another location within a Hybrid Automata
+A transition to another location within a Hybrid Automata.
 
 #### Fields
 
 | Name | Type | Description |
 |---|---|---|
-| to | String | **Required.** The destination location of this transition. |
+| to | String | **Required.** The name of the destination location for this transition. |
 | guard | [Formula](#formula) | The guard that protects when this transition is "active" and can be taken.<br/><br/> **Default:** `true` |
 | update | Map[String, [Formula](#formula)] | A set of discrete operations that are done when this transition is taken. |
 
@@ -363,7 +363,7 @@ valuations:
 
 ### Instance
 
-An instantiation of a Hybrid Automata Definition.
+An instantiation of a Hybrid Automata [Definition](#definition).
 
 #### Fields
 
@@ -416,7 +416,7 @@ return 0.29*exp(62.89*theta) + 0.70*exp(-10.99*theta)
 
 A boolean or algebraic formula that can be used to either represent a boolean or real result.
 
-A formula is implemented as a String, and allows for a subset of math operations to be used within.
+A Formula is implemented as a String, and allows for a subset of math operations to be used within.
 Custom functions can also be called, with any arbitrary number of parameters.
 Any real number, the values `true` and `false`, and any variables, can be used as operands for any operation.
 Parentheses (`(` and `)`) can be used to force operation order, as standard precedence rules are used.
