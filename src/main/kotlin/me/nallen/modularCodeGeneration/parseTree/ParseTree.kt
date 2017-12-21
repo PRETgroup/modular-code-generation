@@ -6,16 +6,16 @@ import com.fasterxml.jackson.annotation.JsonValue
 sealed class ParseTreeItem(var type: String) {
     companion object Factory {
         @JsonCreator @JvmStatic
-        fun generate(input: String): ParseTreeItem = GenerateParseTreeFromString(input)
+        fun generate(input: String): ParseTreeItem = generateParseTreeFromString(input)
 
         @JsonCreator @JvmStatic
-        fun generate(input: Int): ParseTreeItem = GenerateParseTreeFromString(input.toString())
+        fun generate(input: Int): ParseTreeItem = generateParseTreeFromString(input.toString())
 
         @JsonCreator @JvmStatic
-        fun generate(input: Double): ParseTreeItem = GenerateParseTreeFromString(input.toString())
+        fun generate(input: Double): ParseTreeItem = generateParseTreeFromString(input.toString())
 
         @JsonCreator @JvmStatic
-        fun generate(input: Boolean): ParseTreeItem = GenerateParseTreeFromString(input.toString())
+        fun generate(input: Boolean): ParseTreeItem = generateParseTreeFromString(input.toString())
     }
 
     @JsonValue
@@ -53,7 +53,7 @@ enum class VariableType {
     BOOLEAN, REAL
 }
 
-fun GenerateParseTreeFromString(input: String): ParseTreeItem {
+fun generateParseTreeFromString(input: String): ParseTreeItem {
     val postfix = convertToPostfix(input)
 
     val arguments = postfix.split(" ")
@@ -84,8 +84,7 @@ fun GenerateParseTreeFromString(input: String): ParseTreeItem {
 
                     if(match != null) {
                         val functionArguments = ArrayList<ParseTreeItem>()
-                        for(i in match.groupValues[2].toInt() downTo 1)
-                            functionArguments.add(stack[stack.size-i])
+                        (match.groupValues[2].toInt() downTo 1).mapTo(functionArguments) { stack[stack.size- it] }
 
                         FunctionCall(match.groupValues[1], functionArguments)
                     }
@@ -139,7 +138,7 @@ private fun getTypeFromLiteral(literal: String): VariableType? {
 fun ParseTreeItem.padOperand(operand: ParseTreeItem): String {
     var precedence = this.getPrecedence()
     if((!operand.getCommutative() || !this.getCommutative()) && operand.getChildren().size > 1) {
-        precedence--;
+        precedence--
     }
     if(precedence < operand.getPrecedence())
         return "(" + operand.generateString() + ")"
@@ -225,7 +224,7 @@ fun ParseTreeItem.generateString(): String {
                 builder.append(argument.generateString())
             }
 
-            return "$functionName(${builder.toString()})"
+            return "$functionName($builder)"
         }
         is Literal -> return this.value
         is Variable -> return this.name

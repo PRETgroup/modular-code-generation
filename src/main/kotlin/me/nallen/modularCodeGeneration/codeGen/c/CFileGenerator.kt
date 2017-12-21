@@ -17,7 +17,7 @@ object CFileGenerator {
     private var config: Configuration = Configuration()
 
     private var requireSelfReferenceInFunctionCalls: Boolean = false
-    private val delayedVariableTypes: HashMap<String, VariableType> = HashMap<String, VariableType>()
+    private val delayedVariableTypes: HashMap<String, VariableType> = HashMap()
 
     fun generate(automata: HybridAutomata, config: Configuration = Configuration()): String {
         this.automata = automata
@@ -141,9 +141,9 @@ object CFileGenerator {
     }
 
     private fun generateDefaultInitForType(type: VariableType): String {
-        when(type) {
-            VariableType.BOOLEAN -> return Utils.generateCodeForParseTreeItem(Literal("false"))
-            VariableType.REAL -> return Utils.generateCodeForParseTreeItem(Literal("0"))
+        return when(type) {
+            VariableType.BOOLEAN -> Utils.generateCodeForParseTreeItem(Literal("false"))
+            VariableType.REAL -> Utils.generateCodeForParseTreeItem(Literal("0"))
         }
     }
 
@@ -341,10 +341,9 @@ object CFileGenerator {
                 result.appendln("${config.getIndent(indent+1)}// Also some dependencies that need saturating")
                 result.appendln("${config.getIndent(indent+1)}double frac = ($limit - me->$variable) / (${variable}_u - me->$variable);")
                 result.appendln()
-                for(dependency in dependencies) {
-                    val dependencyVariable = Utils.createVariableName(dependency)
-                    result.appendln("${config.getIndent(indent+1)}${dependencyVariable}_u = me->$dependencyVariable + frac * (${dependencyVariable}_u - me->$dependencyVariable);")
-                }
+                dependencies
+                        .map { Utils.createVariableName(it) }
+                        .forEach { result.appendln("${config.getIndent(indent+1)}${it}_u = me->$it + frac * (${it}_u - me->$it);") }
                 result.appendln()
             }
 

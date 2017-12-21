@@ -8,8 +8,8 @@ import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 import kotlin.system.measureTimeMillis
 
 fun main(args: Array<String>) {
-    var network: HybridNetwork = HybridNetwork()
-    var config: Configuration = Configuration()
+    var network = HybridNetwork()
+    var config = Configuration()
     var time: Long
 
     time = measureTimeMillis {

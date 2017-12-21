@@ -88,12 +88,12 @@ internal fun convertToPostfix(input: String): String {
     var output = ""
     var storage = ""
     var skip = 0
-    val op_stack = ArrayList<Operand>()
+    val opStack = ArrayList<Operand>()
     val openBracketStack = ArrayList<Operand>()
     val functionCalls = ArrayList<Function>()
     var followingOperand = true
 
-    for(i in 0 .. input.length-1) {
+    for(i in 0 until input.length) {
         if(skip > 0) {
             skip--
             continue
@@ -109,17 +109,17 @@ internal fun convertToPostfix(input: String): String {
 
         if(operand != null) {
             var operator = operands[operand]
-            skip = 0;
+            skip = 0
 
             if(operand == Operand.CLOSE_BRACKET) {
                 val isFunctionCall = openBracketStack.isNotEmpty() && openBracketStack.last() == Operand.FUNCTION_CALL
 
-                while(op_stack.last() != Operand.OPEN_BRACKET && op_stack.last() != Operand.FUNCTION_CALL) {
-                    if(op_stack.last() != Operand.FUNCTION_SEPARATOR)
-                        output += operands[op_stack.last()]?.symbol + " "
-                    op_stack.removeAt(op_stack.size-1)
+                while(opStack.last() != Operand.OPEN_BRACKET && opStack.last() != Operand.FUNCTION_CALL) {
+                    if(opStack.last() != Operand.FUNCTION_SEPARATOR)
+                        output += operands[opStack.last()]?.symbol + " "
+                    opStack.removeAt(opStack.size-1)
 
-                    if(op_stack.size == 0) {
+                    if(opStack.size == 0) {
                         throw IllegalArgumentException("Unmatched parenthesis in formula $input")
                     }
                 }
@@ -133,7 +133,7 @@ internal fun convertToPostfix(input: String): String {
                 }
 
                 openBracketStack.removeAt(openBracketStack.size-1)
-                op_stack.removeAt(op_stack.size-1)
+                opStack.removeAt(opStack.size-1)
             }
             else {
                 if(operand != Operand.OPEN_BRACKET && operand != Operand.FUNCTION_CALL) {
@@ -145,8 +145,8 @@ internal fun convertToPostfix(input: String): String {
                     if(operand == Operand.FUNCTION_SEPARATOR && functionCalls.isNotEmpty())
                         functionCalls[functionCalls.size-1].parameters++
 
-                    while((op_stack.size > 0) && (op_stack.last() != Operand.OPEN_BRACKET) && (op_stack.last() != Operand.FUNCTION_CALL)) {
-                        val lastOperator = operands[op_stack.last()]
+                    while((opStack.size > 0) && (opStack.last() != Operand.OPEN_BRACKET) && (opStack.last() != Operand.FUNCTION_CALL)) {
+                        val lastOperator = operands[opStack.last()]
                         if(lastOperator != null && operator != null) {
                             if(lastOperator.precedence > operator.precedence)
                                 break
@@ -158,7 +158,7 @@ internal fun convertToPostfix(input: String): String {
                             output += lastOperator.symbol + " "
                         }
 
-                        op_stack.removeAt(op_stack.size-1)
+                        opStack.removeAt(opStack.size-1)
                     }
                 }
                 else {
@@ -178,7 +178,7 @@ internal fun convertToPostfix(input: String): String {
                     openBracketStack.add(operand)
                 }
 
-                op_stack.add(operand)
+                opStack.add(operand)
 
                 followingOperand = true
             }
@@ -198,12 +198,12 @@ internal fun convertToPostfix(input: String): String {
         output += storage + " "
     }
 
-    while(op_stack.size > 0) {
-        val lastOperator = operands[op_stack.last()]
+    while(opStack.size > 0) {
+        val lastOperator = operands[opStack.last()]
         if(lastOperator != null)
-            output += operands[op_stack.last()]?.symbol + " "
+            output += operands[opStack.last()]?.symbol + " "
 
-        op_stack.removeAt(op_stack.size-1)
+        opStack.removeAt(opStack.size-1)
     }
 
     return output

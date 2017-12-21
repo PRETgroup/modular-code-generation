@@ -11,20 +11,20 @@ fun String.isAllUpperCase(): Boolean {
 fun String.splitIntoWords(): List<String> {
     if (this.contains(" "))
     {
-        return this.split(' ');
+        return this.split(' ')
     }
     else if (this.contains("-"))
     {
-        return this.split('-');
+        return this.split('-')
     }
     else if(this.contains("_"))
     {
-        return this.split('_');
+        return this.split('_')
     }
     else
     {
         // Try camelCase or PascalCase
-        val regex = Regex("^([A-Z][a-z0-9]*)+$");
+        val regex = Regex("^([A-Z][a-z0-9]*)+$")
 
         if(regex.matches(this.capitalize())) {
             val smallerRegex = Regex("[A-Z][a-z0-9]*")
@@ -35,11 +35,11 @@ fun String.splitIntoWords(): List<String> {
                 words.add(match.groupValues[0])
             }
 
-            return words;
+            return words
         }
     }
 
-    return listOf(this);
+    return listOf(this)
 }
 
 private fun List<String>.convertToCamelCase(): String {
@@ -74,10 +74,6 @@ fun Array<out String>.convertWordDelimiterConvention(newConvention: NamingConven
         NamingConvention.CAMEL_CASE -> words.convertToCamelCase()
         NamingConvention.UPPER_CAMEL_CASE -> words.convertToCamelCase().capitalize()
     }
-}
-
-fun String.convertWordDelimiterConvention(newConvention: NamingConvention): String {
-    return arrayOf(this).convertWordDelimiterConvention(newConvention)
 }
 
 enum class NamingConvention {

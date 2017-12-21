@@ -190,16 +190,14 @@ fun generateProgramFromString(input: String): Program {
             }
             else {
                 val match = returnRegex.matchEntire(line)
-                if(match != null) {
-                    programLine = Return(ParseTreeItem.Factory.generate(match.groupValues[1]))
-                }
-                else {
+                programLine = if(match != null) {
+                    Return(ParseTreeItem.Factory.generate(match.groupValues[1]))
+                } else {
                     val match = assignmentRegex.matchEntire(line)
                     if(match != null) {
-                        programLine = Assignment(Variable(match.groupValues[1]), ParseTreeItem.Factory.generate(match.groupValues[2]))
-                    }
-                    else {
-                        programLine = Statement(ParseTreeItem.Factory.generate(line))
+                        Assignment(Variable(match.groupValues[1]), ParseTreeItem.Factory.generate(match.groupValues[2]))
+                    } else {
+                        Statement(ParseTreeItem.Factory.generate(line))
                     }
                 }
             }
@@ -213,7 +211,7 @@ fun generateProgramFromString(input: String): Program {
 }
 
 fun getTextUntilNextMatchingCloseBracket(input: String): String {
-    var bracketsToFind = 1;
+    var bracketsToFind = 1
     for(i in 0 until input.length) {
         if(input[i] == '{')
             bracketsToFind++
@@ -230,18 +228,18 @@ fun getTextUntilNextMatchingCloseBracket(input: String): String {
 fun Program.generateString(): String {
     val builder = StringBuilder()
 
-    for(line in lines) {
-        val lineString = when(line) {
-            is Statement -> line.logic.generateString()
-            is Assignment -> "${line.variableName.generateString()} = ${line.variableValue.generateString()}"
-            is Return -> "return ${line.logic.generateString()}"
-            is IfStatement -> "if(${line.condition.generateString()}) {\n${line.body.generateString().prependIndent("  ")}\n}"
-            is ElseIfStatement -> "else if(${line.condition.generateString()}) {\n${line.body.generateString().prependIndent("  ")}\n}"
-            is ElseStatement -> "else {\n${line.body.generateString().prependIndent("  ")}\n}"
-        }
-
-        builder.appendln(lineString)
-    }
+    lines
+            .map {
+                when(it) {
+                    is Statement -> it.logic.generateString()
+                    is Assignment -> "${it.variableName.generateString()} = ${it.variableValue.generateString()}"
+                    is Return -> "return ${it.logic.generateString()}"
+                    is IfStatement -> "if(${it.condition.generateString()}) {\n${it.body.generateString().prependIndent("  ")}\n}"
+                    is ElseIfStatement -> "else if(${it.condition.generateString()}) {\n${it.body.generateString().prependIndent("  ")}\n}"
+                    is ElseStatement -> "else {\n${it.body.generateString().prependIndent("  ")}\n}"
+                }
+            }
+            .forEach { builder.appendln(it) }
 
     return builder.toString().trimEnd()
 }

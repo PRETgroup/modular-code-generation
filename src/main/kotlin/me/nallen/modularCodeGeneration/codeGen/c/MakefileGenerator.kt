@@ -5,7 +5,7 @@ import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.hybridAutomata.AutomataInstance
 
 object MakefileGenerator {
-    private var instances: Map<String, AutomataInstance> = LinkedHashMap<String, AutomataInstance>()
+    private var instances: Map<String, AutomataInstance> = LinkedHashMap()
     private var config: Configuration = Configuration()
 
     fun generate(networkName: String, instances: Map<String, AutomataInstance>, config: Configuration = Configuration()): String {

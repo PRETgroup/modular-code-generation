@@ -11,8 +11,8 @@ object RunnableGenerator {
     private var config: Configuration = Configuration()
 
     private var requireSelfReferenceInFunctionCalls: Boolean = false
-    private var objects: ArrayList<CodeObject> = ArrayList<CodeObject>()
-    private var toLog: List<LoggingField> = ArrayList<LoggingField>()
+    private var objects: ArrayList<CodeObject> = ArrayList()
+    private var toLog: List<LoggingField> = ArrayList()
 
     fun generate(network: HybridNetwork, config: Configuration = Configuration()): String {
         this.network = network

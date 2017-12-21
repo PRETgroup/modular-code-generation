@@ -10,13 +10,13 @@ import me.nallen.modularCodeGeneration.parseTree.Variable as ParseTreeVariable
 data class HybridAutomata(
         var name: String = "HA",
 
-        val locations: ArrayList<Location> = ArrayList<Location>(),
-        val edges: ArrayList<Edge> = ArrayList<Edge>(),
+        val locations: ArrayList<Location> = ArrayList(),
+        val edges: ArrayList<Edge> = ArrayList(),
         var init: Initialisation = Initialisation(""),
 
-        val functions: ArrayList<FunctionDefinition> = ArrayList<FunctionDefinition>(),
+        val functions: ArrayList<FunctionDefinition> = ArrayList(),
 
-        val variables: ArrayList<Variable> = ArrayList<Variable>()
+        val variables: ArrayList<Variable> = ArrayList()
 ) {
     fun addLocation(location: Location): HybridAutomata {
         /*if(locations.any({it.name == location.name}))
@@ -184,22 +184,22 @@ data class HybridAutomata(
 data class Location(
         var name: String,
         var invariant: ParseTreeItem = Literal("true"),
-        var flow: MutableMap<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>(),
-        var update: MutableMap<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>()
+        var flow: MutableMap<String, ParseTreeItem> = LinkedHashMap(),
+        var update: MutableMap<String, ParseTreeItem> = LinkedHashMap()
 )
 
 data class Edge(
         var fromLocation: String,
         var toLocation: String,
         var guard: ParseTreeItem = Literal("true"),
-        var update: MutableMap<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>(),
+        var update: MutableMap<String, ParseTreeItem> = LinkedHashMap(),
         var inEvents: ParseTreeItem = Literal("true"),
-        var outEvents: List<String> = ArrayList<String>()
+        var outEvents: List<String> = ArrayList()
 )
 
 data class Initialisation(
         var state: String,
-        var valuations: MutableMap<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>()
+        var valuations: MutableMap<String, ParseTreeItem> = LinkedHashMap()
 )
 
 data class Variable(

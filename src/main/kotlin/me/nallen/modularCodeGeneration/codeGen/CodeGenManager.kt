@@ -17,7 +17,7 @@ object CodeGenManager {
         val outputDir = File(dir)
 
         if(outputDir.exists() && !outputDir.isDirectory)
-            throw IllegalArgumentException("Desired output directory ${dir} is not a directory!")
+            throw IllegalArgumentException("Desired output directory $dir is not a directory!")
 
         outputDir.deleteRecursively()
         outputDir.mkdir()
@@ -69,9 +69,7 @@ object CodeGenManager {
                     val definition = network.definitions.first({it.name == instance.automata})
 
                     val outputs = definition.variables.filter({it.locality == Locality.EXTERNAL_OUTPUT})
-                    for(output in outputs) {
-                        toLog.add(LoggingField(name, output.name, output.type))
-                    }
+                    outputs.mapTo(toLog) { LoggingField(name, it.name, it.type) }
                 }
             }
 
@@ -126,7 +124,7 @@ object CodeGenManager {
                     value = comparison.getChildren()[0]
                 }
                 else {
-                    continue;
+                    continue
                 }
 
                 val saturationDirection = if (comparison is LessThan || comparison is GreaterThanOrEqual) {

@@ -7,7 +7,6 @@ import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.Literal
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
-import me.nallen.modularCodeGeneration.parseTree.Program
 import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
 import java.io.File
 import java.io.IOException
@@ -16,7 +15,7 @@ typealias ParseTreeVariableType = me.nallen.modularCodeGeneration.parseTree.Vari
 typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
 typealias HybridLocation = me.nallen.modularCodeGeneration.hybridAutomata.Location
 
-class Importer() {
+class Importer {
     companion object Factory {
         fun import(path: String): Pair<HybridNetwork, Configuration> {
             val parsedFile = parseIncludes(path)

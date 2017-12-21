@@ -81,7 +81,7 @@ data class HybridNetwork(
 
 data class AutomataInstance(
         val automata: String,
-        val parameters: MutableMap<String, ParseTreeItem> = LinkedHashMap<String, ParseTreeItem>()
+        val parameters: MutableMap<String, ParseTreeItem> = LinkedHashMap()
 )
 
 data class AutomataVariablePair(val automata: String, val variable: String)

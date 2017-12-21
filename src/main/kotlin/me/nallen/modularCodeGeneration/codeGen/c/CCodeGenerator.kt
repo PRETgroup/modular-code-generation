@@ -9,13 +9,12 @@ import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 import me.nallen.modularCodeGeneration.parseTree.VariableType
 import java.io.File
 
-class CCodeGenerator() {
+class CCodeGenerator {
     companion object {
         val RUNNABLE = "runnable.c"
         val MAKEFILE = "Makefile"
         val CONFIG_FILE = "config.h"
         val DELAYABLE_HEADER = "delayable.h"
-        val DELAYABLE_SOURCE = "delayable.c"
 
         private fun generateFsm(automata: HybridAutomata, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
@@ -143,10 +142,7 @@ class CCodeGenerator() {
             // Generate FSM files
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 for((name, instance) in network.instances) {
-                    val automata = CodeGenManager.createParametrisedFsm(network, name, instance)
-
-                    if(automata == null)
-                        throw IllegalArgumentException("Unable to find base machine $name to instantiate!")
+                    val automata = CodeGenManager.createParametrisedFsm(network, name, instance) ?: throw IllegalArgumentException("Unable to find base machine $name to instantiate!")
 
                     delayedTypes.addAll(automata.variables.filter({it.canBeDelayed()}).map({it.type}))
 
