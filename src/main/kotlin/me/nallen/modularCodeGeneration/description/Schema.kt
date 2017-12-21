@@ -62,5 +62,10 @@ data class Initialisation(
 
 data class Instance(
         var type: String,
-        var parameters: Map<String, ParseTreeItem>?
-)
+        var parameters: Map<String, ParseTreeItem>? = null
+) {
+    companion object Factory {
+        @JsonCreator @JvmStatic
+        fun create(input: String) = Instance(input)
+    }
+}

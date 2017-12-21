@@ -85,7 +85,7 @@ The root object for the HAML Document.
 |---|---|---|
 | name | String | **Required.** The name of this Hybrid Network. |
 | definitions | Map[String, [Definition](#definition)] | **Required.** A set of definitions of Hybrid Automata that can be instantiated. |
-| instances | Map[String, [Instance](#instance)] | **Required.** A set of instances of previously defined Hybrid Automata. |
+| instances | Map[String, [Instance](#instance) \| String] | **Required.** A set of instances of previously defined Hybrid Automata. |
 | mappings | Map[String, [Formula](#formula)] | A set of mappings that determine the value of each input of each Instance. |
 | codegenConfig | [Codegen Configuration](#codegen-configuration) | A list of settings available for the default code generation logic in this tool.<br/><br/> **Default:** A default instance of [Codegen Configuration](#codegen-configuration). |
 
