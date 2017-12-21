@@ -384,10 +384,22 @@ parameters:
 
 ### Program
 
-Introduction
+A sequence of operations that are to be executed.
+Programs allow for more advanced implementations than can be captured solely through Hybrid Automata.
 
-- Inherits String
-- Each line is a [Formula](#formula)
+A Program should be defined as a String.
+There is no need for semicolons at the end of each line, nor is there a need to declare and initialise variables, all internal variables and their types will automatically be inferred.
+
+Each line may be one of the following:
+
+| Name | Description | Example |
+|---|---|---|
+| Statement | A single [Formula](#formula). | `x + 5` |
+| Assignment | An assignment of a [Formula](#formula) to a variable. | `y = x + 5` |
+| Return | Return some [Formula](#formula) for a [Function](#function) | `return x + 5` |
+| If Statement | Allows for branching based on some [Formula](#formula) | `if (x < 5) {`<br/>&nbsp;&nbsp;&nbsp;&nbsp;`    y = x + 5`<br/>`}` |
+| ElseIf Statement | Allows for branching based on some [Formula](#formula) | `elseif (x < 10) {`<br/>&nbsp;&nbsp;&nbsp;&nbsp;`y = x + 10`<br/>`}` |
+| Else Statement | Allows for branching | `else {`<br/>&nbsp;&nbsp;&nbsp;&nbsp;`y = x + 15`<br/>`}` |
 
 #### Example
 
@@ -402,10 +414,25 @@ return 0.29*exp(62.89*theta) + 0.70*exp(-10.99*theta)
 
 ### Formula
 
-Introduction
+A boolean or algebraic formula that can be used to either represent a boolean or real result.
 
-- Inherits String
-- Subset of math operations
+A formula is implemented as a String, and allows for a subset of math operations to be used within.
+Custom functions can also be called, with any arbitrary number of parameters.
+Any real number, the values `true` and `false`, and any variables, can be used as operands for any operation.
+Parentheses (`(` and `)`) can be used to force operation order, as standard precedence rules are used.
+
+The operations allowed in a Formula are as follows:
+
+| Name | Symbol | Name | Symbol |
+|---|---|---|---|
+| AND | `&&` | OR | `\|\|` |
+| NOT | `!` | | |
+| Greater Than or Equal | `>=` | Greater Than | `>` |
+| Less Than or Equal | `<=` | Less Than | `<` |
+| Equal | `==` | Not Equal | `!=` |
+| Plus | `+` | Minus / Negative | `-` |
+| Multiple | `*` | Divide | `/` |
+| Square Root | `sqrt` | Exponential | `exp` |
 
 #### Example
 
