@@ -23,12 +23,13 @@ repositories {
 }
 
 dependencies {
+  compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
   compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
   testCompile 'junit:junit:4.11'
   testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
-  compile "com.fasterxml.jackson.core:jackson-databind:2.8.9"
-  compile "com.fasterxml.jackson.module:jackson-module-kotlin:2.8.9"
-  compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.8.9"
+  compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"
+  compile "com.fasterxml.jackson.module:jackson-module-kotlin:2.9.3"
+  compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.3"
   compile "com.xenomachina:kotlin-argparser:2.0.3"
 }
 
