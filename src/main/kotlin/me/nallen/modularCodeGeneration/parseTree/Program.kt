@@ -189,13 +189,13 @@ fun generateProgramFromString(input: String): Program {
                 }
             }
             else {
-                val match = returnRegex.matchEntire(line)
-                programLine = if(match != null) {
-                    Return(ParseTreeItem.Factory.generate(match.groupValues[1]))
+                val returnMatch = returnRegex.matchEntire(line)
+                programLine = if(returnMatch != null) {
+                    Return(ParseTreeItem.Factory.generate(returnMatch.groupValues[1]))
                 } else {
-                    val match = assignmentRegex.matchEntire(line)
-                    if(match != null) {
-                        Assignment(Variable(match.groupValues[1]), ParseTreeItem.Factory.generate(match.groupValues[2]))
+                    val assignmentMatch = assignmentRegex.matchEntire(line)
+                    if(assignmentMatch != null) {
+                        Assignment(Variable(assignmentMatch.groupValues[1]), ParseTreeItem.Factory.generate(assignmentMatch.groupValues[2]))
                     } else {
                         Statement(ParseTreeItem.Factory.generate(line))
                     }
