@@ -16,8 +16,9 @@ object MakefileGenerator {
 
         result.appendln("TARGET = $networkName")
         result.appendln("CC = gcc")
-        result.appendln("CFLAGS = -c -O2 -lm -Wall")
-        result.appendln("LDFLAGS = -g -Wall -lm")
+        result.appendln("CFLAGS = -c -O2 -Wall")
+        result.appendln("LDFLAGS = -g -Wall")
+        result.appendln("LDLIBS = -lm")
         result.appendln()
 
         result.appendln("build: $(TARGET)")
@@ -81,8 +82,13 @@ object MakefileGenerator {
         result.appendln()
         result.appendln("\t@echo Building $name...")
         result.append("\t@mkdir -p Objects; $(CC) $(CFLAGS)")
-        for(source in sources) {
-            result.append(" $source")
+        if(sources.size == 1) {
+            result.append(" $<")
+        }
+        else {
+            for (source in sources) {
+                result.append(" $source")
+            }
         }
         result.appendln(" -o $@")
 
@@ -98,11 +104,7 @@ object MakefileGenerator {
         }
         result.appendln()
         result.appendln("\t@echo Building $output...")
-        result.append("\t$(CC) $(LDFLAGS)")
-        for(source in sources) {
-            result.append(" $source")
-        }
-        result.appendln(" -o $@")
+        result.append("\t$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@")
 
         return result.toString()
     }
