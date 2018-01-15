@@ -2,6 +2,8 @@
 
 Aka. Modular Code Generation
 
+[![Build Status](https://travis-ci.org/PRETgroup/modular-code-generation.svg?branch=master)](https://travis-ci.org/PRETgroup/modular-code-generation)
+
 ## Table of Contents
 
 - [What is this?](#what-is-this)
