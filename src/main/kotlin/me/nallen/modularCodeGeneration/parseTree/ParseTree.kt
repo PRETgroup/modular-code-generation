@@ -267,7 +267,7 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
     }
 }
 
-fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableType>, knownFunctions: Map<String, VariableType?>): VariableType {
+fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableType> = HashMap(), knownFunctions: Map<String, VariableType?> = HashMap()): VariableType {
     return when(this) {
         is And -> VariableType.BOOLEAN
         is Or -> VariableType.BOOLEAN
@@ -288,6 +288,81 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         is Exponential -> VariableType.REAL
         is Variable -> knownVariables[name] ?: VariableType.REAL
         is Literal -> getTypeFromLiteral(value) ?: VariableType.REAL
+    }
+}
+
+fun ParseTreeItem.evaluateBoolean(var_map: Map<String, Literal> = HashMap()): Boolean {
+    if(this is FunctionCall) {
+        throw IllegalArgumentException("Unable to evaluate expression involving custom function calls")
+    }
+
+    if(this is Variable && !var_map.containsKey(name)) {
+        throw IllegalArgumentException("Unable to evaluate expression where not all variables have values")
+    }
+
+    return when(this) {
+        is And -> operandA.evaluateBoolean(var_map) && operandB.evaluateBoolean(var_map)
+        is Or -> operandA.evaluateBoolean(var_map) || operandB.evaluateBoolean(var_map)
+        is Not -> !operandA.evaluateBoolean(var_map)
+        is GreaterThanOrEqual -> operandA.evaluateReal(var_map) >= operandB.evaluateReal(var_map)
+        is GreaterThan -> operandA.evaluateReal(var_map) > operandB.evaluateReal(var_map)
+        is LessThanOrEqual -> operandA.evaluateReal(var_map) <= operandB.evaluateReal(var_map)
+        is LessThan -> operandA.evaluateReal(var_map) < operandB.evaluateReal(var_map)
+        is Equal -> operandA.evaluateReal(var_map) == operandB.evaluateReal(var_map)
+        is NotEqual -> operandA.evaluateReal(var_map) != operandB.evaluateReal(var_map)
+
+        is Variable -> var_map[name]!!.evaluateBoolean(var_map)
+        is Literal -> if("true" == value) {
+            true
+        }
+        else if("false" == value) {
+            false
+        }
+        else {
+            (value.toDoubleOrNull() ?: 0.0) != 0.0
+        }
+
+        else -> this.evaluateReal(var_map) != 0.0
+    }
+}
+
+fun ParseTreeItem.evaluateReal(var_map: Map<String, Literal> = HashMap()): Double {
+    if(this is FunctionCall) {
+        throw IllegalArgumentException("Unable to evaluate expression involving custom function calls")
+    }
+
+    if(this is Variable && !var_map.containsKey(name)) {
+        throw IllegalArgumentException("Unable to evaluate expression where not all variables have values")
+    }
+
+    return when(this) {
+        is Plus -> operandA.evaluateReal(var_map) + operandB.evaluateReal(var_map)
+        is Minus -> operandA.evaluateReal(var_map) - operandB.evaluateReal(var_map)
+        is Multiply -> operandA.evaluateReal(var_map) * operandB.evaluateReal(var_map)
+        is Divide -> operandA.evaluateReal(var_map) / operandB.evaluateReal(var_map)
+        is Negative -> -1 * operandA.evaluateReal(var_map)
+        is SquareRoot -> Math.sqrt(operandA.evaluateReal(var_map))
+        is Exponential -> Math.exp(operandA.evaluateReal(var_map))
+
+        is Variable -> var_map[name]!!.evaluateReal(var_map)
+        is Literal -> if("true" == value) {
+            1.0
+        }
+        else if("false" == value) {
+            0.0
+        }
+        else {
+            value.toDoubleOrNull() ?: 0.0
+        }
+
+        else -> if(this.evaluateBoolean(var_map)) 1.0 else 0.0
+    }
+}
+
+fun ParseTreeItem.evaluate(var_map: Map<String, Literal> = HashMap()): Any {
+    return when(this.getOperationResultType()) {
+        VariableType.BOOLEAN -> this.evaluateBoolean(var_map)
+        VariableType.REAL -> this.evaluateReal(var_map)
     }
 }
 
