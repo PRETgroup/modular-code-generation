@@ -3,7 +3,9 @@ package me.nallen.modularCodeGeneration
 import io.kotlintest.matchers.*
 import io.kotlintest.specs.StringSpec
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
+import me.nallen.modularCodeGeneration.parseTree.Program
 import me.nallen.modularCodeGeneration.parseTree.evaluate
+import me.nallen.modularCodeGeneration.parseTree.generateString
 
 data class EquationSet(
         val original: String,
@@ -76,6 +78,44 @@ class ParseTreeTests : StringSpec() {
                         ParseTreeItem.generate(equation.original).evaluate()
                     }
                 }
+            }
+        }
+
+        "Parse Complex Program" {
+            val program = Program.generate(
+                    "x = y + 1\n" +
+                    "if(x < 5) {\n" +
+                    "    if(y > 2) {\n" +
+                    "        x = x + y\n" +
+                    "        return x\n" +
+                    "    }\n" +
+                    "}\n" +
+                    "else if(x == 5) {\n" +
+                    "    return x\n" +
+                    "}\n" +
+                    "else {\n" +
+                    "    z = x\n" +
+                    "}\n" +
+                    "return 0\n")
+
+            program.getReturnType()
+
+            program.generateString()
+
+            program.collectVariables()
+        }
+
+        "Invalid Program Return Types" {
+            val program = Program.generate(
+                    "if(x < 5) {\n" +
+                    "    return x\n" +
+                    "}\n" +
+                    "else {\n" +
+                    "    return false\n" +
+                    "}\n")
+
+            shouldThrow<IllegalArgumentException> {
+                program.getReturnType()
             }
         }
     }

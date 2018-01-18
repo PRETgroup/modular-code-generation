@@ -22,10 +22,13 @@ class CodeGenTests : StringSpec() {
                         config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
                         CodeGenManager.generateForNetwork(network, CodeGenLanguage.C, "build/tmp/codegen", config)
 
-                        config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME, logging = Logging())
+                        config = config.copy(indentSize = -1, parametrisationMethod = ParametrisationMethod.RUN_TIME, logging = Logging())
                         CodeGenManager.generateForNetwork(network, CodeGenLanguage.C, "build/tmp/codegen", config)
 
                         config = config.copy(maximumInterTransitions = 4, requireOneIntraTransitionPerTick = true)
+                        CodeGenManager.generateForNetwork(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+
+                        config = config.copy(maximumInterTransitions = 4, requireOneIntraTransitionPerTick = false)
                         CodeGenManager.generateForNetwork(network, CodeGenLanguage.C, "build/tmp/codegen", config)
                     }
                 }
