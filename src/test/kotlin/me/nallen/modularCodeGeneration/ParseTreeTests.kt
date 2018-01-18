@@ -43,7 +43,10 @@ class ParseTreeTests : StringSpec() {
                 EquationSet("broken_function_52<3>"),
                 EquationSet("5 * / 2"),
                 EquationSet("4 3 - + 2"),
-                EquationSet("5 * 2 / 3)")
+                EquationSet("5 * 2 / 3)"),
+                EquationSet("4 +"),
+                EquationSet("4 , 4"),
+                EquationSet("4 + (2 - 3")
         )
 
         for(equation in equations) {
@@ -86,6 +89,7 @@ class ParseTreeTests : StringSpec() {
                     "x = y + 1\n" +
                     "if(x < 5) {\n" +
                     "    if(y > 2) {\n" +
+                    "        custom_function(y)\n" +
                     "        x = x + y\n" +
                     "        return x\n" +
                     "    }\n" +
@@ -116,6 +120,14 @@ class ParseTreeTests : StringSpec() {
 
             shouldThrow<IllegalArgumentException> {
                 program.getReturnType()
+            }
+        }
+
+        "Invalid Program" {
+            shouldThrow<IllegalArgumentException> {
+                Program.generate(
+                "if(x < 5) {\n" +
+                        "    return x\n")
             }
         }
     }

@@ -213,7 +213,7 @@ internal fun convertToPostfix(input: String): String {
 
         val lastOperator = operands[opStack.last()]
         if(lastOperator != null)
-            output += operands[opStack.last()]?.symbol + " "
+            output += lastOperator.symbol + " "
 
         opStack.removeAt(opStack.size-1)
     }
