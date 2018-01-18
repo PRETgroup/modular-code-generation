@@ -2,7 +2,9 @@
 
 Aka. Modular Code Generation
 
-[![Build Status](https://travis-ci.org/PRETgroup/modular-code-generation.svg?branch=master)](https://travis-ci.org/PRETgroup/modular-code-generation)
+[![Build Status](https://img.shields.io/travis/PRETgroup/modular-code-generation.svg?style=flat-square)](https://travis-ci.org/PRETgroup/modular-code-generation)
+[![Test Coverage](https://img.shields.io/codecov/c/github/PRETgroup/modular-code-generation.svg?style=flat-square)](https://codecov.io/gh/PRETgroup/modular-code-generation)
+
 
 ## Table of Contents
 
