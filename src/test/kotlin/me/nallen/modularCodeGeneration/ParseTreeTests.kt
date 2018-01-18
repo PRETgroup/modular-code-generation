@@ -1,16 +1,13 @@
 package me.nallen.modularCodeGeneration
 
-import io.kotlintest.matchers.Matcher
-import io.kotlintest.matchers.Result
-import io.kotlintest.matchers.should
-import io.kotlintest.matchers.shouldBe
+import io.kotlintest.matchers.*
 import io.kotlintest.specs.StringSpec
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.parseTree.evaluate
 
 data class EquationSet(
         val original: String,
-        val parenthesised: String,
+        val parenthesised: String? = null,
         val result: Any? = null
 )
 
@@ -27,12 +24,29 @@ class ParseTreeTests : StringSpec() {
                 EquationSet("a == 7 || b != 5", "(a == 7) || (b != 5)"),
                 EquationSet("a <= 3 && b >= 2 || c < 2 || d > 7", "(((a <= 3) && (b >= 2)) || (c < 2)) || (d > 7)"),
                 EquationSet("!b == 5", "(!b) == 5"),
-                EquationSet("!(b == 5)", "!(b == 5)")
+                EquationSet("!(b == 5)", "!(b == 5)"),
+                EquationSet("2 + my_custom_function(a, b, test() )", "2 + my_custom_function(a, b, test() )"),
+
+                EquationSet("my_custom_function(a, b c)"),
+                EquationSet("my_custom_function(a, b, c"),
+                EquationSet("my_custom_function(a, b, c -)"),
+                EquationSet("5 * / 2"),
+                EquationSet("4 3 - + 2"),
+                EquationSet("5 * 2 / 3)")
         )
 
         for(equation in equations) {
-            ("Precedence of " + equation.original) {
-                ParseTreeItem.generate(equation.original) shouldBe ParseTreeItem.generate(equation.parenthesised)
+            if(equation.parenthesised != null) {
+                ("Precedence of " + equation.original) {
+                    ParseTreeItem.generate(equation.original) shouldBe ParseTreeItem.generate(equation.parenthesised)
+                }
+            }
+            else {
+                ("Failure of " + equation.original) {
+                    shouldThrow<IllegalArgumentException> {
+                        ParseTreeItem.generate(equation.original)
+                    }
+                }
             }
 
             if(equation.result != null) {
