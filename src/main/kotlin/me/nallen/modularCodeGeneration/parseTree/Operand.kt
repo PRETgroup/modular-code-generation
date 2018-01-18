@@ -226,9 +226,16 @@ internal fun operandsCanExistTogether(first: Operand, second: Operand): Boolean 
     val secondOperator = operands[second]
 
     if (firstOperator != null && secondOperator != null) {
-        if (firstOperator.associativity == Associativity.RIGHT && firstOperator.operands > 0
-                || firstOperator.associativity == Associativity.LEFT && firstOperator.operands > 1) {
+        if ((firstOperator.associativity == Associativity.RIGHT && firstOperator.operands > 0)
+                || (firstOperator.associativity == Associativity.LEFT && firstOperator.operands > 1)) {
             if (secondOperator.associativity == Associativity.RIGHT)
+                return true
+
+            return false
+        }
+
+        if (secondOperator.associativity == Associativity.LEFT && secondOperator.operands > 0) {
+            if (firstOperator.associativity == Associativity.LEFT)
                 return true
 
             return false
