@@ -91,7 +91,7 @@ internal fun convertToPostfix(input: String): String {
     val opStack = ArrayList<Operand>()
     val openBracketStack = ArrayList<Operand>()
     val functionCalls = ArrayList<Function>()
-    var followingOperand = true
+    var followingOperand: Operand? = Operand.PLUS
 
     for(i in 0 until input.length) {
         if(skip > 0) {
@@ -125,8 +125,11 @@ internal fun convertToPostfix(input: String): String {
                 }
 
                 if (isFunctionCall) {
-                    if(followingOperand)
+                    if(followingOperand == Operand.FUNCTION_CALL)
                         functionCalls.last().parameters--
+                    else if(followingOperand != null && operandNeedsRightHandOperator(followingOperand)) {
+                        throw IllegalArgumentException("Invalid sequence of operators in formula $input")
+                    }
 
                     output += "${functionCalls.last().name}<${functionCalls.last().parameters}> "
                     functionCalls.removeAt(functionCalls.size - 1)
@@ -137,9 +140,12 @@ internal fun convertToPostfix(input: String): String {
             }
             else {
                 if(operand != Operand.OPEN_BRACKET && operand != Operand.FUNCTION_CALL) {
-                    if(operand == Operand.MINUS && followingOperand) {
+                    if(operand == Operand.MINUS && followingOperand != null) {
                         operand = Operand.NEGATIVE
                         operator = operands[Operand.NEGATIVE]
+                    }
+                    else if(followingOperand != null && operandNeedsRightHandOperator(followingOperand)) {
+                        throw IllegalArgumentException("Invalid sequence of operators in formula $input")
                     }
 
                     if(operand == Operand.FUNCTION_SEPARATOR && functionCalls.isNotEmpty())
@@ -180,7 +186,7 @@ internal fun convertToPostfix(input: String): String {
 
                 opStack.add(operand)
 
-                followingOperand = true
+                followingOperand = operand
             }
 
             if(skip == 0)
@@ -189,7 +195,7 @@ internal fun convertToPostfix(input: String): String {
                 skip -= 1
         }
         else if(!input[i].isWhitespace()){
-            followingOperand = false
+            followingOperand = null
             storage += input[i]
         }
     }
@@ -207,6 +213,16 @@ internal fun convertToPostfix(input: String): String {
     }
 
     return output
+}
+
+internal fun operandNeedsRightHandOperator(operand: Operand): Boolean {
+    val operator = operands[operand]
+
+    if(operator != null)
+        if(operator.associativity == Associativity.LEFT && operator.operands == 1)
+            return false
+
+    return true;
 }
 
 internal data class Function(var name: String, var parameters: Int = 1)
