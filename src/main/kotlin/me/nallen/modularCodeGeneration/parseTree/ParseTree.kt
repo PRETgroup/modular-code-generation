@@ -66,55 +66,60 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
         val operand = getOperandForSequence(argument)
 
         if(operand != null) {
-            val item = when(operand) {
-                Operand.AND -> And(stack[stack.size-2], stack[stack.size-1])
-                Operand.OR -> Or(stack[stack.size-2], stack[stack.size-1])
-                Operand.NOT -> Not(stack[stack.size-1])
-                Operand.GREATER_THAN_OR_EQUAL -> GreaterThanOrEqual(stack[stack.size-2], stack[stack.size-1])
-                Operand.GREATER_THAN -> GreaterThan(stack[stack.size-2], stack[stack.size-1])
-                Operand.LESS_THAN_OR_EQUAL -> LessThanOrEqual(stack[stack.size-2], stack[stack.size-1])
-                Operand.LESS_THAN -> LessThan(stack[stack.size-2], stack[stack.size-1])
-                Operand.EQUAL -> Equal(stack[stack.size-2], stack[stack.size-1])
-                Operand.NOT_EQUAL -> NotEqual(stack[stack.size-2], stack[stack.size-1])
-                Operand.OPEN_BRACKET -> null
-                Operand.CLOSE_BRACKET -> null
-                Operand.FUNCTION_CALL -> {
-                    val regex = Regex("^(.+)<(\\d+)>$")
-                    val match = regex.matchEntire(argument)
+            try {
+                val item = when(operand) {
+                    Operand.AND -> And(stack[stack.size-2], stack[stack.size-1])
+                    Operand.OR -> Or(stack[stack.size-2], stack[stack.size-1])
+                    Operand.NOT -> Not(stack[stack.size-1])
+                    Operand.GREATER_THAN_OR_EQUAL -> GreaterThanOrEqual(stack[stack.size-2], stack[stack.size-1])
+                    Operand.GREATER_THAN -> GreaterThan(stack[stack.size-2], stack[stack.size-1])
+                    Operand.LESS_THAN_OR_EQUAL -> LessThanOrEqual(stack[stack.size-2], stack[stack.size-1])
+                    Operand.LESS_THAN -> LessThan(stack[stack.size-2], stack[stack.size-1])
+                    Operand.EQUAL -> Equal(stack[stack.size-2], stack[stack.size-1])
+                    Operand.NOT_EQUAL -> NotEqual(stack[stack.size-2], stack[stack.size-1])
+                    Operand.OPEN_BRACKET -> null
+                    Operand.CLOSE_BRACKET -> null
+                    Operand.FUNCTION_CALL -> {
+                        val regex = Regex("^(.+)<(\\d+)>$")
+                        val match = regex.matchEntire(argument)
 
-                    if(match != null) {
-                        val functionArguments = ArrayList<ParseTreeItem>()
-                        try {
-                            (match.groupValues[2].toInt() downTo 1).mapTo(functionArguments) { stack[stack.size- it] }
+                        if(match != null) {
+                            val functionArguments = ArrayList<ParseTreeItem>()
+                            try {
+                                (match.groupValues[2].toInt() downTo 1).mapTo(functionArguments) { stack[stack.size- it] }
 
-                            FunctionCall(match.groupValues[1], functionArguments)
+                                FunctionCall(match.groupValues[1], functionArguments)
+                            }
+                            catch(ex: ArrayIndexOutOfBoundsException) {
+                                throw IllegalArgumentException("Unable to correctly parse function ${match.groupValues[1]} in $input")
+                            }
                         }
-                        catch(ex: ArrayIndexOutOfBoundsException) {
-                            throw IllegalArgumentException("Unable to correctly parse function ${match.groupValues[1]} in $input")
-                        }
+                        else
+                            throw IllegalArgumentException("An error occurred while trying to parse the function $argument")
                     }
-                    else
-                        throw IllegalArgumentException("An error occurred while trying to parse the function $argument")
+                    Operand.FUNCTION_SEPARATOR -> null
+                    Operand.PLUS -> Plus(stack[stack.size-2], stack[stack.size-1])
+                    Operand.MINUS -> Minus(stack[stack.size-2], stack[stack.size-1])
+                    Operand.NEGATIVE -> Negative(stack[stack.size-1])
+                    Operand.MULTIPLY -> Multiply(stack[stack.size-2], stack[stack.size-1])
+                    Operand.DIVIDE -> Divide(stack[stack.size-2], stack[stack.size-1])
+                    Operand.SQUARE_ROOT -> SquareRoot(stack[stack.size-1])
+                    Operand.EXPONENTIAL -> Exponential(stack[stack.size-1])
                 }
-                Operand.FUNCTION_SEPARATOR -> null
-                Operand.PLUS -> Plus(stack[stack.size-2], stack[stack.size-1])
-                Operand.MINUS -> Minus(stack[stack.size-2], stack[stack.size-1])
-                Operand.NEGATIVE -> Negative(stack[stack.size-1])
-                Operand.MULTIPLY -> Multiply(stack[stack.size-2], stack[stack.size-1])
-                Operand.DIVIDE -> Divide(stack[stack.size-2], stack[stack.size-1])
-                Operand.SQUARE_ROOT -> SquareRoot(stack[stack.size-1])
-                Operand.EXPONENTIAL -> Exponential(stack[stack.size-1])
+
+                if(item != null) {
+                    var numOperands = operands[operand]?.operands ?: 0
+                    if(item is FunctionCall)
+                        numOperands = item.arguments.size
+
+                    for(i in 1..numOperands)
+                        stack.removeAt(stack.size-1)
+
+                    stack.add(item)
+                }
             }
-
-            if(item != null) {
-                var numOperands = operands[operand]?.operands ?: 0
-                if(item is FunctionCall)
-                    numOperands = item.arguments.size
-
-                for(i in 1..numOperands)
-                    stack.removeAt(stack.size-1)
-
-                stack.add(item)
+            catch(ex: ArrayIndexOutOfBoundsException) {
+                throw IllegalArgumentException("Incorrect number of arguments provided to ${operand.name}: $input. ")
             }
         }
         else {
