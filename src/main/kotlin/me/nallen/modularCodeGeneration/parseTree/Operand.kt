@@ -36,8 +36,8 @@ internal val operands: Map<Operand, Operator> = hashMapOf(
         Operand.LESS_THAN to Operator("<", 2, Associativity.LEFT, 6, false),
         Operand.EQUAL to Operator("==", 2, Associativity.LEFT, 7, true),
         Operand.NOT_EQUAL to Operator("!=", 2, Associativity.LEFT, 7, true),
-        Operand.OPEN_BRACKET to Operator("(", 0, Associativity.NONE, 1, true),
-        Operand.CLOSE_BRACKET to Operator(")", 0, Associativity.NONE, 1, true),
+        Operand.OPEN_BRACKET to Operator("(", 0, Associativity.RIGHT, 1, true),
+        Operand.CLOSE_BRACKET to Operator(")", 0, Associativity.LEFT, 1, true),
         Operand.FUNCTION_SEPARATOR to Operator(",", 0, Associativity.NONE, 1, true),
         Operand.PLUS to Operator("+", 2, Associativity.LEFT, 4, true),
         Operand.MINUS to Operator("-", 2, Associativity.LEFT, 4, false),
@@ -127,7 +127,7 @@ internal fun convertToPostfix(input: String): String {
                 if (isFunctionCall) {
                     if(followingOperand == Operand.FUNCTION_CALL)
                         functionCalls.last().parameters--
-                    else if(followingOperand != null && operandNeedsRightHandOperator(followingOperand)) {
+                    else if(followingOperand != null && !operandsCanExistTogether(followingOperand, operand)) {
                         throw IllegalArgumentException("Invalid sequence of operators in formula $input")
                     }
 
@@ -144,7 +144,7 @@ internal fun convertToPostfix(input: String): String {
                         operand = Operand.NEGATIVE
                         operator = operands[Operand.NEGATIVE]
                     }
-                    else if(followingOperand != null && operandNeedsRightHandOperator(followingOperand)) {
+                    else if(followingOperand != null && !operandsCanExistTogether(followingOperand, operand)) {
                         throw IllegalArgumentException("Invalid sequence of operators in formula $input")
                     }
 
@@ -205,6 +205,10 @@ internal fun convertToPostfix(input: String): String {
     }
 
     while(opStack.size > 0) {
+        if(opStack.last() == Operand.OPEN_BRACKET || opStack.last() == Operand.FUNCTION_CALL) {
+            throw IllegalArgumentException("Unmatched parenthesis in formula $input")
+        }
+
         val lastOperator = operands[opStack.last()]
         if(lastOperator != null)
             output += operands[opStack.last()]?.symbol + " "
@@ -215,12 +219,21 @@ internal fun convertToPostfix(input: String): String {
     return output
 }
 
-internal fun operandNeedsRightHandOperator(operand: Operand): Boolean {
-    val operator = operands[operand]
+internal fun operandsCanExistTogether(first: Operand, second: Operand): Boolean {
+    val firstOperator = operands[first]
+    val secondOperator = operands[second]
 
-    if(operator != null)
-        if(operator.associativity == Associativity.LEFT && operator.operands == 1)
+    if (firstOperator != null && secondOperator != null) {
+        if (firstOperator.associativity == Associativity.RIGHT && firstOperator.operands > 0
+                || firstOperator.associativity == Associativity.LEFT && firstOperator.operands > 1) {
+            if (secondOperator.associativity == Associativity.RIGHT)
+                return true
+
             return false
+        }
+    }
+
+
 
     return true;
 }
