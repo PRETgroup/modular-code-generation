@@ -57,6 +57,10 @@ private fun List<String>.convertToCamelCase(): String {
     return builder.toString().trim()
 }
 
+fun String.convertWordDelimiterConvention(newConvention: NamingConvention): String {
+    return arrayOf(this).convertWordDelimiterConvention(newConvention);
+}
+
 fun Array<out String>.convertWordDelimiterConvention(newConvention: NamingConvention): String {
     val words = ArrayList<String>()
     for(item in this) {
