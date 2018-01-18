@@ -84,9 +84,14 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
 
                     if(match != null) {
                         val functionArguments = ArrayList<ParseTreeItem>()
-                        (match.groupValues[2].toInt() downTo 1).mapTo(functionArguments) { stack[stack.size- it] }
+                        try {
+                            (match.groupValues[2].toInt() downTo 1).mapTo(functionArguments) { stack[stack.size- it] }
 
-                        FunctionCall(match.groupValues[1], functionArguments)
+                            FunctionCall(match.groupValues[1], functionArguments)
+                        }
+                        catch(ex: ArrayIndexOutOfBoundsException) {
+                            throw IllegalArgumentException("Unable to correctly parse function ${match.groupValues[1]} in $input")
+                        }
                     }
                     else
                         throw IllegalArgumentException("An error occurred while trying to parse the function $argument")
