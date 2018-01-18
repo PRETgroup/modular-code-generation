@@ -30,6 +30,7 @@ class ParseTreeTests : StringSpec() {
                 EquationSet("my_custom_function(a, b c)"),
                 EquationSet("my_custom_function(a, b, c"),
                 EquationSet("my_custom_function(a, b, c -)"),
+                EquationSet("broken_function_52<3>"),
                 EquationSet("5 * / 2"),
                 EquationSet("4 3 - + 2"),
                 EquationSet("5 * 2 / 3)")
