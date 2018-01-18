@@ -137,10 +137,12 @@ internal fun convertToPostfix(input: String): String {
 
                 openBracketStack.removeAt(openBracketStack.size-1)
                 opStack.removeAt(opStack.size-1)
+
+                followingOperand = operand
             }
             else {
                 if(operand != Operand.OPEN_BRACKET && operand != Operand.FUNCTION_CALL) {
-                    if(operand == Operand.MINUS && followingOperand != null) {
+                    if(operand == Operand.MINUS && followingOperand != null && !operandsCanExistTogether(followingOperand, operand)) {
                         operand = Operand.NEGATIVE
                         operator = operands[Operand.NEGATIVE]
                     }
