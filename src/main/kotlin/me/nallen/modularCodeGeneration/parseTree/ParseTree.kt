@@ -108,7 +108,7 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
                 }
 
                 if(item != null) {
-                    var numOperands = operands[operand]?.operands ?: 0
+                    var numOperands = getOperator(operand).operands
                     if(item is FunctionCall)
                         numOperands = item.arguments.size
 
@@ -179,11 +179,7 @@ fun ParseTreeItem.getPrecedence(): Int {
         is Exponential -> Operand.EXPONENTIAL
     }
 
-    val operator = operands[operand]
-    if(operator != null)
-        return operator.precedence
-
-    return 0
+    return getOperator(operand).precedence
 }
 
 fun ParseTreeItem.getCommutative(): Boolean {
@@ -209,11 +205,7 @@ fun ParseTreeItem.getCommutative(): Boolean {
         is Exponential -> Operand.EXPONENTIAL
     }
 
-    val operator = operands[operand]
-    if(operator != null)
-        return operator.commutative
-
-    return false
+    return getOperator(operand).commutative
 }
 
 fun ParseTreeItem.generateString(): String {

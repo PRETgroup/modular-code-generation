@@ -26,37 +26,44 @@ internal data class Operator(
         var commutative: Boolean
 )
 
-internal val operands: Map<Operand, Operator> = hashMapOf(
-        Operand.AND to Operator("&&", 2, Associativity.LEFT, 11, true),
-        Operand.OR to Operator("||", 2, Associativity.LEFT, 12, true),
-        Operand.NOT to Operator("!", 1, Associativity.RIGHT, 2, true),
-        Operand.GREATER_THAN_OR_EQUAL to Operator(">=", 2, Associativity.LEFT, 6, false),
-        Operand.GREATER_THAN to Operator(">", 2, Associativity.LEFT, 6, false),
-        Operand.LESS_THAN_OR_EQUAL to Operator("<=", 2, Associativity.LEFT, 6, false),
-        Operand.LESS_THAN to Operator("<", 2, Associativity.LEFT, 6, false),
-        Operand.EQUAL to Operator("==", 2, Associativity.LEFT, 7, true),
-        Operand.NOT_EQUAL to Operator("!=", 2, Associativity.LEFT, 7, true),
-        Operand.OPEN_BRACKET to Operator("(", 0, Associativity.RIGHT, 1, true),
-        Operand.CLOSE_BRACKET to Operator(")", 0, Associativity.LEFT, 1, true),
-        Operand.FUNCTION_SEPARATOR to Operator(",", 0, Associativity.NONE, 1, true),
-        Operand.PLUS to Operator("+", 2, Associativity.LEFT, 4, true),
-        Operand.MINUS to Operator("-", 2, Associativity.LEFT, 4, false),
-        Operand.NEGATIVE to Operator("`", 1, Associativity.RIGHT, 2, true),
-        Operand.MULTIPLY to Operator("*", 2, Associativity.LEFT, 3, true),
-        Operand.DIVIDE to Operator("/", 2, Associativity.LEFT, 3, false),
-        Operand.SQUARE_ROOT to Operator("sqrt", 1, Associativity.RIGHT, 3, true),
-        Operand.EXPONENTIAL to Operator("exp", 1, Associativity.RIGHT, 3, true)
-)
+internal fun getOperator(operand: Operand): Operator {
+    return when(operand) {
+        Operand.AND -> Operator("&&", 2, Associativity.LEFT, 11, true)
+        Operand.OR -> Operator("||", 2, Associativity.LEFT, 12, true)
+        Operand.NOT -> Operator("!", 1, Associativity.RIGHT, 2, true)
+        Operand.GREATER_THAN_OR_EQUAL -> Operator(">=", 2, Associativity.LEFT, 6, false)
+        Operand.GREATER_THAN -> Operator(">", 2, Associativity.LEFT, 6, false)
+        Operand.LESS_THAN_OR_EQUAL -> Operator("<=", 2, Associativity.LEFT, 6, false)
+        Operand.LESS_THAN -> Operator("<", 2, Associativity.LEFT, 6, false)
+        Operand.EQUAL -> Operator("==", 2, Associativity.LEFT, 7, true)
+        Operand.NOT_EQUAL -> Operator("!=", 2, Associativity.LEFT, 7, true)
+        Operand.OPEN_BRACKET -> Operator("(", 0, Associativity.RIGHT, 1, true)
+        Operand.CLOSE_BRACKET -> Operator(")", 0, Associativity.LEFT, 1, true)
+        Operand.FUNCTION_SEPARATOR -> Operator(",", 0, Associativity.NONE, 1, true)
+        Operand.PLUS -> Operator("+", 2, Associativity.LEFT, 4, true)
+        Operand.MINUS -> Operator("-", 2, Associativity.LEFT, 4, false)
+        Operand.NEGATIVE -> Operator("`", 1, Associativity.RIGHT, 2, true)
+        Operand.MULTIPLY -> Operator("*", 2, Associativity.LEFT, 3, true)
+        Operand.DIVIDE -> Operator("/", 2, Associativity.LEFT, 3, false)
+        Operand.SQUARE_ROOT -> Operator("sqrt", 1, Associativity.RIGHT, 3, true)
+        Operand.EXPONENTIAL -> Operator("exp", 1, Associativity.RIGHT, 3, true)
+        Operand.FUNCTION_CALL -> Operator("function<>(", 0, Associativity.RIGHT, 1, true)
+    }
+}
+
+internal fun getMapOfOperators(): Map<Operand, Operator> {
+    return Operand.values().map { Pair(it, getOperator(it)) }.toMap()
+}
 
 internal fun getOperandForSequence(input: String): Operand? {
     val matches = ArrayList<Operand>()
-    for((operand, operator) in operands) {
+    for((operand, operator) in getMapOfOperators()) {
         if(input.startsWith(operator.symbol))
             matches.add(operand)
     }
 
     if(matches.size > 0)
-        return matches.sortedWith(compareBy({operands[it]?.symbol?.length}, {operands[it]?.operands})).last()
+        return matches.sortedWith(compareBy({getOperator(it).symbol.length}, {getOperator(it).operands})).last()
 
     if(getFunctionName(input) != null)
         return Operand.FUNCTION_CALL
@@ -108,7 +115,7 @@ internal fun convertToPostfix(input: String): String {
         }
 
         if(operand != null) {
-            var operator = operands[operand]
+            var operator = getOperator(operand)
             skip = 0
 
             if(operand == Operand.CLOSE_BRACKET) {
@@ -116,7 +123,7 @@ internal fun convertToPostfix(input: String): String {
 
                 while(opStack.last() != Operand.OPEN_BRACKET && opStack.last() != Operand.FUNCTION_CALL) {
                     if(opStack.last() != Operand.FUNCTION_SEPARATOR)
-                        output += operands[opStack.last()]?.symbol + " "
+                        output += getOperator(opStack.last()).symbol + " "
                     opStack.removeAt(opStack.size-1)
 
                     if(opStack.size == 0) {
@@ -144,7 +151,7 @@ internal fun convertToPostfix(input: String): String {
                 if(operand != Operand.OPEN_BRACKET && operand != Operand.FUNCTION_CALL) {
                     if(operand == Operand.MINUS && followingOperand != null && !operandsCanExistTogether(followingOperand, operand)) {
                         operand = Operand.NEGATIVE
-                        operator = operands[Operand.NEGATIVE]
+                        operator = getOperator(Operand.NEGATIVE)
                     }
                     else if(followingOperand != null && !operandsCanExistTogether(followingOperand, operand)) {
                         throw IllegalArgumentException("Invalid sequence of operators in formula $input")
@@ -154,17 +161,15 @@ internal fun convertToPostfix(input: String): String {
                         functionCalls[functionCalls.size-1].parameters++
 
                     while((opStack.size > 0) && (opStack.last() != Operand.OPEN_BRACKET) && (opStack.last() != Operand.FUNCTION_CALL)) {
-                        val lastOperator = operands[opStack.last()]
-                        if(lastOperator != null && operator != null) {
-                            if(lastOperator.precedence > operator.precedence)
-                                break
+                        val lastOperator = getOperator(opStack.last())
+                        if(lastOperator.precedence > operator.precedence)
+                            break
 
-                            if((lastOperator.precedence == operator.precedence)
-                                    && operator.associativity == Associativity.RIGHT)
-                                break
+                        if((lastOperator.precedence == operator.precedence)
+                                && operator.associativity == Associativity.RIGHT)
+                            break
 
-                            output += lastOperator.symbol + " "
-                        }
+                        output += lastOperator.symbol + " "
 
                         opStack.removeAt(opStack.size-1)
                     }
@@ -192,7 +197,7 @@ internal fun convertToPostfix(input: String): String {
             }
 
             if(skip == 0)
-                skip = (operator?.symbol?.length ?: 1) - 1
+                skip = operator.symbol.length - 1
             else
                 skip -= 1
         }
@@ -211,9 +216,8 @@ internal fun convertToPostfix(input: String): String {
             throw IllegalArgumentException("Unmatched parenthesis in formula $input")
         }
 
-        val lastOperator = operands[opStack.last()]
-        if(lastOperator != null)
-            output += lastOperator.symbol + " "
+        val lastOperator = getOperator(opStack.last())
+        output += lastOperator.symbol + " "
 
         opStack.removeAt(opStack.size-1)
     }
@@ -222,27 +226,23 @@ internal fun convertToPostfix(input: String): String {
 }
 
 internal fun operandsCanExistTogether(first: Operand, second: Operand): Boolean {
-    val firstOperator = operands[first]
-    val secondOperator = operands[second]
+    val firstOperator = getOperator(first)
+    val secondOperator = getOperator(second)
 
-    if (firstOperator != null && secondOperator != null) {
-        if ((firstOperator.associativity == Associativity.RIGHT && firstOperator.operands > 0)
-                || (firstOperator.associativity == Associativity.LEFT && firstOperator.operands > 1)) {
-            if (secondOperator.associativity == Associativity.RIGHT)
-                return true
+    if ((firstOperator.associativity == Associativity.RIGHT && firstOperator.operands > 0)
+            || (firstOperator.associativity == Associativity.LEFT && firstOperator.operands > 1)) {
+        if (secondOperator.associativity == Associativity.RIGHT)
+            return true
 
-            return false
-        }
-
-        if (secondOperator.associativity == Associativity.LEFT && secondOperator.operands > 0) {
-            if (firstOperator.associativity == Associativity.LEFT)
-                return true
-
-            return false
-        }
+        return false
     }
 
+    if (secondOperator.associativity == Associativity.LEFT && secondOperator.operands > 0) {
+        if (firstOperator.associativity == Associativity.LEFT)
+            return true
 
+        return false
+    }
 
     return true;
 }
