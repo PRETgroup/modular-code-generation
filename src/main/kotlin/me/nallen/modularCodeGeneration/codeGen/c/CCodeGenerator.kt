@@ -20,7 +20,7 @@ class CCodeGenerator {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
-                outputDir.mkdir()
+                outputDir.mkdirs()
 
             File(outputDir, "${Utils.createFileName(automata.name)}.h").writeText(HFileGenerator.generate(automata, config))
             File(outputDir, "${Utils.createFileName(automata.name)}.c").writeText(CFileGenerator.generate(automata, config))
@@ -30,7 +30,7 @@ class CCodeGenerator {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
-                outputDir.mkdir()
+                outputDir.mkdirs()
 
             File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(network, config))
         }
@@ -39,7 +39,7 @@ class CCodeGenerator {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
-                outputDir.mkdir()
+                outputDir.mkdirs()
 
             File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(name, instances, config))
         }
@@ -48,7 +48,7 @@ class CCodeGenerator {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
-                outputDir.mkdir()
+                outputDir.mkdirs()
 
             val content = StringBuilder()
 
@@ -65,7 +65,7 @@ class CCodeGenerator {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
-                outputDir.mkdir()
+                outputDir.mkdirs()
 
             val content = StringBuilder()
 
@@ -136,7 +136,7 @@ class CCodeGenerator {
             val outputDir = File(dir)
 
             if(!outputDir.exists())
-                outputDir.mkdir()
+                outputDir.mkdirs()
 
             val delayedTypes = ArrayList<VariableType>()
             // Generate FSM files

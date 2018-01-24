@@ -20,7 +20,7 @@ object CodeGenManager {
             throw IllegalArgumentException("Desired output directory $dir is not a directory!")
 
         outputDir.deleteRecursively()
-        outputDir.mkdir()
+        outputDir.mkdirs()
 
         when(language) {
             CodeGenLanguage.C -> CCodeGenerator.generateNetwork(network, dir, config)
