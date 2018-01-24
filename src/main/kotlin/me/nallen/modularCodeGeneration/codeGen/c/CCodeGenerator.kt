@@ -96,7 +96,7 @@ class CCodeGenerator {
                 content.appendln()
 
                 content.appendln("// Initialisation function")
-                content.appendln("inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Init")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double max_delay) {")
+                content.appendln("static inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Init")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double max_delay) {")
                 content.appendln("${config.getIndent(1)}me->index = 0;")
                 content.appendln("${config.getIndent(1)}me->max_length = (unsigned int) (max_delay / STEP_SIZE);")
                 content.appendln("${config.getIndent(1)}me->buffer = malloc(sizeof(${Utils.generateCType(type)}) * me->max_length);")
@@ -104,7 +104,7 @@ class CCodeGenerator {
                 content.appendln()
 
                 content.appendln("// Add function")
-                content.appendln("inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Add")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, ${Utils.generateCType(type)} value) {")
+                content.appendln("static inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Add")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, ${Utils.generateCType(type)} value) {")
                 content.appendln("${config.getIndent(1)}me->index++;")
                 content.appendln("${config.getIndent(1)}if(me->index >= me->max_length)")
                 content.appendln("${config.getIndent(2)}me->index = 0;")
@@ -114,7 +114,7 @@ class CCodeGenerator {
                 content.appendln()
 
                 content.appendln("// Get function")
-                content.appendln("inline ${Utils.generateCType(type)} ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Get")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double delay) {")
+                content.appendln("static inline ${Utils.generateCType(type)} ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Get")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double delay) {")
                 content.appendln("${config.getIndent(1)}int steps = (int) (delay / STEP_SIZE);")
                 content.appendln("${config.getIndent(1)}if(steps > me->max_length)")
                 content.appendln("${config.getIndent(2)}return 0; // This is an error")
