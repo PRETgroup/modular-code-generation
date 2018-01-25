@@ -1,5 +1,12 @@
 package me.nallen.modularCodeGeneration.utils
 
+/**
+ * A set of utilities that operate on Strings (or Arrays of Strings).
+ */
+
+/**
+ * Checks whether the given string is entirely upper case characters
+ */
 fun String.isAllUpperCase(): Boolean {
     for(char in this) {
         if(!char.isUpperCase() && !char.isDigit())
@@ -8,17 +15,28 @@ fun String.isAllUpperCase(): Boolean {
     return true
 }
 
+/**
+ * Splits the string up into its constituent words.
+ * This could be in various different formats, in the following precedence:
+ *     1. Space delimited
+ *     2. kebab-case
+ *     3. snake_case
+ *     4. camelCase (or PascalCase)
+ */
 fun String.splitIntoWords(): List<String> {
     if (this.contains(" "))
     {
+        // Space delimited
         return this.split(' ')
     }
     else if (this.contains("-"))
     {
+        // kebab-case
         return this.split('-')
     }
     else if(this.contains("_"))
     {
+        // snake_case
         return this.split('_')
     }
     else
@@ -26,7 +44,9 @@ fun String.splitIntoWords(): List<String> {
         // Try camelCase or PascalCase
         val regex = Regex("^([A-Z][a-z0-9]*)+$")
 
+        // We capitalise the first letter in order to convert to PascalCase
         if(regex.matches(this.capitalize())) {
+            // Get each individual word
             val smallerRegex = Regex("[A-Z][a-z0-9]*")
             val matches = smallerRegex.findAll(this.capitalize())
 
@@ -39,14 +59,20 @@ fun String.splitIntoWords(): List<String> {
         }
     }
 
+    // If we can't find any method we know about, assume it's just one word
     return listOf(this)
 }
 
+/**
+ * Generates a string in camelCase format (lower case first letter) from a List of Strings
+ */
 private fun List<String>.convertToCamelCase(): String {
     val builder = StringBuilder()
 
+    // The first word is special as it needs to have a lower case first letter
     var first = true
     for(word in this) {
+        // The word we append also needs to have every non-first letter lower case
         if(first)
             builder.append(word.toLowerCase())
         else
@@ -57,19 +83,29 @@ private fun List<String>.convertToCamelCase(): String {
     return builder.toString().trim()
 }
 
+/**
+ * Converts the delimiter method from the current to a provided one
+ */
 fun String.convertWordDelimiterConvention(newConvention: NamingConvention): String {
+    // Call the other extension method we have to do the actual conversion
     return arrayOf(this).convertWordDelimiterConvention(newConvention);
 }
 
+/**
+ * Converts the delimiter method from the current to a provided one
+ */
 fun Array<out String>.convertWordDelimiterConvention(newConvention: NamingConvention): String {
+    // The list of strings that we have are sequences of words that get concatenated together.
     val words = ArrayList<String>()
     for(item in this) {
+        // Each string needs to be split up into its constituent words
         if(item.isAllUpperCase())
             words.addAll(item.toLowerCase().splitIntoWords())
         else
             words.addAll(item.splitIntoWords())
     }
 
+    // Return the string in its correct new naming convention
     return when(newConvention) {
         NamingConvention.SNAKE_CASE -> words.joinToString("_").toLowerCase()
         NamingConvention.UPPER_SNAKE_CASE -> words.joinToString("_").toUpperCase()
@@ -80,6 +116,9 @@ fun Array<out String>.convertWordDelimiterConvention(newConvention: NamingConven
     }
 }
 
+/**
+ * The different output naming conventions that are supported and can be converted into
+ */
 enum class NamingConvention {
     SNAKE_CASE, UPPER_SNAKE_CASE, KEBAB_CASE, UPPER_KEBAB_CASE, CAMEL_CASE, UPPER_CAMEL_CASE
 }
