@@ -26,7 +26,7 @@ object CFileGenerator {
         this.requireSelfReferenceInFunctionCalls = config.parametrisationMethod == ParametrisationMethod.RUN_TIME
         this.delayedVariableTypes.clear()
         for(variable in automata.variables.filter({it.canBeDelayed()}))
-            this.delayedVariableTypes.put(variable.name, variable.type)
+            this.delayedVariableTypes[variable.name] = variable.type
 
         val result = StringBuilder()
 
@@ -76,7 +76,7 @@ object CFileGenerator {
 
         val customDefinedVariables = LinkedHashMap<String, String>(Utils.DEFAULT_CUSTOM_VARIABLES)
         for(parameter in automata.variables.filter({it.locality == Locality.PARAMETER})) {
-            customDefinedVariables.put(parameter.name, "me->${Utils.createVariableName(parameter.name)}")
+            customDefinedVariables[parameter.name] = "me->${Utils.createVariableName(parameter.name)}"
         }
 
         result.appendln(Utils.generateCodeForProgram(function.logic, config, 1, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customDefinedVariables)))
@@ -311,7 +311,7 @@ object CFileGenerator {
         for((variable, equation) in location.flow) {
             val eulerSolution = Plus(ParseTreeVariable(variable), Multiply(equation, ParseTreeVariable("STEP_SIZE")))
             result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))};")
-            customVars.put(variable, "${Utils.createVariableName(variable)}_u")
+            customVars[variable] = "${Utils.createVariableName(variable)}_u"
         }
 
         if(location.flow.isNotEmpty())

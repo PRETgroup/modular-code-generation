@@ -14,7 +14,7 @@ This specification allows for the describing of hybrid systems in a formal manne
 - [Definitions](#definitions)
     - [Hybrid Automata](#hybrid-automata)
     - [Hybrid Network](#hybrid-network)
-    - [Ordinary Differential Equation](#ordinary-differerential-equation)
+    - [Ordinary Differential Equation](#ordinary-differential-equation)
 - [Specification](#specification)
     - [Includes](#includes)
 - [Schema](#schema)
@@ -41,7 +41,7 @@ This specification allows for the describing of hybrid systems in a formal manne
 
 #### Hybrid Automata
 A form of automata that supports both continuous and discrete parts.
-Continuous aspects of the automata are specified through [ODEs](#ordinary-differential-equations), while discrete aspects are captured through locations and transitions between them.
+Continuous aspects of the automata are specified through [ODEs](#ordinary-differential-equation), while discrete aspects are captured through locations and transitions between them.
 
 #### Hybrid Network
 A network of [Hybrid Automata](#hybrid-automata) that can be connected through their inputs and outputs in order to create a complete system.

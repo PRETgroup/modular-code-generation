@@ -44,7 +44,7 @@ object CodeGenManager {
                 function.logic.collectVariables(inputs, functionTypes)
 
                 function.returnType = function.logic.getReturnType(functionTypes)
-                functionTypes.put(function.name, function.returnType)
+                functionTypes[function.name] = function.returnType
             }
 
             for ((key, value) in instance.parameters) {
@@ -143,7 +143,7 @@ object CodeGenManager {
             for(saturationPoint in saturationPoints) {
                 val variableName = saturationPoint.variable
                 if(location.flow.containsKey(variableName) || location.update.containsKey(variableName))
-                    limits.put(saturationPoint, getDependenciesForSaturation(variableName, location))
+                    limits[saturationPoint] = getDependenciesForSaturation(variableName, location)
             }
         }
 

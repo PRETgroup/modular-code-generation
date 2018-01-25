@@ -309,14 +309,10 @@ fun ParseTreeItem.evaluateBoolean(var_map: Map<String, Literal> = HashMap()): Bo
         is NotEqual -> operandA.evaluateReal(var_map) != operandB.evaluateReal(var_map)
 
         is Variable -> var_map[name]!!.evaluateBoolean(var_map)
-        is Literal -> if("true" == value) {
-            true
-        }
-        else if("false" == value) {
-            false
-        }
-        else {
-            (value.toDoubleOrNull() ?: 0.0) != 0.0
+        is Literal -> when (value) {
+            "true" -> true
+            "false" -> false
+            else -> (value.toDoubleOrNull() ?: 0.0) != 0.0
         }
 
         else -> this.evaluateReal(var_map) != 0.0
@@ -342,14 +338,10 @@ fun ParseTreeItem.evaluateReal(var_map: Map<String, Literal> = HashMap()): Doubl
         is Exponential -> Math.exp(operandA.evaluateReal(var_map))
 
         is Variable -> var_map[name]!!.evaluateReal(var_map)
-        is Literal -> if("true" == value) {
-            1.0
-        }
-        else if("false" == value) {
-            0.0
-        }
-        else {
-            value.toDoubleOrNull() ?: 0.0
+        is Literal -> when (value) {
+            "true" -> 1.0
+            "false" -> 0.0
+            else -> value.toDoubleOrNull() ?: 0.0
         }
 
         else -> if(this.evaluateBoolean(var_map)) 1.0 else 0.0

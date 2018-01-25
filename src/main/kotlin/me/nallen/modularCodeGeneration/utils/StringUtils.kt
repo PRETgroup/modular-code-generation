@@ -87,8 +87,8 @@ private fun List<String>.convertToCamelCase(): String {
  * Converts the delimiter method from the current to a provided one
  */
 fun String.convertWordDelimiterConvention(newConvention: NamingConvention): String {
+    return arrayOf(this).convertWordDelimiterConvention(newConvention)
     // Call the other extension method we have to do the actual conversion
-    return arrayOf(this).convertWordDelimiterConvention(newConvention);
 }
 
 /**

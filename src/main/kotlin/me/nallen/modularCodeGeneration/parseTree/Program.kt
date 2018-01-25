@@ -33,7 +33,7 @@ data class Program(
         val knownVariables = LinkedHashMap<String, VariableType>()
 
         for(item in existing) {
-            knownVariables.put(item.name, item.type)
+            knownVariables[item.name] = item.type
         }
 
         for(item in existing) {
@@ -47,7 +47,7 @@ data class Program(
                 is Statement -> checkParseTreeForNewVariable(line.logic, knownVariables, knownFunctionTypes)
                 is Assignment -> {
                     if(!knownVariables.containsKey(line.variableName.name))
-                        knownVariables.put(line.variableName.name, line.variableValue.getOperationResultType(knownVariables, knownFunctionTypes))
+                        knownVariables[line.variableName.name] = line.variableValue.getOperationResultType(knownVariables, knownFunctionTypes)
 
                     checkParseTreeForNewVariable(line.variableName, knownVariables, knownFunctionTypes)
                     checkParseTreeForNewVariable(line.variableValue, knownVariables, knownFunctionTypes)
@@ -77,7 +77,7 @@ data class Program(
 
         val variableTypeMap = LinkedHashMap<String, VariableType>()
         for(variable in variables) {
-            variableTypeMap.put(variable.name, variable.type)
+            variableTypeMap[variable.name] = variable.type
         }
 
         var currentReturnType: VariableType? = null
@@ -120,7 +120,7 @@ data class Program(
             addVariable(item.name, item.getOperationResultType(knownVariables, knownFunctions))
 
             if(!knownVariables.containsKey(item.name))
-                knownVariables.put(item.name, variables.first({it.name == item.name}).type)
+                knownVariables[item.name] = variables.first({it.name == item.name}).type
         }
 
         for(child in item.getChildren()) {

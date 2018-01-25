@@ -42,7 +42,7 @@ data class HybridNetwork(
                 throw IllegalArgumentException("Instance ${name} does not declare value for parameter ${param.name} of ${instance.automata}!")
         }*/
 
-        instances.put(name, instance)
+        instances[name] = instance
 
         return this
     }
@@ -73,7 +73,7 @@ data class HybridNetwork(
             throw IllegalArgumentException("A previous assignment to ${to.automata}.${to.variable} has already been created!")
         }*/
 
-        ioMapping.put(to, from)
+        ioMapping[to] = from
 
         return this
     }

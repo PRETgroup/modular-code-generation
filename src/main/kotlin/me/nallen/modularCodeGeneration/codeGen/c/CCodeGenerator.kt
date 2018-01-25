@@ -11,10 +11,10 @@ import java.io.File
 
 class CCodeGenerator {
     companion object {
-        val RUNNABLE = "runnable.c"
-        val MAKEFILE = "Makefile"
-        val CONFIG_FILE = "config.h"
-        val DELAYABLE_HEADER = "delayable.h"
+        const val RUNNABLE = "runnable.c"
+        const val MAKEFILE = "Makefile"
+        const val CONFIG_FILE = "config.h"
+        const val DELAYABLE_HEADER = "delayable.h"
 
         private fun generateFsm(automata: HybridAutomata, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
