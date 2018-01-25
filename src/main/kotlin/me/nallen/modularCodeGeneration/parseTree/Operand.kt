@@ -218,18 +218,34 @@ internal fun convertToPostfix(input: String): String {
                 // Now we need to check that it's not an open bracket or function call
                 if(operand != Operand.OPEN_BRACKET && operand != Operand.FUNCTION_CALL) {
                     // The operator is a "normal" operator that needs precedence checks
+
+                    // Another special case is for the "negative" symbol, it looks just like a "minus" but behaves
+                    // differently, so if we find a "minus" after another operator then it's going to be a
+                    // "negative"
                     if(operand == Operand.MINUS && followingOperand != null && !operandsCanExistTogether(followingOperand, operand)) {
                         operand = Operand.NEGATIVE
                         operator = getOperator(Operand.NEGATIVE)
                     }
                     else if(followingOperand != null && !operandsCanExistTogether(followingOperand, operand)) {
+                        // Alternatively, if we find two operators after one another that can't work together, then
+                        // this is an invalid formula
                         throw IllegalArgumentException("Invalid sequence of operators in formula $input")
                     }
 
+                    // If we come across a function separator (comma) and we're within a function then we've found
+                    // another parameter
                     if(operand == Operand.FUNCTION_SEPARATOR && functionCalls.isNotEmpty())
                         functionCalls[functionCalls.size-1].parameters++
 
+                    // Whenever we come across an operator, we need to go through the stack to find any other operators
+                    // that need to be added beforehand because of precedence.
+                    // E.g. both (a + b * c) and (b * c + a) would add the * before +
                     while((opStack.size > 0) && (opStack.last() != Operand.OPEN_BRACKET) && (opStack.last() != Operand.FUNCTION_CALL)) {
+                        // Here there are two cases when we would STOP adding previous operators:
+                        //     - When the previous operator is of worse precedence than the current (e.g. + and *)
+                        //     - When the two operators are of the same precedence and the current one is right
+                        //       associative (e.g. + and "negative")
+
                         val lastOperator = getOperator(opStack.last())
                         if(lastOperator.precedence > operator.precedence)
                             break
@@ -238,6 +254,8 @@ internal fun convertToPostfix(input: String): String {
                                 && operator.associativity == Associativity.RIGHT)
                             break
 
+                        // If neither of those conditions are met, then we add the previous symbol and remove it from
+                        // the stack
                         output += lastOperator.symbol + " "
 
                         opStack.removeAt(opStack.size-1)
@@ -246,75 +264,116 @@ internal fun convertToPostfix(input: String): String {
                 else {
                     // The operator is some form of open bracket
                     if(operand == Operand.FUNCTION_CALL) {
+                        // If it's a function call then we have some extra information - the function name
                         val functionData = getFunctionName(input.substring(i))
                         if(functionData != null) {
+                            // We could successfully get the function name, so let's add that to the operator and skip
+                            // however many characters we need to
                             val (name, skipAmount) = functionData
                             skip = skipAmount
 
+                            // We keep track of function calls too so we know where parameters get associated to
                             functionCalls.add(Function(name))
                         }
                         else {
+                            // This is a case where a function is detected, but has an invalid function name, can occur
+                            // when someone writes our custom postfix function identifier in an infix formula
                             throw IllegalArgumentException("An unexpected error occured while trying to parse the formula $input")
                         }
                     }
 
+                    // Keep track of open brackets, for when we have to unwrap it
                     openBracketStack.add(operand)
                 }
 
+                // The current operator gets added to the stack for future processing
                 opStack.add(operand)
 
                 followingOperand = operand
             }
 
+            // Here we work out how many characters to skip, if none had previously been specified
             if(skip == 0)
                 skip = operator.symbol.length - 1
             else
                 skip -= 1
         }
         else if(!input[i].isWhitespace()){
+            // Finally, if it's not an operator, but also not whitespace, then it must be some sort of literal or
+            // variable, so we just keep track of this "thing" and add it when we're done
             followingOperand = null
             storage += input[i]
         }
     }
 
+    // If there's any trailing literal or variable we haven't yet added
     if(storage.isNotEmpty()) {
         output += storage + " "
     }
 
+    // Any operators left in the stack just get added in the order that they come off the stack - no need to evaluate
+    // precedence
     while(opStack.size > 0) {
+        // The only check is for unmatched open brackets
         if(opStack.last() == Operand.OPEN_BRACKET || opStack.last() == Operand.FUNCTION_CALL) {
+            // If we find an open bracket or function call then this an unmatched open bracket, error
             throw IllegalArgumentException("Unmatched parenthesis in formula $input")
         }
 
+        // Add the operator and remove it from the stack
         val lastOperator = getOperator(opStack.last())
         output += lastOperator.symbol + " "
 
         opStack.removeAt(opStack.size-1)
     }
 
+    // Can finally return the infix formula!
     return output
 }
 
+/**
+ * Checks whether or not the two operators can exist after each other taking into account order, associativity and the
+ * number of operands they accept
+ * Examples:
+ *     * and "minus" can not exist after one another
+ *     * and "negative" can exist after one another
+ *     "negative" and * can not exist after one another
+ */
 internal fun operandsCanExistTogether(first: Operand, second: Operand): Boolean {
+    // Get the properties for each operator we want to check
     val firstOperator = getOperator(first)
     val secondOperator = getOperator(second)
 
+    // For this logic, we first assume they can work together, and find the cases where they can't
+
+    // We may encounter issues when the first operator is right associative and has at least one argument, or is left
+    // associative and has 2 or more arguments. This is the cases where it depends on the second operator
     if ((firstOperator.associativity == Associativity.RIGHT && firstOperator.operands > 0)
             || (firstOperator.associativity == Associativity.LEFT && firstOperator.operands > 1)) {
+        // If the second operator is only right associative (does not depend on the first) then everything is fine!
         if (secondOperator.associativity == Associativity.RIGHT)
             return true
 
+        // Otherwise, the second operator also depends on the first, so this is not okay
         return false
     }
 
+    // We may also encounter issues when the second operator is left associative and has at least one argument. In this
+    // case it depends on the first operator
     if (secondOperator.associativity == Associativity.LEFT && secondOperator.operands > 0) {
+        // If the first operator is left associative then everything is fine!
         if (firstOperator.associativity == Associativity.LEFT)
             return true
 
+        // Otherwise, the first operator also depends on the second, so this is not okay
         return false
     }
 
+    // The default case is that it's fine
     return true
 }
 
+/**
+ * An instance of a Function Call, containing both its name and the number of parameters it takes
+ */
 internal data class Function(var name: String, var parameters: Int = 1)
