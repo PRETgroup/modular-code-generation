@@ -61,7 +61,7 @@ class CodeGenTests : StringSpec() {
     }
 
     private fun String.runCommand(workingDir: File, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {
-        try {
+        return try {
             val parts = this.split("\\s".toRegex())
             val proc = ProcessBuilder(*parts.toTypedArray())
                     .directory(workingDir)
@@ -70,10 +70,10 @@ class CodeGenTests : StringSpec() {
                     .start()
 
             proc.waitFor(60, TimeUnit.MINUTES)
-            return proc.exitValue()
+            proc.exitValue()
         }
         catch(ex: IOException) {
-            return 127;
+            127
         }
     }
 

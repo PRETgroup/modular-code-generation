@@ -244,7 +244,7 @@ internal fun operandsCanExistTogether(first: Operand, second: Operand): Boolean 
         return false
     }
 
-    return true;
+    return true
 }
 
 internal data class Function(var name: String, var parameters: Int = 1)

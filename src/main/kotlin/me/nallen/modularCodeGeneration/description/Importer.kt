@@ -165,7 +165,7 @@ private fun HybridAutomata.loadFunction(name: String, function: Function, existi
     val func = FunctionDefinition(name, function.logic, inputs)
 
     func.returnType = function.logic.getReturnType(existingFunctionTypes)
-    existingFunctionTypes.put(func.name, func.returnType)
+    existingFunctionTypes[func.name] = func.returnType
 
     this.functions.add(func)
 }
@@ -183,7 +183,7 @@ private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
 
         automataInstance.parameters.loadParseTreeItems(instance.parameters)
 
-        this.instances.put(name, automataInstance)
+        this.instances[name] = automataInstance
     }
 }
 
@@ -193,7 +193,7 @@ private fun HybridNetwork.importMappings(mappings: Map<String, ParseTreeItem>?) 
             if(to.contains(".")) {
                 val toPair = AutomataVariablePair(to.substringBeforeLast("."), to.substringAfterLast("."))
 
-                this.ioMapping.put(toPair, from)
+                this.ioMapping[toPair] = from
             }
             else {
                 throw IOException("Invalid IO Mapping provided for $from -> $to")
@@ -205,7 +205,7 @@ private fun HybridNetwork.importMappings(mappings: Map<String, ParseTreeItem>?) 
 private fun MutableMap<String, ParseTreeItem>.loadParseTreeItems(items: Map<String, ParseTreeItem>?) {
     if(items != null) {
         for((key, value) in items) {
-            this.put(key, value)
+            this[key] = value
         }
     }
 }

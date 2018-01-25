@@ -58,7 +58,7 @@ private fun List<String>.convertToCamelCase(): String {
 }
 
 fun String.convertWordDelimiterConvention(newConvention: NamingConvention): String {
-    return arrayOf(this).convertWordDelimiterConvention(newConvention);
+    return arrayOf(this).convertWordDelimiterConvention(newConvention)
 }
 
 fun Array<out String>.convertWordDelimiterConvention(newConvention: NamingConvention): String {

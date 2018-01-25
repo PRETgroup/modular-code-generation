@@ -132,7 +132,7 @@ class ParseTreeTests : StringSpec() {
         }
     }
 
-    fun matchDouble(testValue: Double, tolerance: Double = 0.001) = object : Matcher<Double> {
+    private fun matchDouble(testValue: Double, tolerance: Double = 0.001) = object : Matcher<Double> {
         override fun test(value: Double) = Result(value + tolerance > testValue && value - tolerance < testValue, "expected: $testValue but was: $value (using tolerance $tolerance)")
     }
 
