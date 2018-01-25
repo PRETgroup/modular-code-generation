@@ -1,13 +1,15 @@
 package me.nallen.modularCodeGeneration.parseTree
 
 /**
- * Created by nall426 on 1/06/2017.
+ * Enum that determines whether the operator is left or right associative (or not at all)
  */
-
 internal enum class Associativity {
     LEFT, RIGHT, NONE
 }
 
+/**
+ * Enum of all the different operators that can be represented
+ */
 internal enum class Operand {
     AND, OR, NOT,
     GREATER_THAN_OR_EQUAL, GREATER_THAN, LESS_THAN_OR_EQUAL, LESS_THAN,
@@ -18,6 +20,9 @@ internal enum class Operand {
     SQUARE_ROOT, EXPONENTIAL
 }
 
+/**
+ * An operator and its properties
+ */
 internal data class Operator(
         var symbol: String,
         var operands: Int,
@@ -26,7 +31,11 @@ internal data class Operator(
         var commutative: Boolean
 )
 
+/**
+ * Get the properties for a given operator enum
+ */
 internal fun getOperator(operand: Operand): Operator {
+    // Each operator enum corresponds to a pre-defined set of properties
     return when(operand) {
         Operand.AND -> Operator("&&", 2, Associativity.LEFT, 11, true)
         Operand.OR -> Operator("||", 2, Associativity.LEFT, 12, true)
@@ -51,46 +60,78 @@ internal fun getOperator(operand: Operand): Operator {
     }
 }
 
+/**
+ * Gets a map of all the operators and their properties
+ */
 internal fun getMapOfOperators(): Map<Operand, Operator> {
+    // Get all instances of the enum, and then map them to a <Key, Value> pair
     return Operand.values().map { Pair(it, getOperator(it)) }.toMap()
 }
 
+/**
+ * Detects what the next operator should be for the given input string.
+ * If the first character(s) do not correspond to any operator then null will be returned.
+ * If the start of the string matches multiple operators, the one with the longest length will be returned.
+ */
 internal fun getOperandForSequence(input: String): Operand? {
+    // Create a list of operators that match the start of the string
     val matches = ArrayList<Operand>()
     for((operand, operator) in getMapOfOperators()) {
+        // Check that the string starts with the given operator
         if(input.startsWith(operator.symbol))
             matches.add(operand)
     }
 
+    // If we found at least one operator that matches
     if(matches.size > 0)
+        // We want to return the operator with the longest symbol (sort by length, take longest)
         return matches.sortedWith(compareBy({getOperator(it).symbol.length}, {getOperator(it).operands})).last()
 
+    // Alternatively, we can see if the start of the string is a valid custom function name
     if(getFunctionName(input) != null)
         return Operand.FUNCTION_CALL
 
+    // Or, if we're looking at a postfix equation, it may be our custom postfix function style
     if(isPostfixedFunction(input))
         return Operand.FUNCTION_CALL
 
+    // Otherwise, no operator found
     return null
 }
 
+/**
+ * Check if the given string completely matches the custom postfix function syntax.
+ * E.g. my_function<2>
+ */
 internal fun isPostfixedFunction(input: String): Boolean {
     val functionRegex = Regex("^(.+)<(\\d+)>$$")
 
     return functionRegex.matches(input)
 }
 
+/**
+ * Check if the given string starts with a valid custom function name.
+ * The return value is both the name of the function, and how many characters until the open parenthesis.
+ * If no valid function is found, then null is returned
+ */
 internal fun getFunctionName(input: String): Pair<String, Int>? {
+    // A function is a sequence of characters, followed by an open bracket
     val functionRegex = Regex("^([-_a-zA-Z]+)(\\s*)\\(")
 
+    // Check if we can find a function at the start
     val match = functionRegex.find(input)
     if(match != null) {
+        // Here we return both the name, and the length until the open parenthesis
         return Pair(match.groupValues[1], match.groupValues[0].length)
     }
 
+    // No match, not a function
     return null
 }
 
+/**
+ * Convert a given infix notation equation to postfix (a.k.a Reverse Polish Notation)
+ */
 internal fun convertToPostfix(input: String): String {
     var output = ""
     var storage = ""
@@ -100,55 +141,83 @@ internal fun convertToPostfix(input: String): String {
     val functionCalls = ArrayList<Function>()
     var followingOperand: Operand? = Operand.PLUS
 
+    // Iterate through every character in the string
     for(i in 0 until input.length) {
+        // Whenever we encounter a symbol with a length greater than one, this value will be set to skip the appropriate
+        // number of characters
         if(skip > 0) {
             skip--
             continue
         }
 
+        // Try and parse the first operand in the remaining input string
         var operand = getOperandForSequence(input.substring(i))
 
+        // Once we find an operand (or encounter whitespace), we need to add any values that we found before this into
+        // the output string first
         if((operand != null || input[i].isWhitespace()) && storage.isNotEmpty()) {
             output += storage + " "
 
             storage = ""
         }
 
+        // If we were able to find an operator, then we have a lot more processing to do
         if(operand != null) {
+            // Get the properties for the operator
             var operator = getOperator(operand)
             skip = 0
 
+            // Close brackets are a special case to check for
             if(operand == Operand.CLOSE_BRACKET) {
+                // We need to find the matching open bracket for precedence
                 val isFunctionCall = openBracketStack.isNotEmpty() && openBracketStack.last() == Operand.FUNCTION_CALL
 
+                // Keep iterating over the operator stack until we get to the last open bracket (could be a function
+                // call)
                 while(opStack.last() != Operand.OPEN_BRACKET && opStack.last() != Operand.FUNCTION_CALL) {
+                    // While we keep finding operands that aren't the bracket, keep adding them to the output string
+                    // One exception is that we don't add function separators (commas)
                     if(opStack.last() != Operand.FUNCTION_SEPARATOR)
                         output += getOperator(opStack.last()).symbol + " "
                     opStack.removeAt(opStack.size-1)
 
+                    // If we reach the end of the stack, then an invalid formula has been provided because of
+                    // unmatched parentheses
                     if(opStack.size == 0) {
                         throw IllegalArgumentException("Unmatched parenthesis in formula $input")
                     }
                 }
 
-                if (isFunctionCall) {
-                    if(followingOperand == Operand.FUNCTION_CALL)
-                        functionCalls.last().parameters--
-                    else if(followingOperand != null && !operandsCanExistTogether(followingOperand, operand)) {
-                        throw IllegalArgumentException("Invalid sequence of operators in formula $input")
-                    }
+                // If we get here then that means we've found the matching open bracket
 
+                // If this was the closing bracket for a function call
+                if (isFunctionCall) {
+                    // We need to do some addition checks for the function name and parameters
+
+                    if(followingOperand == Operand.FUNCTION_CALL)
+                        //TODO: Why is this here?
+                        functionCalls.last().parameters--
+                    else if(followingOperand != null && !operandsCanExistTogether(followingOperand, operand))
+                        // If the function can't follow the previous operand then there's an error
+                        // E.g. following a close bracket
+                        throw IllegalArgumentException("Invalid sequence of operators in formula $input")
+
+                    // Add the function name and parameters in the format NAME<NUM_PARAMETERS> to the output string
                     output += "${functionCalls.last().name}<${functionCalls.last().parameters}> "
                     functionCalls.removeAt(functionCalls.size - 1)
                 }
 
+                // Remove the bracket from the stack
                 openBracketStack.removeAt(openBracketStack.size-1)
                 opStack.removeAt(opStack.size-1)
 
                 followingOperand = operand
             }
             else {
+                // This means the operator is not a close bracket
+                // Now we need to check that it's not an open bracket or function call
                 if(operand != Operand.OPEN_BRACKET && operand != Operand.FUNCTION_CALL) {
+                    // The operator is a "normal" operator that needs precedence checks
                     if(operand == Operand.MINUS && followingOperand != null && !operandsCanExistTogether(followingOperand, operand)) {
                         operand = Operand.NEGATIVE
                         operator = getOperator(Operand.NEGATIVE)
@@ -175,6 +244,7 @@ internal fun convertToPostfix(input: String): String {
                     }
                 }
                 else {
+                    // The operator is some form of open bracket
                     if(operand == Operand.FUNCTION_CALL) {
                         val functionData = getFunctionName(input.substring(i))
                         if(functionData != null) {
