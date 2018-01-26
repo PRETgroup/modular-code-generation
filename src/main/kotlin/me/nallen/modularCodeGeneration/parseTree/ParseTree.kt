@@ -239,9 +239,9 @@ fun ParseTreeItem.getPrecedence(): Int {
         is LessThan -> Operand.LESS_THAN
         is Equal -> Operand.EQUAL
         is NotEqual -> Operand.NOT_EQUAL
-        is FunctionCall -> return 1
-        is Literal -> return 0 // Literals are of the highest precedence, 0
+        is FunctionCall -> Operand.FUNCTION_CALL
         is Variable -> return 0 // Variables are of the highest precedence, 0
+        is Literal -> return 0 // Literals are of the highest precedence, 0
         is Plus -> Operand.PLUS
         is Minus -> Operand.MINUS
         is Negative -> Operand.NEGATIVE
@@ -270,7 +270,7 @@ fun ParseTreeItem.getCommutative(): Boolean {
         is LessThan -> Operand.LESS_THAN
         is Equal -> Operand.EQUAL
         is NotEqual -> Operand.NOT_EQUAL
-        is FunctionCall -> return false
+        is FunctionCall -> Operand.FUNCTION_CALL
         is Literal -> return false // Does not matter, Literals have no children
         is Variable -> return false // Does not matter, Variables have no children
         is Plus -> Operand.PLUS
