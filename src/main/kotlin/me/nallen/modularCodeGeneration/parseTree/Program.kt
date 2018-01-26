@@ -18,12 +18,12 @@ data class Program(
         return this.generateString()
     }
 
-    private fun addVariable(item: String, type: VariableType, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null, knownVariables: HashMap<String, VariableType> = LinkedHashMap(), knownFunctions: Map<String, VariableType?> = LinkedHashMap()): Program {
+    private fun addVariable(item: String, type: VariableType, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null): Program {
         if(!variables.any({it.name == item})) {
             variables.add(VariableDeclaration(item, type, locality, default))
 
             if(default != null)
-                checkParseTreeForNewVariable(default, knownVariables, knownFunctions)
+                checkParseTreeForNewVariable(default)
         }
 
         return this
@@ -37,28 +37,28 @@ data class Program(
         }
 
         for(item in existing) {
-            addVariable(item.name, item.type, Locality.EXTERNAL_INPUT, item.defaultValue, knownVariables, knownFunctionTypes)
+            addVariable(item.name, item.type, Locality.EXTERNAL_INPUT, item.defaultValue)
         }
 
 
         val bodiesToParse = ArrayList<Program>()
         for(line in lines) {
             when(line) {
-                is Statement -> checkParseTreeForNewVariable(line.logic, knownVariables, knownFunctionTypes)
+                is Statement -> checkParseTreeForNewVariable(line.logic)
                 is Assignment -> {
                     if(!knownVariables.containsKey(line.variableName.name))
                         knownVariables[line.variableName.name] = line.variableValue.getOperationResultType(knownVariables, knownFunctionTypes)
 
-                    checkParseTreeForNewVariable(line.variableName, knownVariables, knownFunctionTypes)
-                    checkParseTreeForNewVariable(line.variableValue, knownVariables, knownFunctionTypes)
+                    checkParseTreeForNewVariable(line.variableName)
+                    checkParseTreeForNewVariable(line.variableValue)
                 }
-                is Return -> checkParseTreeForNewVariable(line.logic, knownVariables, knownFunctionTypes)
+                is Return -> checkParseTreeForNewVariable(line.logic)
                 is IfStatement -> {
-                    checkParseTreeForNewVariable(line.condition, knownVariables, knownFunctionTypes)
+                    checkParseTreeForNewVariable(line.condition)
                     bodiesToParse.add(line.body)
                 }
                 is ElseIfStatement -> {
-                    checkParseTreeForNewVariable(line.condition, knownVariables, knownFunctionTypes)
+                    checkParseTreeForNewVariable(line.condition)
                     bodiesToParse.add(line.body)
                 }
                 is ElseStatement -> bodiesToParse.add(line.body)
@@ -115,16 +115,13 @@ data class Program(
         return a
     }
 
-    private fun checkParseTreeForNewVariable(item: ParseTreeItem, knownVariables: HashMap<String, VariableType>, knownFunctions: Map<String, VariableType?>) {
+    private fun checkParseTreeForNewVariable(item: ParseTreeItem) {
         if(item is Variable) {
-            addVariable(item.name, item.getOperationResultType(knownVariables, knownFunctions))
-
-            if(!knownVariables.containsKey(item.name))
-                knownVariables[item.name] = variables.first({it.name == item.name}).type
+            addVariable(item.name, item.getOperationResultType())
         }
 
         for(child in item.getChildren()) {
-            checkParseTreeForNewVariable(child, knownVariables, knownFunctions)
+            checkParseTreeForNewVariable(child)
         }
     }
 }
