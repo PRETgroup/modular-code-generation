@@ -451,7 +451,7 @@ A set of options that determine how the generate code will look and behave.
 |---|---|---|
 | indentSize | Int | The indentation size (in spaces) for the generated code. Use negative numbers for tabs.<br/><br/> **Default:** `4` |
 | execution | [Execution Settings](#execution-settings) | The settings for the execution properties of the generated code.<br/><br/> **Default:** A default instance of [Execution Settings](#execution-settings). |
-| logging | [Logging Settings](#logging-settings) | The settings for the execution properties of the generated code.<br/><br/> **Default:** A default instance of [Logging Settings](#logging-settings). |
+| logging | [Logging Settings](#logging-settings) | The settings for the logging properties of the generated code.<br/><br/> **Default:** A default instance of [Logging Settings](#logging-settings). |
 | parametrisationMethod | [Parametrisation Method](#parametrisation-method) | The method to use for parametrisation when code is generated.<br/><br/> **Default:** `COMPILE_TIME` |
 | maximumInterTransitions | Int | The maximum number of inter-location transitions that can be taken within each "step". In Hybrid Automata semantics these transitions should be instantaneous and this aims to replicate that to some degree.<br/><br/> **Default:** `1` |
 | requireOneIntraTransitionPerTick | Boolean | Whether or not to require an intra-location transition (i.e. ODEs) within each "step". The evolution of ODEs is the only aspect of Hybrid Automata that should take any time.<br/><br/> **Default:** `false` |
