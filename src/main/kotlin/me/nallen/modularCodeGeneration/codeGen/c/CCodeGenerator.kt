@@ -116,8 +116,9 @@ class CCodeGenerator {
             content.appendln("#define DELAYABLE_H_")
             content.appendln()
 
-            // We depend on stdlib
+            // We depend on stdlib and string.h
             content.appendln("#include <stdlib.h>")
+            content.appendln("#include <string.h>")
             content.appendln()
 
             // If we're generating for a boolean type

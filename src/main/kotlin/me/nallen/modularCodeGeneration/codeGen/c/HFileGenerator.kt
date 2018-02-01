@@ -74,11 +74,6 @@ object HFileGenerator {
         result.appendln("#include <math.h>") // This may not be needed in all cases
         // TODO: Check if FSM uses a math.h function (sqrt, pow, etc.)
 
-        // If we have delayed variables we need string.h
-        // TODO: Can this just be in delayable.h?
-        if(automata.variables.any({it.canBeDelayed()}))
-            result.appendln("#include <string.h>")
-
         // Define the boolean type
         result.appendln()
         result.appendln("typedef int bool;")
