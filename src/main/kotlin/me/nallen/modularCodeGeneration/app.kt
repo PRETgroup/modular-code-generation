@@ -7,11 +7,17 @@ import me.nallen.modularCodeGeneration.description.Importer
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 import kotlin.system.measureTimeMillis
 
+/**
+ * The main program that gets run when you call 'gradle run'.
+ */
 fun main(args: Array<String>) {
     var network = HybridNetwork()
     var config = Configuration()
     var time: Long
 
+    // Times are recorded and output for debugging purposes
+
+    // Import from the description
     time = measureTimeMillis {
         val imported = Importer.import("examples/heart/main.yaml")
         network = imported.first
@@ -19,6 +25,7 @@ fun main(args: Array<String>) {
     }
     println("Import time: $time ms")
 
+    // Generate C code
     time = measureTimeMillis {
         CodeGenManager.generateForNetwork(network, CodeGenLanguage.C, "Generated", config)
     }
