@@ -82,20 +82,14 @@ object HFileGenerator {
         result.appendln("#define true 1")
 
         result.appendln()
-        // Include the config file, which will differ for depending on if we've done compile time parametrisation
-        if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME)
-            result.appendln("#include \"../${CCodeGenerator.CONFIG_FILE}\"")
-        else
-            result.appendln("#include \"${CCodeGenerator.CONFIG_FILE}\"")
+        // Include the config file
+        result.appendln("#include \"${CCodeGenerator.CONFIG_FILE}\"")
 
         if(item is HybridAutomata) {
             // If we have delayed variables
             if(item.variables.any({it.canBeDelayed()})) {
-                // Include the delayable file, which will differ for depending on if we've done compile time parametrisation
-                if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME)
-                    result.appendln("#include \"../${CCodeGenerator.DELAYABLE_HEADER}\"")
-                else
-                    result.appendln("#include \"${CCodeGenerator.DELAYABLE_HEADER}\"")
+                // Include the delayable file
+                result.appendln("#include \"${CCodeGenerator.DELAYABLE_HEADER}\"")
             }
         }
 
