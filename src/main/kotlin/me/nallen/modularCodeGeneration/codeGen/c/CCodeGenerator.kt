@@ -22,6 +22,9 @@ class CCodeGenerator {
         const val CONFIG_FILE = "config.h"
         const val DELAYABLE_HEADER = "delayable.h"
 
+        // We need to keep track of the variables we need to delay
+        private val delayedTypes = ArrayList<VariableType>()
+
         /**
          * Generate C code for the FSM that represents a Hybrid Automata. The code will be placed into the provided
          * directory, overwriting any contents that may already exist.
@@ -58,7 +61,7 @@ class CCodeGenerator {
          * Generate a Makefile for the overall program that represents a Hybrid Network. The code will be placed into
          * the provided directory, overwriting any contents that may already exist.
          */
-        private fun generateMakefile(name: String, instances: Map<String, AutomataInstance>, dir: String, config: Configuration = Configuration()) {
+        private fun generateMakefile(name: String, instances: Map<String, AutomataInstance>, dir: String, config: Configuration, isRoot: Boolean = false) {
             val outputDir = File(dir)
 
             // If the directory doesn't already exist, we want to create it
@@ -66,7 +69,7 @@ class CCodeGenerator {
                 outputDir.mkdirs()
 
             // Generate the Makefile
-            File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(name, instances, config))
+            File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(name, instances, config, isRoot))
         }
 
         /**
@@ -201,8 +204,7 @@ class CCodeGenerator {
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
-            // We need to keep track of the variables we need to delay
-            val delayedTypes = ArrayList<VariableType>()
+            generateItem(network, outputDir.absolutePath, config)
 
             // Depending on the parametrisation method, we'll do things slightly differently
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
@@ -243,11 +245,27 @@ class CCodeGenerator {
                 }
             }
 
+            // Generate Makefile
+            generateMakefile(network.name, network.instances, outputDir.absolutePath, config)
+        }
+
+        fun generate(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
+            val outputDir = File(dir)
+
+            // If the directory doesn't already exist, we want to create it
+            if(!outputDir.exists())
+                outputDir.mkdirs()
+
+            val networkDir = File(outputDir, Utils.createFolderName(network.name, "Network"))
+
+            // Generate the network
+            generateNetwork(network, networkDir.absolutePath, config)
+
             // Generate runnable
             generateRunnable(network, outputDir.absolutePath, config)
 
             // Generate Makefile
-            generateMakefile(network.name, network.instances, outputDir.absolutePath, config)
+            generateMakefile(network.name, network.instances, outputDir.absolutePath, config, true)
 
             // Generate Config file
             generateConfigFile(outputDir.absolutePath, config)
@@ -256,19 +274,6 @@ class CCodeGenerator {
             if(delayedTypes.isNotEmpty()) {
                 generateDelayableFiles(delayedTypes.distinct(), outputDir.absolutePath, config)
             }
-        }
-
-        fun generate(item: HybridItem, dir: String, config: Configuration = Configuration()) {
-            val outputDir = File(dir)
-
-            // If the directory doesn't already exist, we want to create it
-            if(!outputDir.exists())
-                outputDir.mkdirs()
-
-            generateItem(item, outputDir.absolutePath, config)
-
-            if(item is HybridNetwork)
-                generateNetwork(item, outputDir.absolutePath, config)
         }
     }
 }

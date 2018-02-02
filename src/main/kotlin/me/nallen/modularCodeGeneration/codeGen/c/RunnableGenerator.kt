@@ -54,7 +54,7 @@ object RunnableGenerator {
         result.appendln("#include <string.h>")
         result.appendln()
 
-        result.appendln("#include \"${Utils.createFileName(network.name)}.h\"")
+        result.appendln("#include \"${Utils.createFolderName(network.name, "Network")}/${Utils.createFileName(network.name)}.h\"")
         result.appendln()
 
         result.appendln("${Utils.createTypeName(network.name)} ${Utils.createVariableName(network.name, "data")};")
