@@ -5,6 +5,7 @@ import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.hybridAutomata.AutomataInstance
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 import me.nallen.modularCodeGeneration.parseTree.VariableType
 import java.io.File
@@ -25,7 +26,7 @@ class CCodeGenerator {
          * Generate C code for the FSM that represents a Hybrid Automata. The code will be placed into the provided
          * directory, overwriting any contents that may already exist.
          */
-        private fun generateFsm(automata: HybridAutomata, dir: String, config: Configuration = Configuration()) {
+        private fun generateItem(item: HybridItem, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             // If the directory doesn't already exist, we want to create it
@@ -33,9 +34,9 @@ class CCodeGenerator {
                 outputDir.mkdirs()
 
             // Generate the Header File
-            File(outputDir, "${Utils.createFileName(automata.name)}.h").writeText(HFileGenerator.generate(automata, config))
+            File(outputDir, "${Utils.createFileName(item.name)}.h").writeText(HFileGenerator.generate(item, config))
             // Generate the Source File
-            File(outputDir, "${Utils.createFileName(automata.name)}.c").writeText(CFileGenerator.generate(automata, config))
+            File(outputDir, "${Utils.createFileName(item.name)}.c").writeText(CFileGenerator.generate(item, config))
         }
 
         /**
@@ -193,7 +194,7 @@ class CCodeGenerator {
          * Generate all the files needed in the C Code generation of the given Hybrid Network. The code will be
          * generated into the provided directory, overwriting any contents that may exist
          */
-        fun generateNetwork(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
+        private fun generateNetwork(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             // If the directory doesn't already exist, we want to create it
@@ -218,7 +219,7 @@ class CCodeGenerator {
                     val subfolder = if(instance.automata.equals(network.name, true)) { instance.automata + " Files" } else { instance.automata }
 
                     // Generate the code for the parametrised automata
-                    generateFsm(automata, File(outputDir, Utils.createFolderName(subfolder)).absolutePath, config)
+                    generateItem(automata, File(outputDir, Utils.createFolderName(subfolder)).absolutePath, config)
                 }
             }
             else  {
@@ -237,7 +238,7 @@ class CCodeGenerator {
                         delayedTypes.addAll(automata.variables.filter({it.canBeDelayed()}).map({it.type}))
 
                         // Generate code for the unparametrised automata
-                        generateFsm(automata, outputDir.absolutePath, config)
+                        generateItem(automata, outputDir.absolutePath, config)
                     }
                 }
             }
@@ -255,6 +256,19 @@ class CCodeGenerator {
             if(delayedTypes.isNotEmpty()) {
                 generateDelayableFiles(delayedTypes.distinct(), outputDir.absolutePath, config)
             }
+        }
+
+        fun generate(item: HybridItem, dir: String, config: Configuration = Configuration()) {
+            val outputDir = File(dir)
+
+            // If the directory doesn't already exist, we want to create it
+            if(!outputDir.exists())
+                outputDir.mkdirs()
+
+            generateItem(item, outputDir.absolutePath, config)
+
+            if(item is HybridNetwork)
+                generateNetwork(item, outputDir.absolutePath, config)
         }
     }
 }

@@ -48,79 +48,23 @@ object RunnableGenerator {
         val result = StringBuilder()
 
         // Start with all the includes at the top of the file
-        result.appendln(generateIncludes())
+        result.appendln("#include <stdint.h>")
+        result.appendln("#include <stdlib.h>")
+        result.appendln("#include <stdio.h>")
+        result.appendln("#include <string.h>")
+        result.appendln()
 
-        // Then the declaration of all the variables
-        result.appendln(generateVariables())
+        result.appendln("#include \"${Utils.createFileName(network.name)}.h\"")
+        result.appendln()
+
+        result.appendln("${Utils.createTypeName(network.name)} ${Utils.createVariableName(network.name, "data")};")
+        result.appendln()
 
         // And finally the main function which executes the network
         result.appendln(generateMain())
 
         // And then return the code!
         return result.toString().trim()
-    }
-
-    /**
-     * Generates a string that represents all the includes that are required for this runnable file
-     */
-    private fun generateIncludes(): String {
-        val result = StringBuilder()
-
-        // A standard set of includes are required regardless
-        result.appendln("#include <stdint.h>")
-        result.appendln("#include <stdlib.h>")
-        result.appendln("#include <stdio.h>")
-        result.appendln("#include <string.h>")
-
-        // Now we need to add an include statement for each type we have to add
-        if(network.instances.isNotEmpty()) {
-            result.appendln()
-
-            // Different logic depending on the parametrisation method
-            if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
-                // If it's compile time then we need to include a type for each instantiation
-                for((name, instance) in network.instances) {
-                    // And the includes will be in a sub-directory of the instance type
-                    val subfolder = if(instance.automata.equals(network.name, true)) { instance.automata + " Files" } else { instance.automata }
-                    result.appendln("#include \"${Utils.createFolderName(subfolder)}/${Utils.createFileName(name)}.h\"")
-                }
-            }
-            else {
-                // Otherwise it's run time which means we only need to include once per definition type
-
-                // So keep track of which types we've handled
-                val generated = ArrayList<String>()
-                for((_, instance) in network.instances) {
-                    // Check if we've seen this type before
-                    if (!generated.contains(instance.automata)) {
-                        // If we haven't seen it, keep track of it
-                        generated.add(instance.automata)
-
-                        // And add the include
-                        result.appendln("#include \"${Utils.createFileName(instance.automata)}.h\"")
-                    }
-                }
-            }
-        }
-
-        // Return all the includes
-        return result.toString()
-    }
-
-    /**
-     * Generates a string that represents the declaration of all the variables that are required for this runnable file
-     */
-    private fun generateVariables(): String {
-        val result = StringBuilder()
-
-        // Simply iterate over each object that we created earlier
-        for((name, instance) in objects) {
-            // And add the type and variable name
-            result.appendln("${Utils.createTypeName(instance)} ${Utils.createVariableName(name, "data")};")
-        }
-
-        // The return all the variables
-        return result.toString()
     }
 
     /**
@@ -140,16 +84,7 @@ object RunnableGenerator {
         result.appendln("${config.getIndent(1)}unsigned int i = 0;")
         result.appendln("${config.getIndent(1)}for(i=1; i <= (SIMULATION_TIME / STEP_SIZE); i++) {")
 
-        // Generate the I/O Mappings
-        result.append(generateIOMappings())
-
-        result.appendln()
-        result.appendln()
-
-        // Generate the code that runs all of the machines
-        result.append(generateRunSection())
-
-        result.appendln()
+        result.appendln("${config.getIndent(2)}${Utils.createFunctionName(network.name, "Run")}(&${Utils.createVariableName(network.name, "data")});")
         result.appendln()
 
         // Generate the logging code
@@ -176,34 +111,12 @@ object RunnableGenerator {
     private fun generateInitialisation(): String {
         val result = StringBuilder()
 
-        // Let's start the initialisation code
-        result.appendln("${config.getIndent(1)}/* Initialise Structs */")
-        // We need to initialise every object
-        var first = true
-        for ((name, instance) in objects) {
-            if (!first)
-                result.appendln()
-            first = false
-
-            // Call a memset for the variable to allocate the memory and actually create the object
-            result.appendln("${config.getIndent(1)}(void) memset((void *)&${Utils.createVariableName(name, "data")}, 0, sizeof(${Utils.createTypeName(instance)}));")
-
-            // Now, if it's run-time parametrisation then we need to do some extra logic
-            if (config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
-                // Firstly we want to call the default parametrisation for the model, in case we don't set any
-                result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Parametrise")}(&${Utils.createVariableName(name, "data")});")
-
-                // Next we need to go through every parameter that we need to set
-                for ((key, value) in network.instances[name]!!.parameters) {
-                    // And set that parameter value accordingly
-                    result.appendln("${config.getIndent(1)}${Utils.createVariableName(name, "data")}.${Utils.createVariableName(key)} = ${Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("${Utils.createVariableName(name, "data")}.", requireSelfReferenceInFunctionCalls))};")
-                }
-            }
-
-            // Finally, we can call the initialisation function for the object
-            result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Init")}(&${Utils.createVariableName(name, "data")});")
+        if (config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
+            // Firstly we want to call the default parametrisation for the model, in case we don't set any
+            result.appendln("${config.getIndent(1)}${Utils.createFunctionName(network.name, "Parametrise")}(&${Utils.createVariableName(network.name, "data")});")
         }
 
+        result.appendln("${config.getIndent(1)}${Utils.createFunctionName(network.name, "Init")}(&${Utils.createVariableName(network.name, "data")});")
         result.appendln()
 
         // Next we need to add some code that handles logging, if it is enabled
@@ -228,7 +141,7 @@ object RunnableGenerator {
         }
         result.append("\\n\", 0.0")
         for ((machine, variable, _) in toLog) {
-            result.append(", ${Utils.createVariableName(machine, "data")}.${Utils.createVariableName(variable)}")
+            result.append(", ${Utils.createVariableName(network.name, "data")}.${Utils.createVariableName(machine, "data")}.${Utils.createVariableName(variable)}")
         }
         result.appendln(");")
 
@@ -240,61 +153,6 @@ object RunnableGenerator {
         result.appendln("#endif")
 
         // And we're done for initialisation! Return the code
-        return result.toString()
-    }
-
-    /**
-     * Generates a string that handles all of the mapping between automata inputs and outputs
-     */
-    private fun generateIOMappings(): String {
-        val result = StringBuilder()
-
-        // Let's start the mapping code
-        result.appendln("${config.getIndent(2)}/* Mappings */")
-
-        // Get a list of the inputs that we're assigning to, in a sorted order so it looks slightly nicer
-        val keys = network.ioMapping.keys.sortedWith(compareBy({ it.automata }, { it.variable }))
-
-        // And get a map of all the instance names that we need to use here (they're formatted differently to variables)
-        val customVariableNames = network.instances.mapValues({ Utils.createVariableName(it.key, "data") })
-
-        // Now we go through each input
-        var prev = ""
-        for (key in keys) {
-            if (prev != "" && prev != key.automata)
-                result.appendln()
-            prev = key.automata
-
-            // And assign to the input, the correct output (or combination of them)
-            val from = network.ioMapping[key]!!
-            result.appendln("${config.getIndent(2)}${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
-        }
-
-        // Done, return all the mappings
-        return result.toString()
-    }
-
-    /**
-     * Generates a string that executes all of the automata in the network
-     */
-    private fun generateRunSection(): String {
-        val result = StringBuilder()
-
-        // Let's start the run code
-        result.appendln("${config.getIndent(2)}/* Run Automata */")
-
-        // We go through each instance we've created
-        var first = true
-        for ((name, instance) in objects) {
-            if (!first)
-                result.appendln()
-            first = false
-
-            // And simply call the "Run" function for it
-            result.appendln("${config.getIndent(2)}${Utils.createFunctionName(instance, "Run")}(&${Utils.createVariableName(name, "data")});")
-        }
-
-        // And return the collection of "Run" functions
         return result.toString()
     }
 
@@ -321,7 +179,7 @@ object RunnableGenerator {
         }
         result.append("\\n\", i*STEP_SIZE")
         for ((machine, variable, _) in toLog) {
-            result.append(", ${Utils.createVariableName(machine, "data")}.${Utils.createVariableName(variable)}")
+            result.append(", ${Utils.createVariableName(network.name, "data")}.${Utils.createVariableName(machine, "data")}.${Utils.createVariableName(variable)}")
         }
         result.appendln(");")
 

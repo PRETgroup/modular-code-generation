@@ -6,9 +6,7 @@ import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
  * Created by nathan on 6/06/17.
  */
 
-data class HybridNetwork(
-        var name: String = "Network"
-) {
+class HybridNetwork(override var name: String = "Network") : HybridItem(){
     val definitions = ArrayList<HybridAutomata>()
     val instances = LinkedHashMap<String, AutomataInstance>()
     val ioMapping = LinkedHashMap<AutomataVariablePair, ParseTreeItem>()

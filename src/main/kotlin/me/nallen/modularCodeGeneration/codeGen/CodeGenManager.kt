@@ -38,7 +38,7 @@ object CodeGenManager {
         // Depending on the language, we want to call a different generator.
         // Currently only C code is supported, so this looks a bit boring
         when(language) {
-            CodeGenLanguage.C -> CCodeGenerator.generateNetwork(network, dir, config)
+            CodeGenLanguage.C -> CCodeGenerator.generate(network, dir, config)
         }
     }
 

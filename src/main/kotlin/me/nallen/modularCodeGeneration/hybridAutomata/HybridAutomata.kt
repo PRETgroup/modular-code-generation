@@ -8,7 +8,7 @@ import me.nallen.modularCodeGeneration.parseTree.Variable as ParseTreeVariable
  */
 
 data class HybridAutomata(
-        var name: String = "HA",
+        override var name: String = "HA",
 
         val locations: ArrayList<Location> = ArrayList(),
         val edges: ArrayList<Edge> = ArrayList(),
@@ -17,7 +17,7 @@ data class HybridAutomata(
         val functions: ArrayList<FunctionDefinition> = ArrayList(),
 
         val variables: ArrayList<Variable> = ArrayList()
-) {
+) : HybridItem() {
     fun addLocation(location: Location): HybridAutomata {
         /*if(locations.any({it.name == location.name}))
             throw IllegalArgumentException("Location with name ${location.name} already exists!")*/
