@@ -3,12 +3,13 @@ package me.nallen.modularCodeGeneration.codeGen.c
 import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
+import me.nallen.modularCodeGeneration.codeGen.c.Utils.createFileName
 import me.nallen.modularCodeGeneration.hybridAutomata.AutomataInstance
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 import me.nallen.modularCodeGeneration.parseTree.VariableType
 import java.io.File
+import kotlin.collections.ArrayList
 
 /**
  * The class that contains methods to do with the generation of C code for a Hybrid Network.
@@ -29,7 +30,7 @@ class CCodeGenerator {
          * Generate C code for the FSM that represents a Hybrid Automata. The code will be placed into the provided
          * directory, overwriting any contents that may already exist.
          */
-        private fun generateItem(item: HybridItem, dir: String, config: Configuration = Configuration()) {
+        private fun generateItem(item: HybridItem, dir: String, config: Configuration) {
             val outputDir = File(dir)
 
             // If the directory doesn't already exist, we want to create it
@@ -249,6 +250,37 @@ class CCodeGenerator {
             generateMakefile(network.name, network.instances, outputDir.absolutePath, config)
         }
 
+        private fun makeItemsUnique(network: HybridNetwork, config: Configuration, assignedNames: ArrayList<String> = ArrayList()) {
+            if(assignedNames.contains(createFileName(network.name)))
+                network.name += assignedNames.size
+
+            assignedNames.add(createFileName(network.name))
+
+            // Depending on the parametrisation method, we'll do things slightly differently
+            if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
+                for(key in network.instances.keys) {
+                    var name = key
+
+                    if(assignedNames.contains(createFileName(name))) {
+                        name += assignedNames.size
+                        network.instances.put(name, network.instances[key]!!)
+                        network.instances.remove(key)
+                    }
+
+                    assignedNames.add(createFileName(name))
+                }
+            }
+            else  {
+                for(definition in network.definitions) {
+                    if(assignedNames.contains(createFileName(definition.name)))
+                        definition.name += assignedNames.size
+
+                    assignedNames.add(createFileName(definition.name))
+                }
+            }
+        }
+
+
         fun generate(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
@@ -257,6 +289,9 @@ class CCodeGenerator {
                 outputDir.mkdirs()
 
             val networkDir = File(outputDir, Utils.createFolderName(network.name, "Network"))
+
+            //For C Code we need to make sure each type is unique, so let's do that
+            makeItemsUnique(network, config)
 
             // Generate the network
             generateNetwork(network, networkDir.absolutePath, config)
