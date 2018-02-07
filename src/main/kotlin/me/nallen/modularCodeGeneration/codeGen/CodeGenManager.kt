@@ -7,6 +7,7 @@ import me.nallen.modularCodeGeneration.hybridAutomata.Locality
 import me.nallen.modularCodeGeneration.parseTree.*
 import me.nallen.modularCodeGeneration.parseTree.Variable
 import java.io.File
+import java.util.*
 
 typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
 
@@ -48,11 +49,19 @@ object CodeGenManager {
      * if not present in the AutomataInstance map.
      */
     fun createParametrisedFsm(network: HybridNetwork, name: String, instance: AutomataInstance): HybridAutomata? {
+        val instantiate = network.getInstantiateForInstance(instance.instance)
+        if(instantiate != null && instantiate.name != name) {
+            val instantiateId = UUID.randomUUID()
+            network.instantiates[instantiateId] = AutomataInstantiate(instantiate.definition, name)
+            instance.instance = instantiateId
+        }
+
         // We need to make sure that the instance actually exists
-        if(network.definitions.any({it.name == instance.automata})) {
+        val definition = network.getDefinitionForInstance(instance.instance)
+        if(definition != null) {
             // This is currently a really hacky way to do a deep copy, JSON serialize it and then deserialize.
             // Bad for performance, but easy to do. Hopefully can be fixed later?
-            val json = mapper.writeValueAsString(network.definitions.first({ it.name == instance.automata }))
+            val json = mapper.writeValueAsString(definition)
 
             val automata = mapper.readValue<HybridAutomata>(json)
 
@@ -106,9 +115,8 @@ object CodeGenManager {
             // Iterate over every instance
             for((name, instance) in network.instances) {
                 // Fetch the automata that the instance implements
-                if(network.definitions.any({it.name == instance.automata})) {
-                    val definition = network.definitions.first({it.name == instance.automata})
-
+                val definition = network.getDefinitionForInstance(instance.instance)
+                if(definition != null && definition is HybridAutomata) {
                     // Fetch all outputs inside that definition
                     val outputs = definition.variables.filter({it.locality == Locality.EXTERNAL_OUTPUT})
                     // And add to the logging fields list
@@ -130,9 +138,8 @@ object CodeGenManager {
                     if(network.instances.containsKey(machine)) {
                         val instance = network.instances[machine]!!
                         // Check that a definition exists for that instance
-                        if(network.definitions.any({it.name == instance.automata})) {
-                            val definition = network.definitions.first({it.name == instance.automata})
-
+                        val definition = network.getDefinitionForInstance(instance.instance)
+                        if(definition != null && definition is HybridAutomata) {
                             // Finally check that a variable of the same name exists in that definition
                             if(definition.variables.any({it.locality == Locality.EXTERNAL_OUTPUT && it.name == variable})) {
                                 val output = definition.variables.first({it.locality == Locality.EXTERNAL_OUTPUT && it.name == variable})

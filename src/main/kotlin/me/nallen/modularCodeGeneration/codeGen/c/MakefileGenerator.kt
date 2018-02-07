@@ -3,29 +3,31 @@ package me.nallen.modularCodeGeneration.codeGen.c
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.hybridAutomata.AutomataInstance
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
+import java.util.*
 
 /**
  * The class that contains methods to do with the generation of the MakeFile for the network
  */
 object MakefileGenerator {
-    private var instances: Map<String, AutomataInstance> = LinkedHashMap()
+    private var network: HybridNetwork = HybridNetwork()
     private var config: Configuration = Configuration()
 
     /**
      * Generates a string that represents the Makefile for the network. The final generated program will be named by the
      * provided networkName.
      */
-    fun generate(networkName: String, instances: Map<String, AutomataInstance>, config: Configuration, isRoot: Boolean): String {
-        this.instances = instances
+    fun generate(network: HybridNetwork, config: Configuration, isRoot: Boolean): String {
+        this.network = network
         this.config = config
 
         val result = StringBuilder()
 
         // The final target is set by the networkName
         if(isRoot)
-            result.appendln("TARGET = $networkName")
+            result.appendln("TARGET = ${network.name}")
         else
-            result.appendln("TARGET = $networkName.a")
+            result.appendln("TARGET = ${network.name}.a")
 
         // Default compiler settings, using gcc
         result.appendln("CC ?= gcc")
@@ -43,16 +45,16 @@ object MakefileGenerator {
         result.appendln()
 
         if(isRoot) {
-            result.appendln(".PHONY: ${Utils.createFolderName(networkName, "Network")}/$networkName.a")
-            result.appendln("${Utils.createFolderName(networkName, "Network")}/$networkName.a:")
-            result.appendln("\t@\$(MAKE) -C ${Utils.createFolderName(networkName, "Network")}/ $networkName.a")
+            result.appendln(".PHONY: ${Utils.createFolderName(network.name, "Network")}/${network.name}.a")
+            result.appendln("${Utils.createFolderName(network.name, "Network")}/${network.name}.a:")
+            result.appendln("\t@\$(MAKE) -C ${Utils.createFolderName(network.name, "Network")}/ ${network.name}.a")
             result.appendln()
 
             // Create the compile command for the runnable main file
             result.append(generateCompileCommand("runnable", listOf("runnable.c"), listOf("\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
             result.appendln()
 
-            result.appendln("\$(TARGET): Objects/runnable.o ${Utils.createFolderName(networkName, "Network")}/$networkName.a")
+            result.appendln("\$(TARGET): Objects/runnable.o ${Utils.createFolderName(network.name, "Network")}/${network.name}.a")
 
             // Let the user know what it's currently linking
             result.appendln("\t@echo Building \$(TARGET)...")
@@ -65,38 +67,23 @@ object MakefileGenerator {
             val sources = ArrayList<String>()
 
             // We can only generate code if there are any instances
-            if(instances.isNotEmpty()) {
+            if(network.instances.isNotEmpty()) {
                 // Depending on the parametrisation method, we'll do things slightly differently
                 if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                     // Compile time parametrisation means compiling each instance
-                    for((name, instance) in instances) {
-                        // Generate the file name that we'll be looking for
-                        val deliminatedName = Utils.createFileName(name)
-
-                        // Generated the folder name that we'll be looking for
-                        val subfolder = if(instance.automata.equals(networkName, true)) { instance.automata + " Files" } else { instance.automata }
-                        val deliminatedFolder = Utils.createFolderName(subfolder)
-
-                        // Create the compile command for the file
-                        result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedFolder/$deliminatedName.c"), listOf("$deliminatedFolder/$deliminatedName.h", "\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
-                        result.appendln()
-
-                        // Keep track of the sources
-                        sources.add("Objects/$deliminatedName.o")
-                    }
-                }
-                else {
-                    // We only want to generate each definition once, so keep a track of them
-                    val generated = ArrayList<String>()
-                    for((_, instance) in instances) {
-                        if (!generated.contains(instance.automata)) {
-                            generated.add(instance.automata)
-
+                    for((_, instance) in network.instances) {
+                        val instantiate = network.getInstantiateForInstance(instance.instance)
+                        val definition = network.getDefinitionForInstance(instance.instance)
+                        if(instantiate != null && definition != null) {
                             // Generate the file name that we'll be looking for
-                            val deliminatedName = Utils.createFileName(instance.automata)
+                            val deliminatedName = Utils.createFileName(instantiate.name)
+
+                            // Generated the folder name that we'll be looking for
+                            val subfolder = if(definition.name.equals(network.name, true)) { definition.name + " Files" } else { definition.name }
+                            val deliminatedFolder = Utils.createFolderName(subfolder)
 
                             // Create the compile command for the file
-                            result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedName.c"), listOf("$deliminatedName.h", "\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
+                            result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedFolder/$deliminatedName.c"), listOf("$deliminatedFolder/$deliminatedName.h", "\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
                             result.appendln()
 
                             // Keep track of the sources
@@ -104,10 +91,34 @@ object MakefileGenerator {
                         }
                     }
                 }
+                else {
+                    // We only want to generate each definition once, so keep a track of them
+                    val generated = ArrayList<UUID>()
+                    for((_, instance) in network.instances) {
+                        val instantiate = network.getInstantiateForInstance(instance.instance)
+                        if(instantiate != null) {
+                            // Check if we've seen this type before
+                            if (!generated.contains(instantiate.definition)) {
+                                // If we haven't seen it, keep track of it
+                                generated.add(instantiate.definition)
+
+                                // Generate the file name that we'll be looking for
+                                val deliminatedName = Utils.createFileName(instantiate.name)
+
+                                // Create the compile command for the file
+                                result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedName.c"), listOf("$deliminatedName.h", "\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
+                                result.appendln()
+
+                                // Keep track of the sources
+                                sources.add("Objects/$deliminatedName.o")
+                            }
+                        }
+                    }
+                }
             }
 
             // Generate the file name for the main file of this network
-            val deliminatedName = Utils.createFileName(networkName)
+            val deliminatedName = Utils.createFileName(network.name)
 
             // Create the compile command for it
             result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedName.c"), listOf("$deliminatedName.h", "\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
@@ -128,7 +139,7 @@ object MakefileGenerator {
         result.appendln("\t@echo Removing compiled binaries...")
         result.appendln("\t@rm -rf \$(TARGET) Objects/* *~")
         if(isRoot) {
-            result.appendln("\t@\$(MAKE) -C ${Utils.createFolderName(networkName, "Network")}/ clean")
+            result.appendln("\t@\$(MAKE) -C ${Utils.createFolderName(network.name, "Network")}/ clean")
         }
         result.appendln()
 

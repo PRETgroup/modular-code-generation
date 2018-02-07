@@ -10,6 +10,7 @@ import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
 import java.io.File
 import java.io.IOException
+import java.util.*
 
 typealias ParseTreeVariableType = me.nallen.modularCodeGeneration.parseTree.VariableType
 typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
@@ -145,7 +146,10 @@ private fun HybridNetwork.importAutomata(definitions: Map<String, Definition>) {
         // And then any custom functions that it may contain
         automata.loadFunctions(definition.functions)
 
-        this.definitions.add(automata)
+        val definitionUUID = UUID.randomUUID()
+        this.definitions.put(definitionUUID, automata)
+
+        this.instantiates.put(UUID.randomUUID(), AutomataInstantiate(definitionUUID, name))
     }
 }
 
@@ -261,14 +265,17 @@ private fun VariableType.convertToParseTreeType(): ParseTreeVariableType {
 private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
     // For each instance that exists
     for((name, instance) in instances) {
-        // We create the associated instance
-        val automataInstance = AutomataInstance(instance.type)
+        val instantiateId = this.instantiates.filter { it.value.name.equals(instance.type) }.keys.firstOrNull()
+        if(instantiateId != null) {
+            // We create the associated instance
+            val automataInstance = AutomataInstance(instantiateId)
 
-        // And then add all the parameters that should be set on it
-        automataInstance.parameters.loadParseTreeItems(instance.parameters)
+            // And then add all the parameters that should be set on it
+            automataInstance.parameters.loadParseTreeItems(instance.parameters)
 
-        // Remembering that the instance name is the key in the Map they get stored in
-        this.instances[name] = automataInstance
+            // Remembering that the instance name is the key in the Map they get stored in
+            this.instances[name] = automataInstance
+        }
     }
 }
 

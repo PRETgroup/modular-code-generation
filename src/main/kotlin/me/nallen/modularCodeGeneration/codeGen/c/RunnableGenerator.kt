@@ -14,7 +14,6 @@ object RunnableGenerator {
     private var config: Configuration = Configuration()
 
     private var requireSelfReferenceInFunctionCalls: Boolean = false
-    private var objects: ArrayList<CodeObject> = ArrayList()
     private var toLog: List<LoggingField> = ArrayList()
 
     /**
@@ -26,20 +25,6 @@ object RunnableGenerator {
 
         // Whether or not we need to include self references in custom functions
         this.requireSelfReferenceInFunctionCalls = config.parametrisationMethod == ParametrisationMethod.RUN_TIME
-
-        // We need to get a list of all objects we need to instantiate, and what type they should be
-        objects.clear()
-        for((name, instance) in network.instances) {
-            // Different instantiated type depending on the parametrisation method
-            if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
-                // Compile time means the type is just itself
-                objects.add(CodeObject(name, name))
-            }
-            else {
-                // Run time means that the type is the instance's definition type
-                objects.add(CodeObject(name, instance.automata))
-            }
-        }
 
         // Collect all the fields that we will need to log (if any)
         toLog = CodeGenManager.collectFieldsToLog(network, config)

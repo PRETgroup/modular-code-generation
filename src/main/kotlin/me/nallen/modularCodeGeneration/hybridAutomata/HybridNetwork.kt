@@ -1,17 +1,19 @@
 package me.nallen.modularCodeGeneration.hybridAutomata
 
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
+import java.util.*
 
 /**
  * Created by nathan on 6/06/17.
  */
 
 class HybridNetwork(override var name: String = "Network") : HybridItem(){
-    val definitions = ArrayList<HybridAutomata>()
+    val definitions = LinkedHashMap<UUID, HybridAutomata>()
     val instances = LinkedHashMap<String, AutomataInstance>()
+    val instantiates = LinkedHashMap<UUID, AutomataInstantiate>()
     val ioMapping = LinkedHashMap<AutomataVariablePair, ParseTreeItem>()
 
-    fun addDefinition(
+    /*fun addDefinition(
             ha: HybridAutomata
     ): HybridNetwork {
         /*if(definitions.any({it.name == ha.name}))
@@ -20,9 +22,9 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
         definitions.add(ha)
 
         return this
-    }
+    }*/
 
-    fun addInstance(
+    /*fun addInstance(
             name: String,
             instance: AutomataInstance
     ): HybridNetwork {
@@ -43,9 +45,9 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
         instances[name] = instance
 
         return this
-    }
+    }*/
 
-    fun addMapping(
+    /*fun addMapping(
             to: AutomataVariablePair,
             from: ParseTreeItem
     ): HybridNetwork {
@@ -74,12 +76,33 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
         ioMapping[to] = from
 
         return this
+    }*/
+
+    fun getDefinitionForInstance(instance: UUID): HybridItem? {
+        val instantiate = instantiates[instance]
+
+        if(instantiate != null)
+            return definitions[instantiate.definition]
+
+        return null
+    }
+
+    fun getInstantiateForInstance(instance: UUID): AutomataInstantiate? {
+        return instantiates[instance]
     }
 }
 
 data class AutomataInstance(
-        val automata: String,
+        var instance: UUID,
         val parameters: MutableMap<String, ParseTreeItem> = LinkedHashMap()
 )
 
-data class AutomataVariablePair(val automata: String, val variable: String)
+data class AutomataInstantiate(
+        val definition: UUID,
+        var name: String
+)
+
+data class AutomataVariablePair(
+        val automata: String,
+        val variable: String
+)

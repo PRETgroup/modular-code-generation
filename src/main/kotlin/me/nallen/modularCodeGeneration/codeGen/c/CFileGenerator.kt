@@ -35,14 +35,9 @@ object CFileGenerator {
             // We need to get a list of all objects we need to instantiate, and what type they should be
             objects.clear()
             for((name, instance) in item.instances) {
-                // Different instantiated type depending on the parametrisation method
-                if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
-                    // Compile time means the type is just itself
-                    objects.add(CodeObject(name, name))
-                }
-                else {
-                    // Run time means that the type is the instance's definition type
-                    objects.add(CodeObject(name, instance.automata))
+                val instantiate = item.getInstantiateForInstance(instance.instance)
+                if(instantiate != null) {
+                    objects.add(CodeObject(name, instantiate.name))
                 }
             }
         }

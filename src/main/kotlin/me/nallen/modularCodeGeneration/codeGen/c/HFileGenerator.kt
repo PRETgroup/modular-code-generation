@@ -3,6 +3,7 @@ package me.nallen.modularCodeGeneration.codeGen.c
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.hybridAutomata.*
+import java.util.*
 
 /**
  * The class that contains methods to do with the generation of Header Files for the Hybrid Automata
@@ -108,25 +109,32 @@ object HFileGenerator {
             // Different logic depending on the parametrisation method
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 // If it's compile time then we need to include a type for each instantiation
-                for((name, instance) in network.instances) {
-                    // And the includes will be in a sub-directory of the instance type
-                    val subfolder = if(instance.automata.equals(network.name, true)) { instance.automata + " Files" } else { instance.automata }
-                    result.appendln("#include \"${Utils.createFolderName(subfolder)}/${Utils.createFileName(name)}.h\"")
+                for((_, instance) in network.instances) {
+                    val instantiate = network.getInstantiateForInstance(instance.instance)
+                    val definition = network.getDefinitionForInstance(instance.instance)
+                    if(instantiate != null && definition != null) {
+                        // And the includes will be in a sub-directory of the instance type
+                        val subfolder = if(definition.name.equals(network.name, true)) { definition.name + " Files" } else { definition.name }
+                        result.appendln("#include \"${Utils.createFolderName(subfolder)}/${Utils.createFileName(instantiate.name)}.h\"")
+                    }
                 }
             }
             else {
                 // Otherwise it's run time which means we only need to include once per definition type
 
                 // So keep track of which types we've handled
-                val generated = ArrayList<String>()
+                val generated = ArrayList<UUID>()
                 for((_, instance) in network.instances) {
-                    // Check if we've seen this type before
-                    if (!generated.contains(instance.automata)) {
-                        // If we haven't seen it, keep track of it
-                        generated.add(instance.automata)
+                    val instantiate = network.getInstantiateForInstance(instance.instance)
+                    if(instantiate != null) {
+                        // Check if we've seen this type before
+                        if (!generated.contains(instantiate.definition)) {
+                            // If we haven't seen it, keep track of it
+                            generated.add(instantiate.definition)
 
-                        // And add the include
-                        result.appendln("#include \"${Utils.createFileName(instance.automata)}.h\"")
+                            // And add the include
+                            result.appendln("#include \"${Utils.createFileName(instantiate.name)}.h\"")
+                        }
                     }
                 }
             }
@@ -219,13 +227,9 @@ object HFileGenerator {
 
         // Simply iterate over each object that we create
         for((name, instance) in network.instances) {
-            // Different instantiated type depending on the parametrisation method
-            if (config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
-                // Compile time means the type is just itself
-                result.appendln("${config.getIndent(1)}${Utils.createTypeName(name)} ${Utils.createVariableName(name, "data")};")
-            } else {
-                // Run time means that the type is the instance's definition type
-                result.appendln("${config.getIndent(1)}${Utils.createTypeName(instance.automata)} ${Utils.createVariableName(name, "data")};")
+            val instantiate = network.getInstantiateForInstance(instance.instance)
+            if(instantiate != null) {
+                result.appendln("${config.getIndent(1)}${Utils.createTypeName(instantiate.name)} ${Utils.createVariableName(name, "data")};")
             }
         }
 
