@@ -56,6 +56,24 @@ object CodeGenManager {
                 }
             }
         }
+        else {
+            for((_, instance) in network.instances) {
+                val instantiate = network.getInstantiateForInstance(instance.instance)
+                val definition = network.getDefinitionForInstance(instance.instance)
+
+                if(instantiate != null && definition != null && network.instantiates.count{it.value.definition == instantiate.definition} > 1) {
+                    instantiate.name = definition.name
+
+                    val instantiateIds = network.instantiates.filter{it.value.definition == instantiate.definition && it.key != instance.instance}.keys
+
+                    for((_, instance2) in network.instances.filter{instantiateIds.contains(it.value.instance)})
+                        instance2.instance = instance.instance
+
+                    for(id in instantiateIds)
+                        network.instantiates.remove(id)
+                }
+            }
+        }
     }
 
     /**
