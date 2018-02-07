@@ -1,6 +1,6 @@
 # Hybrid Automata Modelling Language (HAML)
 
-#### Version: 0.1.0
+#### Version: 0.1.1
 
 ## Introduction
 
@@ -18,7 +18,7 @@ This specification allows for the describing of hybrid systems in a formal manne
 - [Specification](#specification)
     - [Includes](#includes)
 - [Schema](#schema)
-    - [HAML Document Root](#haml-document-root)
+    - [Network](#network)
     - [Definition](#definition)
     - [Variable Definition](#variable-definition)
     - [Variable Type](#variable-type)
@@ -35,6 +35,7 @@ This specification allows for the describing of hybrid systems in a formal manne
     - [Parametrisation Method](#parametrisation-method)
 - [Example Documents](#example-documents)
     - [Water Heater](#water-heater)
+- [Revision History](#revision-history)
 
 
 ## Definitions
@@ -75,17 +76,20 @@ In each case, the location is relative to the file location where the `!include`
 
 ## Schema
 
-### HAML Document Root
+The root object of a HAML Document is a [Network](#network).
 
-The root object for the HAML Document.
+### Network
+
+The object that captures a Hybrid Network, including mappings and instantiations.
+A Network can instantiate further networks inside of it, to create a hierarchical structure.
 
 #### Fields
 
 | Name | Type | Description |
 |---|---|---|
 | name | String | **Required.** The name of this Hybrid Network. |
-| definitions | Map[String, [Definition](#definition)] | **Required.** A set of definitions of Hybrid Automata that can be instantiated. |
-| instances | Map[String, [Instance](#instance) \| String] | **Required.** A set of instances of previously defined Hybrid Automata. |
+| definitions | Map[String, [Definition](#definition) \| [Network](#network)] | **Required.** A set of definitions of Hybrid Automata or Hybrid Networks that can be instantiated. |
+| instances | Map[String, [Instance](#instance) \| String] | **Required.** A set of instances of previously defined Hybrid Automata or Hybrid Networks. |
 | mappings | Map[String, [Formula](#formula)] | A set of mappings that determine the value of each input of each Instance. |
 | codegenConfig | [Codegen Configuration](#codegen-configuration) | A list of settings available for the default code generation logic in this tool.<br/><br/> **Default:** A default instance of [Codegen Configuration](#codegen-configuration). |
 
@@ -642,3 +646,11 @@ codegenConfig:
     fields:
       - Watertank.temperature
 ```
+
+
+## Revision History
+
+| Version | Date | Notes |
+|---|---|---|
+| 0.1.1 | 2018-02-08 | Updated to support hierarchy of Networks |
+| 0.1.0 | 2017-01-20 | Initial release |
