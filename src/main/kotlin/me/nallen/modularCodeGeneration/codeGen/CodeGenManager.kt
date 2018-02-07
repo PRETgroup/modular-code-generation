@@ -36,10 +36,25 @@ object CodeGenManager {
         outputDir.deleteRecursively()
         outputDir.mkdirs()
 
+        createInstantiates(network, config)
+
         // Depending on the language, we want to call a different generator.
         // Currently only C code is supported, so this looks a bit boring
         when(language) {
             CodeGenLanguage.C -> CCodeGenerator.generate(network, dir, config)
+        }
+    }
+
+    fun createInstantiates(network: HybridNetwork, config: Configuration) {
+        if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
+            for((name, instance) in network.instances) {
+                val instantiate = network.getInstantiateForInstance(instance.instance)
+                if(instantiate != null && network.instances.count{it.value.instance == instance.instance} > 1) {
+                    val instantiateId = UUID.randomUUID()
+                    network.instantiates[instantiateId] = AutomataInstantiate(instantiate.definition, name)
+                    instance.instance = instantiateId
+                }
+            }
         }
     }
 
@@ -49,13 +64,6 @@ object CodeGenManager {
      * if not present in the AutomataInstance map.
      */
     fun createParametrisedFsm(network: HybridNetwork, name: String, instance: AutomataInstance): HybridAutomata? {
-        val instantiate = network.getInstantiateForInstance(instance.instance)
-        if(instantiate != null && instantiate.name != name) {
-            val instantiateId = UUID.randomUUID()
-            network.instantiates[instantiateId] = AutomataInstantiate(instantiate.definition, name)
-            instance.instance = instantiateId
-        }
-
         // We need to make sure that the instance actually exists
         val definition = network.getDefinitionForInstance(instance.instance)
         if(definition != null) {

@@ -210,24 +210,27 @@ class CCodeGenerator {
             // Depending on the parametrisation method, we'll do things slightly differently
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 // Compile time parametrisation means creating a C file for each instance
-                for((name, instance) in network.instances) {
-                    // Create the parametrised copy of the automata
-                    val definition = network.getDefinitionForInstance(instance.instance)
+                for((_, instance) in network.instances) {
+                    val instantiate = network.getInstantiateForInstance(instance.instance)
+                    if(instantiate != null) {
+                        // Create the parametrised copy of the automata
+                        val definition = network.getDefinitionForInstance(instance.instance)
 
-                    val automata = CodeGenManager.createParametrisedFsm(network, name, instance)
+                        val automata = CodeGenManager.createParametrisedFsm(network, instantiate.name, instance)
 
-                    if(definition == null || automata == null)
-                        throw IllegalArgumentException("Unable to find base machine $name to instantiate!")
+                        if(definition == null || automata == null)
+                            throw IllegalArgumentException("Unable to find base machine ${instantiate.name} to instantiate!")
 
-                    // Add all the delayed types that we've found
-                    delayedTypes.addAll(automata.variables.filter({it.canBeDelayed()}).map({it.type}))
+                        // Add all the delayed types that we've found
+                        delayedTypes.addAll(automata.variables.filter({it.canBeDelayed()}).map({it.type}))
 
-                    // We need to create a sub-folder for all the instances. We can run into issues if this is the same
-                    // name as the overall system, so check for that too
-                    val subfolder = if(definition.name.equals(network.name, true)) { definition.name + " Files" } else { definition.name }
+                        // We need to create a sub-folder for all the instances. We can run into issues if this is the same
+                        // name as the overall system, so check for that too
+                        val subfolder = if(definition.name.equals(network.name, true)) { definition.name + " Files" } else { definition.name }
 
-                    // Generate the code for the parametrised automata
-                    generateItem(automata, File(outputDir, Utils.createFolderName(subfolder)).absolutePath, config)
+                        // Generate the code for the parametrised automata
+                        generateItem(automata, File(outputDir, Utils.createFolderName(subfolder)).absolutePath, config)
+                    }
                 }
             }
             else  {
@@ -241,6 +244,8 @@ class CCodeGenerator {
                         // Only generate if we haven't generated this definition before
                         if (!generated.contains(instantiate.definition)) {
                             generated.add(instantiate.definition)
+
+                            definition.name = instantiate.name
 
                             // Add all the delayed types that we've found
                             delayedTypes.addAll(definition.variables.filter({it.canBeDelayed()}).map({it.type}))
@@ -260,33 +265,45 @@ class CCodeGenerator {
         }
 
         private fun makeItemsUnique(network: HybridNetwork, config: Configuration, assignedNames: ArrayList<String> = ArrayList()) {
-            /*if(assignedNames.contains(createFileName(network.name)))
+            if(assignedNames.contains(createFileName(network.name)))
                 network.name += assignedNames.size
 
             assignedNames.add(createFileName(network.name))
 
             // Depending on the parametrisation method, we'll do things slightly differently
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
-                for(key in network.instances.keys) {
-                    var name = key
+                for((_, instance) in network.instances) {
+                    val instantiate = network.getInstantiateForInstance(instance.instance)
+                    if(instantiate != null) {
+                        if(assignedNames.contains(createFileName(instantiate.name))) {
+                            instantiate.name += assignedNames.size
+                        }
 
-                    if(assignedNames.contains(createFileName(name))) {
-                        name += assignedNames.size
-                        network.instances.put(name, network.instances[key]!!)
-                        network.instances.remove(key)
+                        assignedNames.add(createFileName(instantiate.name))
                     }
-
-                    assignedNames.add(createFileName(name))
                 }
             }
             else  {
-                for(definition in network.definitions) {
-                    if(assignedNames.contains(createFileName(definition.name)))
-                        definition.name += assignedNames.size
+                // Otherwise it's run time which means we only need to include once per definition type
 
-                    assignedNames.add(createFileName(definition.name))
+                // So keep track of which types we've handled
+                val generated = ArrayList<UUID>()
+                for((_, instance) in network.instances) {
+                    val instantiate = network.getInstantiateForInstance(instance.instance)
+                    if(instantiate != null) {
+                        // Check if we've seen this type before
+                        if (!generated.contains(instantiate.definition)) {
+                            // If we haven't seen it, keep track of it
+                            generated.add(instantiate.definition)
+
+                            if (assignedNames.contains(createFileName(instantiate.name)))
+                                instantiate.name += assignedNames.size
+
+                            assignedNames.add(createFileName(instantiate.name))
+                        }
+                    }
                 }
-            }*/
+            }
         }
 
 
