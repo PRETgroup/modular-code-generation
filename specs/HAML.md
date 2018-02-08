@@ -86,7 +86,7 @@ The root object for the HAML Document.
 | Name | Type | Description |
 |---|---|---|
 | name | String | **Required.** The name of this Hybrid Network. |
-| system | [Network](#network)] \| [Definition](#definition) | **Required.** The main item that describes the system. Which could be either a [Network](#network) or single [Automata](#automata). |
+| system | [Network](#network) \| [Definition](#definition) | **Required.** The main item that describes the system. Which could be either a [Network](#network) or single [Automata](#automata). |
 | codegenConfig | [Codegen Configuration](#codegen-configuration) | A list of settings available for the default code generation logic in this tool.<br/><br/> **Default:** A default instance of [Codegen Configuration](#codegen-configuration). |
 
 
@@ -102,7 +102,7 @@ A Network can instantiate further networks inside of it, to create a hierarchica
 | inputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Network accepts as inputs. |
 | outputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Network emits as outputs. |
 | parameters | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The parameters that are available for configuration of this Hybrid Network. |
-| definitions | Map[String, [Network](#network)] \| [Definition](#definition) | **Required.** A set of definitions of Hybrid Automata or Hybrid Networks that can be instantiated. |
+| definitions | Map[String, [Network](#network) \| [Definition](#definition)] | **Required.** A set of definitions of Hybrid Automata or Hybrid Networks that can be instantiated. |
 | instances | Map[String, [Instance](#instance) \| String] | **Required.** A set of instances of previously defined Hybrid Automata or Hybrid Networks. |
 | mappings | Map[String, [Formula](#formula)] | A set of mappings that determine the value of each input of each Instance. |
 
