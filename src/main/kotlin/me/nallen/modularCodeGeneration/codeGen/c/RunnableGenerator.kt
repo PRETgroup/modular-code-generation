@@ -113,20 +113,20 @@ object RunnableGenerator {
 
         // And fill in the title row (the time, followed by each variable we're logging
         result.append("${config.getIndent(1)}fprintf(fp, \"Time")
-        for ((machine, variable, _) in toLog) {
-            result.append(",$machine.$variable")
+        for ((variable, _) in toLog) {
+            result.append(",${network.name}.$variable")
         }
         result.appendln("\\n\");")
 
         // Next we can fill in the first row (time 0) in the same order as the titles, here we use a format string to
         // correctly format the types we're logging
         result.append("${config.getIndent(1)}fprintf(fp, \"%f")
-        for ((_, _, type) in toLog) {
+        for ((_, type) in toLog) {
             result.append(",${Utils.generatePrintfType(type)}")
         }
         result.append("\\n\", 0.0")
-        for ((machine, variable, _) in toLog) {
-            result.append(", ${Utils.createVariableName(network.name, "data")}.${Utils.createVariableName(machine, "data")}.${Utils.createVariableName(variable)}")
+        for ((variable, _) in toLog) {
+            result.append(", ${Utils.createVariableName(network.name, "data")}.${Utils.createVariableName(variable)}")
         }
         result.appendln(");")
 
@@ -159,12 +159,12 @@ object RunnableGenerator {
         // If all is good, then we log all the fields that we need to, using a format string to correctly format the
         // types we're logging
         result.append("${config.getIndent(3)}fprintf(fp, \"%f")
-        for ((_, _, type) in toLog) {
+        for ((_, type) in toLog) {
             result.append(",${Utils.generatePrintfType(type)}")
         }
         result.append("\\n\", i*STEP_SIZE")
-        for ((machine, variable, _) in toLog) {
-            result.append(", ${Utils.createVariableName(network.name, "data")}.${Utils.createVariableName(machine, "data")}.${Utils.createVariableName(variable)}")
+        for ((variable, _) in toLog) {
+            result.append(", ${Utils.createVariableName(network.name, "data")}.${Utils.createVariableName(variable)}")
         }
         result.appendln(");")
 

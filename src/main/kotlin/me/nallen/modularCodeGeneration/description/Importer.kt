@@ -115,16 +115,10 @@ class Importer {
 
 private fun createHybridAutomata(name: String, definition: Automata): HybridAutomata {
     // Create the automata
-    val automata = HybridAutomata(name)
+    val automata = HybridAutomata()
 
-    // Load all inputs
-    automata.loadVariables(definition.inputs, Locality.EXTERNAL_INPUT)
-
-    // And all outputs
-    automata.loadVariables(definition.outputs, Locality.EXTERNAL_OUTPUT)
-
-    // And all parameters
-    automata.loadVariables(definition.parameters, Locality.PARAMETER)
+    // Load the common features
+    automata.loadData(name, definition)
 
     // Add the locations (transitions are within locations)
     automata.loadLocations(definition.locations)
@@ -142,8 +136,8 @@ private fun createHybridNetwork(name: String, definition: Network): HybridNetwor
     // Now let's create the Hybrid Network
     val network = HybridNetwork()
 
-    // Import the name
-    network.name = name
+    // Load the common features
+    network.loadData(name, definition)
 
     // Import the definitions
     network.importItems(definition.definitions)
@@ -155,6 +149,20 @@ private fun createHybridNetwork(name: String, definition: Network): HybridNetwor
     network.importMappings(definition.mappings)
 
     return network
+}
+
+private fun HybridItem.loadData(name: String, definition: DefinitionItem) {
+    // Load the name
+    this.name = name
+
+    // Load all inputs
+    this.loadVariables(definition.inputs, Locality.EXTERNAL_INPUT)
+
+    // And all outputs
+    this.loadVariables(definition.outputs, Locality.EXTERNAL_OUTPUT)
+
+    // And all parameters
+    this.loadVariables(definition.parameters, Locality.PARAMETER)
 }
 
 /**
@@ -326,8 +334,11 @@ private fun HybridNetwork.importMappings(mappings: Map<String, ParseTreeItem>?) 
                 this.ioMapping[toPair] = from
             }
             else {
-                // Invalid "to" given
-                throw IOException("Invalid IO Mapping provided for $from -> $to")
+                // Otherwise this is probably mapping to an output, in which case we leave the automata blank
+                val toPair = AutomataVariablePair("", to)
+
+                // And add it!
+                this.ioMapping[toPair] = from
             }
         }
     }
@@ -351,7 +362,7 @@ private fun MutableMap<String, ParseTreeItem>.loadParseTreeItems(items: Map<Stri
 /**
  * Imports a set of HAML Variables with a given locality into the given HybridAutomata
  */
-private fun HybridAutomata.loadVariables(variables: Map<String, VariableDefinition>?, type: Locality) {
+private fun HybridItem.loadVariables(variables: Map<String, VariableDefinition>?, type: Locality) {
     // Iterate over every variable we were given
     if(variables != null) {
         for((name, value) in variables) {

@@ -45,12 +45,10 @@ object CFileGenerator {
         // Whether or not we need to include self references in custom functions
         this.requireSelfReferenceInFunctionCalls = config.parametrisationMethod == ParametrisationMethod.RUN_TIME
 
-        if(item is HybridAutomata) {
-            // Create a list of the variables that can be delayed, and the types that they represent
-            this.delayedVariableTypes.clear()
-            for(variable in item.variables.filter({it.canBeDelayed()}))
-                this.delayedVariableTypes[variable.name] = variable.type
-        }
+        // Create a list of the variables that can be delayed, and the types that they represent
+        this.delayedVariableTypes.clear()
+        for(variable in item.variables.filter({it.canBeDelayed()}))
+            this.delayedVariableTypes[variable.name] = variable.type
 
         // Now let's build the source file
         val result = StringBuilder()
@@ -141,12 +139,10 @@ object CFileGenerator {
         // Create the method name
         result.appendln("void ${Utils.createFunctionName(item.name, "Parametrise")}(${Utils.createTypeName(item.name)}* me) {")
 
-        if(item is HybridAutomata) {
-            // We only need to add any logic here if there are actually any parameters with default values
-            if(item.variables.any({it.locality == Locality.PARAMETER && it.defaultValue != null}))
-            // There's at least one, so let's add the code
-                result.append(Utils.performVariableFunctionForLocality(item, Locality.PARAMETER, CFileGenerator::generateParameterInitialisation, config, "Initialise Default"))
-        }
+        // We only need to add any logic here if there are actually any parameters with default values
+        if(item.variables.any({it.locality == Locality.PARAMETER && it.defaultValue != null}))
+        // There's at least one, so let's add the code
+            result.append(Utils.performVariableFunctionForLocality(item, Locality.PARAMETER, CFileGenerator::generateParameterInitialisation, config, "Initialise Default"))
 
         if(item is HybridNetwork) {
             // We need to initialise every object
@@ -189,6 +185,28 @@ object CFileGenerator {
         // Create the method, which just takes in a self reference
         result.appendln("void ${Utils.createFunctionName(item.name, "Init")}(${Utils.createTypeName(item.name)}* me) {")
 
+        // Now we want to initialise all outputs from the automaton
+        result.append(Utils.performVariableFunctionForLocality(item, Locality.EXTERNAL_OUTPUT, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
+
+        // As well as any internal variables
+        result.append(Utils.performVariableFunctionForLocality(item, Locality.INTERNAL, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
+
+        // Now we need to look for delayed variables to initialise too
+        if (item.variables.any({ it.canBeDelayed() })) {
+            result.appendln()
+            result.append("${config.getIndent(1)}// Initialise Delayed Variables")
+
+            // Iterate over every variable that needs to be delayed
+            for (variable in item.variables
+                    .filter { it.canBeDelayed() }) {
+                // For delayed variables, we need to call a memset to create the structure that holds the delayed data,
+                // as well as initialise the delayable structure
+                result.appendln()
+                result.appendln("${config.getIndent(1)}(void) memset((void *)&me->${Utils.createVariableName(variable.name, "delayed")}, 0, sizeof(${Utils.createTypeName("Delayable", Utils.generateCType(variable.type))}));")
+                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Init")}(&me->${Utils.createVariableName(variable.name, "delayed")}, ${Utils.generateCodeForParseTreeItem(variable.delayableBy!!, Utils.PrefixData("me->"))});")
+            }
+        }
+
         if(item is HybridAutomata)
             result.append(generateAutomataIntialisationFunction(item))
 
@@ -217,28 +235,6 @@ object CFileGenerator {
         // First off, let's initialise the state correctly
         result.appendln("${config.getIndent(1)}// Initialise State")
         result.appendln("${config.getIndent(1)}me->state = ${Utils.createMacroName(automata.name, automata.init.state)};")
-
-        // Now we want to initialise all outputs from the automaton
-        result.append(Utils.performVariableFunctionForLocality(automata, Locality.EXTERNAL_OUTPUT, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
-
-        // As well as any internal variables
-        result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
-
-        // Now we need to look for delayed variables to initialise too
-        if (automata.variables.any({ it.canBeDelayed() })) {
-            result.appendln()
-            result.append("${config.getIndent(1)}// Initialise Delayed Variables")
-
-            // Iterate over every variable that needs to be delayed
-            for (variable in automata.variables
-                    .filter { it.canBeDelayed() }) {
-                // For delayed variables, we need to call a memset to create the structure that holds the delayed data,
-                // as well as initialise the delayable structure
-                result.appendln()
-                result.appendln("${config.getIndent(1)}(void) memset((void *)&me->${Utils.createVariableName(variable.name, "delayed")}, 0, sizeof(${Utils.createTypeName("Delayable", Utils.generateCType(variable.type))}));")
-                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Init")}(&me->${Utils.createVariableName(variable.name, "delayed")}, ${Utils.generateCodeForParseTreeItem(variable.delayableBy!!, Utils.PrefixData("me->"))});")
-            }
-        }
 
         return result.toString()
     }
@@ -619,8 +615,12 @@ object CFileGenerator {
     private fun generateNetworkExecutionFunction(network: HybridNetwork): String {
         val result = StringBuilder()
 
-        // Let's start the mapping code
-        result.appendln("${config.getIndent(1)}/* Mappings */")
+        // Let's start by adding an entry to each delayed variable that we have to keep track of
+        if (network.variables.any({ it.canBeDelayed() })) {
+            for (variable in network.variables.filter({ it.canBeDelayed() }))
+                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
+            result.appendln()
+        }
 
         // Get a list of the inputs that we're assigning to, in a sorted order so it looks slightly nicer
         val keys = network.ioMapping.keys.sortedWith(compareBy({ it.automata }, { it.variable }))
@@ -629,15 +629,27 @@ object CFileGenerator {
         val customVariableNames = network.instances.mapValues({ "me->${ Utils.createVariableName(it.key, "data")}" })
 
         // Now we go through each input
-        var prev = ""
+        var prev: String? = null
         for (key in keys) {
-            if (prev != "" && prev != key.automata)
+            if (prev != null && prev != key.automata)
                 result.appendln()
+
+            if(prev != key.automata && key.automata.isBlank())
+                result.appendln("${config.getIndent(1)}/* Output Mapping */")
+
+            if(prev != key.automata && prev != null && prev.isBlank())
+                result.appendln("${config.getIndent(1)}/* Mappings */")
+
             prev = key.automata
 
             // And assign to the input, the correct output (or combination of them)
             val from = network.ioMapping[key]!!
-            result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
+            if(key.automata.isBlank())
+                // We are writing to an output of this automata
+                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
+            else
+                // We are writing to an input of a sub-automata
+                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
         }
 
         result.appendln()

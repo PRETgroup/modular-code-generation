@@ -86,12 +86,10 @@ object HFileGenerator {
         // Include the config file
         result.appendln("#include \"${CCodeGenerator.CONFIG_FILE}\"")
 
-        if(item is HybridAutomata) {
-            // If we have delayed variables
-            if(item.variables.any({it.canBeDelayed()})) {
-                // Include the delayable file
-                result.appendln("#include \"${CCodeGenerator.DELAYABLE_HEADER}\"")
-            }
+        // If we have delayed variables
+        if(item.variables.any({it.canBeDelayed()})) {
+            // Include the delayable file
+            result.appendln("#include \"${CCodeGenerator.DELAYABLE_HEADER}\"")
         }
 
         // Return all the includes
@@ -176,6 +174,30 @@ object HFileGenerator {
         result.appendln("// ${item.name} Data Struct")
         result.appendln("typedef struct {")
 
+        // We want to generate declarations for each of the different types of variables we might have
+        // Inputs
+        result.append(Utils.performVariableFunctionForLocality(item, Locality.EXTERNAL_INPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+        // Ouputs
+        result.append(Utils.performVariableFunctionForLocality(item, Locality.EXTERNAL_OUTPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+        // Internals
+        result.append(Utils.performVariableFunctionForLocality(item, Locality.INTERNAL, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+        // Parameters
+        result.append(Utils.performVariableFunctionForLocality(item, Locality.PARAMETER, HFileGenerator::generateVariableDeclaration, config, "Declare"))
+
+        // Finally, if we have any delayed variables
+        if (item.variables.any({ it.canBeDelayed() })) {
+            // Then we want to declare those too (these are only internal)
+            result.appendln("${config.getIndent(1)}// Declare Delayed Variables")
+
+            // For each delayed variable
+            for (variable in item.variables.filter { it.canBeDelayed() }) {
+                // Declare the delayed variant of the variable
+                result.appendln("${config.getIndent(1)}${Utils.createTypeName("Delayable", Utils.generateCType(variable.type))} ${Utils.createVariableName(variable.name, "delayed")};")
+            }
+
+            result.appendln()
+        }
+
         if(item is HybridAutomata) {
             result.append(generateAutomataStruct(item))
         }
@@ -196,40 +218,21 @@ object HFileGenerator {
         result.appendln("${config.getIndent(1)}// State")
         result.appendln("${config.getIndent(1)}enum ${Utils.createTypeName(automata.name, "States")} state;")
 
-        // We want to generate declarations for each of the different types of variables we might have
-        // Inputs
-        result.append(Utils.performVariableFunctionForLocality(automata, Locality.EXTERNAL_INPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
-        // Ouputs
-        result.append(Utils.performVariableFunctionForLocality(automata, Locality.EXTERNAL_OUTPUT, HFileGenerator::generateVariableDeclaration, config, "Declare"))
-        // Internals
-        result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, HFileGenerator::generateVariableDeclaration, config, "Declare"))
-        // Parameters
-        result.append(Utils.performVariableFunctionForLocality(automata, Locality.PARAMETER, HFileGenerator::generateVariableDeclaration, config, "Declare"))
-
-        // Finally, if we have any delayed variables
-        if (automata.variables.any({ it.canBeDelayed() })) {
-            // Then we want to declare those too (these are only internal)
-            result.appendln()
-            result.appendln("${config.getIndent(1)}// Declare Delayed Variables")
-
-            // For each delayed variable
-            for (variable in automata.variables.filter { it.canBeDelayed() }) {
-                // Declare the delayed variant of the variable
-                result.appendln("${config.getIndent(1)}${Utils.createTypeName("Delayable", Utils.generateCType(variable.type))} ${Utils.createVariableName(variable.name, "delayed")};")
-            }
-        }
-
         return result.toString()
     }
 
     private fun generateNetworkStruct(network: HybridNetwork): String {
         val result = StringBuilder()
 
-        // Simply iterate over each object that we create
-        for((name, instance) in network.instances) {
-            val instantiate = network.getInstantiateForInstance(instance.instance)
-            if(instantiate != null) {
-                result.appendln("${config.getIndent(1)}${Utils.createTypeName(instantiate.name)} ${Utils.createVariableName(name, "data")};")
+        // Check if we have anything to declare
+        if(network.instances.isNotEmpty()) {
+            result.appendln("${config.getIndent(1)}// Declare Daughter Automata")
+            // Simply iterate over each object that we create
+            for((name, instance) in network.instances) {
+                val instantiate = network.getInstantiateForInstance(instance.instance)
+                if(instantiate != null) {
+                    result.appendln("${config.getIndent(1)}${Utils.createTypeName(instantiate.name)} ${Utils.createVariableName(name, "data")};")
+                }
             }
         }
 
