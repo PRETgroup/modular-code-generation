@@ -49,7 +49,7 @@ class CCodeGenerator {
          * Generate C code for the overall runnable that represents a Hybrid Network. The code will be placed into the
          * provided directory, overwriting any contents that may already exist.
          */
-        private fun generateRunnable(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
+        private fun generateRunnable(item: HybridItem, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             // If the directory doesn't already exist, we want to create it
@@ -57,14 +57,14 @@ class CCodeGenerator {
                 outputDir.mkdirs()
 
             // Generate the Runnable File
-            File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(network, config))
+            File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(item, config))
         }
 
         /**
          * Generate a Makefile for the overall program that represents a Hybrid Network. The code will be placed into
          * the provided directory, overwriting any contents that may already exist.
          */
-        private fun generateMakefile(network: HybridNetwork, dir: String, config: Configuration, isRoot: Boolean = false) {
+        private fun generateMakefile(item: HybridItem, dir: String, config: Configuration, isRoot: Boolean = false) {
             val outputDir = File(dir)
 
             // If the directory doesn't already exist, we want to create it
@@ -72,7 +72,7 @@ class CCodeGenerator {
                 outputDir.mkdirs()
 
             // Generate the Makefile
-            File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(network, config, isRoot))
+            File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(item, config, isRoot))
         }
 
         /**
@@ -330,13 +330,13 @@ class CCodeGenerator {
                 generateMakefile(item, outputDir.absolutePath, config, true)
             }
             else {
-                generate(item, outputDir.absolutePath, config)
+                generateItem(item, outputDir.absolutePath, config)
 
                 // Generate runnable
-                //generateRunnable(item, outputDir.absolutePath, config)
+                generateRunnable(item, outputDir.absolutePath, config)
 
                 // Generate Makefile
-                //generateMakefile(item, outputDir.absolutePath, config, true)
+                generateMakefile(item, outputDir.absolutePath, config, true)
             }
 
             // Generate Config file

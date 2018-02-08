@@ -4,13 +4,14 @@ import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.LoggingField
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 
 /**
  * The class that contains methods to do with the generation of the main runnable file for the system
  */
 object RunnableGenerator {
-    private var network: HybridNetwork = HybridNetwork()
+    private var item: HybridItem = HybridItem()
     private var config: Configuration = Configuration()
 
     private var requireSelfReferenceInFunctionCalls: Boolean = false
@@ -19,15 +20,15 @@ object RunnableGenerator {
     /**
      * Generates a string that represents the main runnable file for the system.
      */
-    fun generate(network: HybridNetwork, config: Configuration = Configuration()): String {
-        this.network = network
+    fun generate(item: HybridItem, config: Configuration = Configuration()): String {
+        this.item = item
         this.config = config
 
         // Whether or not we need to include self references in custom functions
         this.requireSelfReferenceInFunctionCalls = config.parametrisationMethod == ParametrisationMethod.RUN_TIME
 
         // Collect all the fields that we will need to log (if any)
-        toLog = CodeGenManager.collectFieldsToLog(network, config)
+        toLog = CodeGenManager.collectFieldsToLog(item, config)
 
         // Now let's build the runnable
         val result = StringBuilder()
@@ -39,10 +40,13 @@ object RunnableGenerator {
         result.appendln("#include <string.h>")
         result.appendln()
 
-        result.appendln("#include \"${Utils.createFolderName(network.name, "Network")}/${Utils.createFileName(network.name)}.h\"")
+        if(item is HybridNetwork)
+            result.appendln("#include \"${Utils.createFolderName(item.name, "Network")}/${Utils.createFileName(item.name)}.h\"")
+        else
+            result.appendln("#include \"${Utils.createFileName(item.name)}.h\"")
         result.appendln()
 
-        result.appendln("${Utils.createTypeName(network.name)} ${Utils.createVariableName(network.name, "data")};")
+        result.appendln("${Utils.createTypeName(item.name)} ${Utils.createVariableName(item.name, "data")};")
         result.appendln()
 
         // And finally the main function which executes the network
@@ -69,7 +73,7 @@ object RunnableGenerator {
         result.appendln("${config.getIndent(1)}unsigned int i = 0;")
         result.appendln("${config.getIndent(1)}for(i=1; i <= (SIMULATION_TIME / STEP_SIZE); i++) {")
 
-        result.appendln("${config.getIndent(2)}${Utils.createFunctionName(network.name, "Run")}(&${Utils.createVariableName(network.name, "data")});")
+        result.appendln("${config.getIndent(2)}${Utils.createFunctionName(item.name, "Run")}(&${Utils.createVariableName(item.name, "data")});")
         result.appendln()
 
         // Generate the logging code
@@ -98,10 +102,10 @@ object RunnableGenerator {
 
         if (config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
             // Firstly we want to call the default parametrisation for the model, in case we don't set any
-            result.appendln("${config.getIndent(1)}${Utils.createFunctionName(network.name, "Parametrise")}(&${Utils.createVariableName(network.name, "data")});")
+            result.appendln("${config.getIndent(1)}${Utils.createFunctionName(item.name, "Parametrise")}(&${Utils.createVariableName(item.name, "data")});")
         }
 
-        result.appendln("${config.getIndent(1)}${Utils.createFunctionName(network.name, "Init")}(&${Utils.createVariableName(network.name, "data")});")
+        result.appendln("${config.getIndent(1)}${Utils.createFunctionName(item.name, "Init")}(&${Utils.createVariableName(item.name, "data")});")
         result.appendln()
 
         // Next we need to add some code that handles logging, if it is enabled
@@ -114,7 +118,7 @@ object RunnableGenerator {
         // And fill in the title row (the time, followed by each variable we're logging
         result.append("${config.getIndent(1)}fprintf(fp, \"Time")
         for ((variable, _) in toLog) {
-            result.append(",${network.name}.$variable")
+            result.append(",${item.name}.$variable")
         }
         result.appendln("\\n\");")
 
@@ -126,7 +130,7 @@ object RunnableGenerator {
         }
         result.append("\\n\", 0.0")
         for ((variable, _) in toLog) {
-            result.append(", ${Utils.createVariableName(network.name, "data")}.${Utils.createVariableName(variable)}")
+            result.append(", ${Utils.createVariableName(item.name, "data")}.${Utils.createVariableName(variable)}")
         }
         result.appendln(");")
 
@@ -164,7 +168,7 @@ object RunnableGenerator {
         }
         result.append("\\n\", i*STEP_SIZE")
         for ((variable, _) in toLog) {
-            result.append(", ${Utils.createVariableName(network.name, "data")}.${Utils.createVariableName(variable)}")
+            result.append(", ${Utils.createVariableName(item.name, "data")}.${Utils.createVariableName(variable)}")
         }
         result.appendln(");")
 
