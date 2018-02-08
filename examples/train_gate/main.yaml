@@ -83,8 +83,8 @@ system:
 
 
   mappings:
-    train_pos: Train.pos
-    gate_pos: Gate.pos
+    train_pos: Train.position
+    gate_pos: Gate.position
 
     Gate.gateRequestUp: Train.gateRequestUp
     Gate.gateRequestDown: Train.gateRequestDown
