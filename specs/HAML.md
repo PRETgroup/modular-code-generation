@@ -18,8 +18,9 @@ This specification allows for the describing of hybrid systems in a formal manne
 - [Specification](#specification)
     - [Includes](#includes)
 - [Schema](#schema)
+    - [HAML Document Root](#haml-document-root)
     - [Network](#network)
-    - [Definition](#definition)
+    - [Automata](#automata)
     - [Variable Definition](#variable-definition)
     - [Variable Type](#variable-type)
     - [Location](#location)
@@ -76,7 +77,18 @@ In each case, the location is relative to the file location where the `!include`
 
 ## Schema
 
-The root object of a HAML Document is a [Network](#network).
+### HAML Document Root
+
+The root object for the HAML Document.
+
+#### Fields
+
+| Name | Type | Description |
+|---|---|---|
+| name | String | **Required.** The name of this Hybrid Network. |
+| system | [Network](#network)] \| [Definition](#definition) | **Required.** The main item that describes the system. Which could be either a [Network](#network) or single [Automata](#automata). |
+| codegenConfig | [Codegen Configuration](#codegen-configuration) | A list of settings available for the default code generation logic in this tool.<br/><br/> **Default:** A default instance of [Codegen Configuration](#codegen-configuration). |
+
 
 ### Network
 
@@ -87,11 +99,12 @@ A Network can instantiate further networks inside of it, to create a hierarchica
 
 | Name | Type | Description |
 |---|---|---|
-| name | String | **Required.** The name of this Hybrid Network. |
-| definitions | Map[String, [Definition](#definition) \| [Network](#network)] | **Required.** A set of definitions of Hybrid Automata or Hybrid Networks that can be instantiated. |
+| inputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Network accepts as inputs. |
+| outputs | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The variables that this Hybrid Network emits as outputs. |
+| parameters | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The parameters that are available for configuration of this Hybrid Network. |
+| definitions | Map[String, [Network](#network)] \| [Definition](#definition) | **Required.** A set of definitions of Hybrid Automata or Hybrid Networks that can be instantiated. |
 | instances | Map[String, [Instance](#instance) \| String] | **Required.** A set of instances of previously defined Hybrid Automata or Hybrid Networks. |
 | mappings | Map[String, [Formula](#formula)] | A set of mappings that determine the value of each input of each Instance. |
-| codegenConfig | [Codegen Configuration](#codegen-configuration) | A list of settings available for the default code generation logic in this tool.<br/><br/> **Default:** A default instance of [Codegen Configuration](#codegen-configuration). |
 
 
 #### Example
@@ -132,7 +145,7 @@ codegenConfig:
 ```
 
 
-### Definition
+### Automata
 
 The object that captures a Hybrid Automata and its logic.
 
