@@ -37,7 +37,7 @@ class Importer {
             mapper.registerModule(KotlinModule())
 
             // ... and convert it into a Schema object
-            val schema = mapper.readValue(parsedFile, Schema::class.java)
+            val schema = mapper.readValue(parsedFile, Network::class.java)
 
             // Now let's create the Hybrid Network
             val network = HybridNetwork()
@@ -46,7 +46,7 @@ class Importer {
             network.name = schema.name
 
             // Import the definitions
-            network.importAutomata(schema.definitions)
+            network.importItems(schema.definitions)
 
             // Import the instances
             network.importInstances(schema.instances)
@@ -122,35 +122,44 @@ class Importer {
 /**
  * Imports all Definitions in the HAML spec into their respective HybridAutomata representations
  */
-private fun HybridNetwork.importAutomata(definitions: Map<String, Definition>) {
+private fun HybridNetwork.importItems(definitions: Map<String, DefinitionItem>) {
     // We want to add every definition, so iterate!
     for((name, definition) in definitions) {
-        // Create the automata
-        val automata = HybridAutomata(name)
+        val uuid = when(definition) {
+            is Definition -> this.loadDefinition(name, definition)
+            is Network -> UUID.randomUUID()
+        }
 
-        // Load all inputs
-        automata.loadVariables(definition.inputs, Locality.EXTERNAL_INPUT)
-
-        // And all outputs
-        automata.loadVariables(definition.outputs, Locality.EXTERNAL_OUTPUT)
-
-        // And all parameters
-        automata.loadVariables(definition.parameters, Locality.PARAMETER)
-
-        // Add the locations (transitions are within locations)
-        automata.loadLocations(definition.locations)
-
-        // Set the initialisation
-        automata.loadInitialisation(definition.initialisation)
-
-        // And then any custom functions that it may contain
-        automata.loadFunctions(definition.functions)
-
-        val definitionUUID = UUID.randomUUID()
-        this.definitions.put(definitionUUID, automata)
-
-        this.instantiates.put(UUID.randomUUID(), AutomataInstantiate(definitionUUID, name))
+        this.instantiates.put(UUID.randomUUID(), AutomataInstantiate(uuid, name))
     }
+}
+
+private fun HybridNetwork.loadDefinition(name: String, definition: Definition): UUID {
+    // Create the automata
+    val automata = HybridAutomata(name)
+
+    // Load all inputs
+    automata.loadVariables(definition.inputs, Locality.EXTERNAL_INPUT)
+
+    // And all outputs
+    automata.loadVariables(definition.outputs, Locality.EXTERNAL_OUTPUT)
+
+    // And all parameters
+    automata.loadVariables(definition.parameters, Locality.PARAMETER)
+
+    // Add the locations (transitions are within locations)
+    automata.loadLocations(definition.locations)
+
+    // Set the initialisation
+    automata.loadInitialisation(definition.initialisation)
+
+    // And then any custom functions that it may contain
+    automata.loadFunctions(definition.functions)
+
+    val definitionUUID = UUID.randomUUID()
+    this.definitions.put(definitionUUID, automata)
+
+    return definitionUUID
 }
 
 /**
@@ -204,12 +213,14 @@ private fun HybridAutomata.loadTransitions(from: String, transitions: List<Trans
 /**
  * Imports a HAML Initialisation spec into the given HybridAutomata instance
  */
-private fun HybridAutomata.loadInitialisation(init: Initialisation) {
-    // Initial state is 1:1 mapping
-    this.init.state = init.state
+private fun HybridAutomata.loadInitialisation(init: Initialisation?) {
+    if(init != null) {
+        // Initial state is 1:1 mapping
+        this.init.state = init.state
 
-    // And load all the initial valuations
-    this.init.valuations.loadParseTreeItems(init.valuations)
+        // And load all the initial valuations
+        this.init.valuations.loadParseTreeItems(init.valuations)
+    }
 }
 
 /**

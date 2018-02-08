@@ -14,9 +14,7 @@ data class HybridAutomata(
         val edges: ArrayList<Edge> = ArrayList(),
         var init: Initialisation = Initialisation(""),
 
-        val functions: ArrayList<FunctionDefinition> = ArrayList(),
-
-        val variables: ArrayList<Variable> = ArrayList()
+        val functions: ArrayList<FunctionDefinition> = ArrayList()
 ) : HybridItem() {
     fun addLocation(location: Location): HybridAutomata {
         /*if(locations.any({it.name == location.name}))
