@@ -122,7 +122,7 @@ A Network can instantiate further networks inside of it, to create a hierarchica
 | parameters | Map[String, [Variable Type](#variable-type) \| [Variable Definition](#variable-definition)] | The parameters that are available for configuration of this Hybrid Network. |
 | definitions | Map[String, [Network](#network) \| [Automata](#automata)] | **Required.** A set of definitions of Hybrid Networks or Hybrid Automata that can be instantiated. |
 | instances | Map[String, [Instance](#instance) \| String] | **Required.** A set of instances of previously defined Hybrid Networks or Hybrid Automata. |
-| mappings | Map[String, [Formula](#formula)] | A set of mappings that determine the value of each input of each Instance. |
+| mappings | Map[String, [Formula](#formula)] | A set of mappings that determine the value of each output of this network, or input of each Instance. |
 
 
 #### Example
@@ -140,6 +140,7 @@ instances:
   !include paths.yaml
 
 mappings:
+  SA_v: SA.v
   !include mappings.yaml
 ```
 
@@ -517,7 +518,7 @@ A set of options that determine which information is logged when the generated c
 | enable | Boolean | Whether or not to enable logging of outputs.<br/><br/> **Default:** `true` |
 | interval | Double | The interval at which to output log results to the file. For best results this should be an integer multiple of the step size.<br/><br/> **Default:** The same as the value of `stepSize` declared in [Execution Settings](#execution-settings). |
 | file | String | The file where the logging output should be placed.<br/><br/> **Default:** `out.csv` |
-| fields | String[] | The list of fields to output when logging.<br/><br/>**Default:** Every output variable of every [Instance](#instance). |
+| fields | String[] | The list of fields to output when logging.<br/><br/>**Default:** Every output variable of the top level system. |
 
 #### Example
 
@@ -525,15 +526,15 @@ A set of options that determine which information is logged when the generated c
 interval: 0.005
 file: out.csv
 fields:
-  - SA.v
-  - RA.v
-  - OS.v
-  - Fast.v
-  - AV.v
-  - His.v
-  - RBB.v
-  - RVA.v
-  - RV.v
+  - SA_v
+  - RA_v
+  - OS_v
+  - Fast_v
+  - AV_v
+  - His_v
+  - RBB_v
+  - RVA_v
+  - RV_v
 ```
 
 
@@ -558,105 +559,110 @@ Some example documents are provided below.
 ```yaml
 name: water_heater
 
-definitions:
-  Watertank:
-    inputs:
-      burnerOn: BOOLEAN
-      burnerOff: BOOLEAN
-    outputs:
-      temperature: REAL
-    parameters:
-      trainSpeed:
-        type: REAL
-        default: 1
-    locations:
-      t1:
-        invariant: temperature >= 20 && temperature < 100 && !burnerOff
-        flow:
-          temperature: 0.075 * (150 - temperature)
-        transitions:
-          - to: t2
-            guard: temperature == 100 && !burnerOff
-          - to: t3
-            guard: burnerOff
-      t2:
-        invariant: '!burnerOff'
-        transitions:
-          - to: t3
-            guard: burnerOff
-      t3:
-        invariant: temperature > 20 && temperature <= 100 && !burnerOn
-        flow:
-          temperature: -0.075 * temperature
-        transitions:
-          - to: t4
-            guard: temperature == 20 && !burnerOn
-          - to: t1
-            guard: burnerOn
-      t4:
-        invariant: '!burnerOn'
-        transitions:
-          - to: t1
-            guard: burnerOn
-    initialisation:
-      state: t1
-      valuations:
-        temperature: 20
+system:
+  outputs:
+    temperature: REAL
 
-  Burner:
-    outputs:
-      burnerOn: BOOLEAN
-      burnerOff: BOOLEAN
-    parameters:
-      cycleTime:
-        type: REAL
-        default: 20
-    locations:
-      b1:
-        invariant: y < cycleTime
-        flow:
-          y: 1
-        update:
-          burnerOn: true
-          burnerOff: false
-        transitions:
-          - to: b2
-            guard: y == cycleTime
-            update:
-              y: 0
-      b2:
-        invariant: y < cycleTime
-        flow:
-          y: 1
-        update:
-          burnerOn: false
-          burnerOff: true
-        transitions:
-          - to: b1
-            guard: y == cycleTime
-            update:
-              y: 0
-    initialisation:
-      state: b1
-      valuations:
-        y: 0
+  definitions:
+    Watertank:
+      inputs:
+        burnerOn: BOOLEAN
+        burnerOff: BOOLEAN
+      outputs:
+        temperature: REAL
+      parameters:
+        trainSpeed:
+          type: REAL
+          default: 1
+      locations:
+        t1:
+          invariant: temperature >= 20 && temperature < 100 && !burnerOff
+          flow:
+            temperature: 0.075 * (150 - temperature)
+          transitions:
+            - to: t2
+              guard: temperature == 100 && !burnerOff
+            - to: t3
+              guard: burnerOff
+        t2:
+          invariant: '!burnerOff'
+          transitions:
+            - to: t3
+              guard: burnerOff
+        t3:
+          invariant: temperature > 20 && temperature <= 100 && !burnerOn
+          flow:
+            temperature: -0.075 * temperature
+          transitions:
+            - to: t4
+              guard: temperature == 20 && !burnerOn
+            - to: t1
+              guard: burnerOn
+        t4:
+          invariant: '!burnerOn'
+          transitions:
+            - to: t1
+              guard: burnerOn
+      initialisation:
+        state: t1
+        valuations:
+          temperature: 20
 
-instances:
-  Watertank: Watertank
-  Burner: Burner
+    Burner:
+      outputs:
+        burnerOn: BOOLEAN
+        burnerOff: BOOLEAN
+      parameters:
+        cycleTime:
+          type: REAL
+          default: 20
+      locations:
+        b1:
+          invariant: y < cycleTime
+          flow:
+            y: 1
+          update:
+            burnerOn: true
+            burnerOff: false
+          transitions:
+            - to: b2
+              guard: y == cycleTime
+              update:
+                y: 0
+        b2:
+          invariant: y < cycleTime
+          flow:
+            y: 1
+          update:
+            burnerOn: false
+            burnerOff: true
+          transitions:
+            - to: b1
+              guard: y == cycleTime
+              update:
+                y: 0
+      initialisation:
+        state: b1
+        valuations:
+          y: 0
+
+  instances:
+    Watertank: Watertank
+    Burner: Burner
 
 
-mappings:
-  Watertank.burnerOn: Burner.burnerOn
-  Watertank.burnerOff: Burner.burnerOff
+  mappings:
+    temperature: Watertank.temperature
+
+    Watertank.burnerOn: Burner.burnerOn
+    Watertank.burnerOff: Burner.burnerOff
 
 codegenConfig:
   execution:
     stepSize: 0.0001
     simulationTime: 100
   logging:
-    fields:
-      - Watertank.temperature
+    file: out.csv
 ```
 
 
