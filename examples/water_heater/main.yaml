@@ -83,16 +83,33 @@ system:
         valuations:
           y: 0
 
+    TankSystem:
+      inputs:
+        burnerOn: BOOLEAN
+        burnerOff: BOOLEAN
+      outputs:
+        temperature: REAL
+      instances:
+        Tank1: Watertank
+        Tank2: Watertank
+      mappings:
+        Tank1.burnerOn: burnerOn
+        Tank1.burnerOff: burnerOff
+        Tank2.burnerOn: burnerOn
+        Tank2.burnerOff: burnerOff
+
+        temperature: (Tank1.temperature + Tank2.temperature) / 2
+
   instances:
-    Watertank: Watertank
+    TankSystem: TankSystem
     Burner: Burner
 
 
   mappings:
-    temperature: Watertank.temperature
+    temperature: TankSystem.temperature
 
-    Watertank.burnerOn: Burner.burnerOn
-    Watertank.burnerOff: Burner.burnerOff
+    TankSystem.burnerOn: Burner.burnerOn
+    TankSystem.burnerOff: Burner.burnerOff
 
 codegenConfig:
   execution:
