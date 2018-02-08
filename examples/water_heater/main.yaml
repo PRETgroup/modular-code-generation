@@ -11,10 +11,6 @@ system:
         burnerOff: BOOLEAN
       outputs:
         temperature: REAL
-      parameters:
-        trainSpeed:
-          type: REAL
-          default: 1
       locations:
         t1:
           invariant: temperature >= 20 && temperature < 100 && !burnerOff
