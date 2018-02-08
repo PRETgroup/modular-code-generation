@@ -138,44 +138,20 @@ object CodeGenManager {
 
         // Check if the user provided any logging fields
         if(config.logging.fields == null) {
-            // The user did not, so let's collect all outputs and log them
-            // Iterate over every instance
-            for((name, instance) in network.instances) {
-                // Fetch the automata that the instance implements
-                val definition = network.getDefinitionForInstance(instance.instance)
-                if(definition != null && definition is HybridAutomata) {
-                    // Fetch all outputs inside that definition
-                    val outputs = definition.variables.filter({it.locality == Locality.EXTERNAL_OUTPUT})
-                    // And add to the logging fields list
-                    outputs.mapTo(toLog) { LoggingField(it.name, it.type) }
-                }
-            }
-
+            // Fetch all outputs inside the definition
+            val outputs = item.variables.filter({it.locality == Locality.EXTERNAL_OUTPUT})
+            // And add to the logging fields list
+            outputs.mapTo(toLog) { LoggingField(it.name, it.type) }
         }
         else {
             // The user specified some logging fields they want, so let's go through each one
             for(field in config.logging.fields) {
-                // Should be of the format instance.output so it should contain a period
-                if(field.contains(".")) {
-                    // Get the instance and output names
-                    val machine = field.substringBeforeLast(".")
-                    val variable = field.substringAfterLast(".")
+                // Check that a variable of the same name exists in the definition
+                if(item.variables.any({it.locality == Locality.EXTERNAL_OUTPUT && it.name == field})) {
+                    val output = item.variables.first({it.locality == Locality.EXTERNAL_OUTPUT && it.name == field})
 
-                    // Check that the instance exists
-                    if(network.instances.containsKey(machine)) {
-                        val instance = network.instances[machine]!!
-                        // Check that a definition exists for that instance
-                        val definition = network.getDefinitionForInstance(instance.instance)
-                        if(definition != null && definition is HybridAutomata) {
-                            // Finally check that a variable of the same name exists in that definition
-                            if(definition.variables.any({it.locality == Locality.EXTERNAL_OUTPUT && it.name == variable})) {
-                                val output = definition.variables.first({it.locality == Locality.EXTERNAL_OUTPUT && it.name == variable})
-
-                                // Yay we found everything we needed to, now we can add it to the logging fields list
-                                toLog.add(LoggingField(output.name, output.type))
-                            }
-                        }
-                    }
+                    // Yay we found everything we needed to, now we can add it to the logging fields list
+                    toLog.add(LoggingField(output.name, output.type))
                 }
             }
         }
