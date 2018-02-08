@@ -2,7 +2,7 @@ name: water_heater
 
 system:
   outputs:
-    - temperature: REAL
+    temperature: REAL
 
   definitions:
     Watertank:

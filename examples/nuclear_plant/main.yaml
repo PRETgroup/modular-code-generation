@@ -2,7 +2,8 @@ name: nuclear_plant
 
 system:
   outputs:
-    - plant_x: REAL
+    plant_x: REAL
+
   definitions:
     Plant:
       inputs:

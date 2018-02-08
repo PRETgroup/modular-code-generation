@@ -2,8 +2,8 @@ name: train_gate
 
 system:
   outputs:
-    - train_pos: REAL
-    - gate_pos: REAL
+    train_pos: REAL
+    gate_pos: REAL
   definitions:
     Train:
       outputs:
