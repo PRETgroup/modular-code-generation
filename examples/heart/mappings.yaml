@@ -1,3 +1,14 @@
+SA_v: SA.v
+RA_v: RA.v
+OS_v: OS.v
+Fast_v: Fast.v
+AV_v: AV.v
+His_v: His.v
+RBB_v: RBB.v
+RVA_v: RVA.v
+RV_v: RV.v
+
+
 AV_His.cell1_resting: AV.resting
 AV_His.cell1_stimulated: AV.stimulated
 AV_His.cell1_v: AV.v
