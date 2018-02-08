@@ -16,6 +16,6 @@ fun main(args: Array<String>) = mainBody("piha") {
 
         // Generate the code
         println("Generating $language code into directory '$outputDir'")
-        CodeGenManager.generateForNetwork(network, language, outputDir, config)
+        CodeGenManager.generate(network, language, outputDir, config)
     }
 }

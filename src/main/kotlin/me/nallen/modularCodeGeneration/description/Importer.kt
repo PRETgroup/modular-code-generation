@@ -28,7 +28,7 @@ class Importer {
          * The configuration settings stored in the HAML documents are also parsed and returned as a separate
          * Configuration object.
          */
-        fun import(path: String): Pair<HybridNetwork, Configuration> {
+        fun import(path: String): Pair<HybridItem, Configuration> {
             // Firstly we want to handle any includes that may exist in the file
             val parsedFile = parseIncludes(path)
 
@@ -37,27 +37,21 @@ class Importer {
             mapper.registerModule(KotlinModule())
 
             // ... and convert it into a Schema object
-            val schema = mapper.readValue(parsedFile, Network::class.java)
+            val schema = mapper.readValue(parsedFile, Schema::class.java)
 
-            // Now let's create the Hybrid Network
-            val network = HybridNetwork()
-
-            // Import the name
-            network.name = schema.name
-
-            // Import the definitions
-            network.importItems(schema.definitions)
-
-            // Import the instances
-            network.importInstances(schema.instances)
-
-            // Import the mappings
-            network.importMappings(schema.mappings)
+            val item: HybridItem = when(schema.system) {
+                is Network -> {
+                    createHybridNetwork(schema.name, schema.system)
+                }
+                is Automata -> {
+                    createHybridAutomata(schema.name, schema.system)
+                }
+            }
 
             // Create the configuration
             val config = schema.codegenConfig ?: Configuration()
 
-            return Pair(network, config)
+            return Pair(item, config)
         }
 
         /**
@@ -119,22 +113,7 @@ class Importer {
     }
 }
 
-/**
- * Imports all Definitions in the HAML spec into their respective HybridAutomata representations
- */
-private fun HybridNetwork.importItems(definitions: Map<String, DefinitionItem>) {
-    // We want to add every definition, so iterate!
-    for((name, definition) in definitions) {
-        val uuid = when(definition) {
-            is Definition -> this.loadDefinition(name, definition)
-            is Network -> UUID.randomUUID()
-        }
-
-        this.instantiates.put(UUID.randomUUID(), AutomataInstantiate(uuid, name))
-    }
-}
-
-private fun HybridNetwork.loadDefinition(name: String, definition: Definition): UUID {
+private fun createHybridAutomata(name: String, definition: Automata): HybridAutomata {
     // Create the automata
     val automata = HybridAutomata(name)
 
@@ -155,6 +134,46 @@ private fun HybridNetwork.loadDefinition(name: String, definition: Definition): 
 
     // And then any custom functions that it may contain
     automata.loadFunctions(definition.functions)
+
+    return automata
+}
+
+private fun createHybridNetwork(name: String, definition: Network): HybridNetwork {
+    // Now let's create the Hybrid Network
+    val network = HybridNetwork()
+
+    // Import the name
+    network.name = name
+
+    // Import the definitions
+    network.importItems(definition.definitions)
+
+    // Import the instances
+    network.importInstances(definition.instances)
+
+    // Import the mappings
+    network.importMappings(definition.mappings)
+
+    return network
+}
+
+/**
+ * Imports all Definitions in the HAML spec into their respective HybridAutomata representations
+ */
+private fun HybridNetwork.importItems(definitions: Map<String, DefinitionItem>) {
+    // We want to add every definition, so iterate!
+    for((name, definition) in definitions) {
+        val uuid = when(definition) {
+            is Automata -> this.loadDefinition(name, definition)
+            is Network -> UUID.randomUUID()
+        }
+
+        this.instantiates.put(UUID.randomUUID(), AutomataInstantiate(uuid, name))
+    }
+}
+
+private fun HybridNetwork.loadDefinition(name: String, definition: Automata): UUID {
+    val automata = createHybridAutomata(name, definition)
 
     val definitionUUID = UUID.randomUUID()
     this.definitions.put(definitionUUID, automata)

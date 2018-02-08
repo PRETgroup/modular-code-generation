@@ -25,7 +25,7 @@ object CodeGenManager {
      *
      * A set of configuration properties can also be set to modify the structure of the generated code
      */
-    fun generateForNetwork(network: HybridNetwork, language: CodeGenLanguage, dir: String, config: Configuration = Configuration()) {
+    fun generate(item: HybridItem, language: CodeGenLanguage, dir: String, config: Configuration = Configuration()) {
         val outputDir = File(dir)
 
         // If the desired output directory already exists and is a file, then we stop!
@@ -36,12 +36,13 @@ object CodeGenManager {
         outputDir.deleteRecursively()
         outputDir.mkdirs()
 
-        createInstantiates(network, config)
+        if(item is HybridNetwork)
+            createInstantiates(item, config)
 
         // Depending on the language, we want to call a different generator.
         // Currently only C code is supported, so this looks a bit boring
         when(language) {
-            CodeGenLanguage.C -> CCodeGenerator.generate(network, dir, config)
+            CodeGenLanguage.C -> CCodeGenerator.generate(item, dir, config)
         }
     }
 
@@ -131,7 +132,7 @@ object CodeGenManager {
      * This is based off of the provided Configuration properties where the set of logging fields can be provided or, if
      * the field is omitted, all outputs are logged by default
      */
-    fun collectFieldsToLog(network: HybridNetwork, config: Configuration): List<LoggingField> {
+    fun collectFieldsToLog(item: HybridItem, config: Configuration): List<LoggingField> {
         // The list that we'll use to store logging fields
         val toLog = ArrayList<LoggingField>()
 
@@ -146,7 +147,7 @@ object CodeGenManager {
                     // Fetch all outputs inside that definition
                     val outputs = definition.variables.filter({it.locality == Locality.EXTERNAL_OUTPUT})
                     // And add to the logging fields list
-                    outputs.mapTo(toLog) { LoggingField(name, it.name, it.type) }
+                    outputs.mapTo(toLog) { LoggingField(it.name, it.type) }
                 }
             }
 
@@ -171,7 +172,7 @@ object CodeGenManager {
                                 val output = definition.variables.first({it.locality == Locality.EXTERNAL_OUTPUT && it.name == variable})
 
                                 // Yay we found everything we needed to, now we can add it to the logging fields list
-                                toLog.add(LoggingField(machine, output.name, output.type))
+                                toLog.add(LoggingField(output.name, output.type))
                             }
                         }
                     }
@@ -405,9 +406,6 @@ enum class SaturationDirection {
  * A class that captures a field to be logged
  */
 data class LoggingField(
-        // The instance to which this variable belongs
-        val machine: String,
-
         // The variable to be logged
         val variable: String,
 

@@ -307,26 +307,37 @@ class CCodeGenerator {
         }
 
 
-        fun generate(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
+        fun generate(item: HybridItem, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             // If the directory doesn't already exist, we want to create it
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
-            val networkDir = File(outputDir, Utils.createFolderName(network.name, "Network"))
+            if(item is HybridNetwork) {
+                val networkDir = File(outputDir, Utils.createFolderName(item.name, "Network"))
 
-            //For C Code we need to make sure each type is unique, so let's do that
-            makeItemsUnique(network, config)
+                //For C Code we need to make sure each type is unique, so let's do that
+                makeItemsUnique(item, config)
 
-            // Generate the network
-            generateNetwork(network, networkDir.absolutePath, config)
+                // Generate the network
+                generateNetwork(item, networkDir.absolutePath, config)
 
-            // Generate runnable
-            generateRunnable(network, outputDir.absolutePath, config)
+                // Generate runnable
+                generateRunnable(item, outputDir.absolutePath, config)
 
-            // Generate Makefile
-            generateMakefile(network, outputDir.absolutePath, config, true)
+                // Generate Makefile
+                generateMakefile(item, outputDir.absolutePath, config, true)
+            }
+            else {
+                generate(item, outputDir.absolutePath, config)
+
+                // Generate runnable
+                //generateRunnable(item, outputDir.absolutePath, config)
+
+                // Generate Makefile
+                //generateMakefile(item, outputDir.absolutePath, config, true)
+            }
 
             // Generate Config file
             generateConfigFile(outputDir.absolutePath, config)

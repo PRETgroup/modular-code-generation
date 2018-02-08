@@ -13,10 +13,22 @@ import me.nallen.modularCodeGeneration.parseTree.Program
 /**
  * The root object of the HAML Document
  */
-class Network: DefinitionItem() {
-    // The name of this Hybrid Network
-    var name: String = "Network"
+data class Schema(
+        // The name of this HAML Document
+        var name: String,
 
+        // The main item that describes the system
+        val system: DefinitionItem,
+
+        // A list of settings available for the default code generation logic in this tool
+        var codegenConfig: Configuration? = null
+)
+
+/**
+ * The object that captures a Hybrid Network, including mappings and instantiations.
+ * A Network can instantiate further networks inside of it, to create a hierarchical structure.
+ */
+class Network: DefinitionItem() {
     // A set of definitions of Hybrid Automata or Hybrid Networks that can be instantiated
     var definitions: Map<String, DefinitionItem> = HashMap()
 
@@ -25,15 +37,12 @@ class Network: DefinitionItem() {
 
     // A set of mappings that determine the value of each input of each Instance
     var mappings: Map<String, ParseTreeItem>? = null
-
-    // A list of settings available for the default code generation logic in this tool
-    var codegenConfig: Configuration? = null
 }
 
 /**
  * The object that captures a Hybrid Automata and its logic
  */
-class Definition: DefinitionItem() {
+class Automata: DefinitionItem() {
     // The locations that exist inside this Hybrid Automata
     var locations: Map<String, Location>? = null
 
@@ -44,6 +53,9 @@ class Definition: DefinitionItem() {
     var initialisation: Initialisation? = null
 }
 
+/**
+ * An abstract (sealed) class to support Polymorphism of Networks and Automata
+ */
 sealed class DefinitionItem {
     // The variables that this Hybrid Item accepts as inputs
     var inputs: Map<String, VariableDefinition>? = null
@@ -64,7 +76,7 @@ sealed class DefinitionItem {
                 return if(node.has("instances"))
                     mapper.treeToValue(node, Network::class.java)
                 else {
-                    mapper.treeToValue(node, Definition::class.java)
+                    mapper.treeToValue(node, Automata::class.java)
                 }
             }
             return null
