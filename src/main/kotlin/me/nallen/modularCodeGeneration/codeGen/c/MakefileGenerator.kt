@@ -126,7 +126,7 @@ object MakefileGenerator {
                 else {
                     // We only want to generate each definition once, so keep a track of them
                     val generated = ArrayList<UUID>()
-                    for((key, instance) in item.getAllInstances()) {
+                    for((_, instance) in item.getAllInstances()) {
                         val instantiate = item.getInstantiateForInstantiateId(instance.instantiate, true)
                         if (instantiate != null) {
                             // Check if we've seen this type before
