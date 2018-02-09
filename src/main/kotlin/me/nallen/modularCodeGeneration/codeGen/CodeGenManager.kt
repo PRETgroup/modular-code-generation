@@ -70,8 +70,8 @@ object CodeGenManager {
                     for((_, instance2) in network.instances.filter{instantiateIds.contains(it.value.instantiate)})
                         instance2.instantiate = instance.instantiate
 
-                    //for(id in instantiateIds)
-                        //network.instantiates.remove(id)
+                    for(id in instantiateIds)
+                        network.instantiates.remove(id)
                 }
             }
         }
