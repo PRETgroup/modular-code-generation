@@ -221,6 +221,7 @@ object Utils {
                     val builder = StringBuilder()
 
                     // For each part
+                    var first = true
                     for(part in parts) {
                         // If needed, deliminate by a period
                         if(builder.isNotEmpty()) builder.append(".")
@@ -230,7 +231,12 @@ object Utils {
                             builder.append(prefixData.customVariableNames[part]!!)
                         else
                             // Otherwise generate the C name for this variable
-                            builder.append("${prefixData.prefix}${Utils.createVariableName(part)}")
+                            if(first)
+                                builder.append("${prefixData.prefix}${Utils.createVariableName(part)}")
+                            else
+                                builder.append(Utils.createVariableName(part))
+
+                        first = false
                     }
 
                     // And return the final variable name

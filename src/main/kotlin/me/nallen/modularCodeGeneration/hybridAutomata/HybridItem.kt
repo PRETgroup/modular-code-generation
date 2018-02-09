@@ -6,7 +6,7 @@ import me.nallen.modularCodeGeneration.parseTree.getChildren
 import me.nallen.modularCodeGeneration.parseTree.setParameterValue
 import me.nallen.modularCodeGeneration.parseTree.Variable as ParseTreeVariable
 
-open class HybridItem(
+abstract class HybridItem(
         open var name: String = "Item",
 
         val variables: ArrayList<Variable> = ArrayList()

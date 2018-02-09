@@ -132,9 +132,10 @@ private fun createHybridAutomata(name: String, definition: Automata): HybridAuto
     return automata
 }
 
-private fun createHybridNetwork(name: String, definition: Network): HybridNetwork {
+private fun createHybridNetwork(name: String, definition: Network, parent: HybridNetwork? = null): HybridNetwork {
     // Now let's create the Hybrid Network
     val network = HybridNetwork()
+    network.parent = parent
 
     // Load the common features
     network.loadData(name, definition)
@@ -173,11 +174,20 @@ private fun HybridNetwork.importItems(definitions: Map<String, DefinitionItem>) 
     for((name, definition) in definitions) {
         val uuid = when(definition) {
             is Automata -> this.loadDefinition(name, definition)
-            is Network -> UUID.randomUUID()
+            is Network -> this.loadNetwork(name, definition)
         }
 
         this.instantiates.put(UUID.randomUUID(), AutomataInstantiate(uuid, name))
     }
+}
+
+private fun HybridNetwork.loadNetwork(name: String, definition: Network): UUID {
+    val network = createHybridNetwork(name, definition, this)
+
+    val definitionUUID = UUID.randomUUID()
+    this.definitions.put(definitionUUID, network)
+
+    return definitionUUID
 }
 
 private fun HybridNetwork.loadDefinition(name: String, definition: Automata): UUID {
@@ -190,7 +200,7 @@ private fun HybridNetwork.loadDefinition(name: String, definition: Automata): UU
 }
 
 /**
- * Imports each Location in a HAML Definition into the given HybridAutomata instance
+ * Imports each Location in a HAML Definition into the given HybridAutomata instantiate
  */
 private fun HybridAutomata.loadLocations(locations: Map<String, Location>?) {
     // For each location that exists
@@ -217,7 +227,7 @@ private fun HybridAutomata.loadLocations(locations: Map<String, Location>?) {
 }
 
 /**
- * Imports each Transition in a HAML Location into the given HybridAutomata instance
+ * Imports each Transition in a HAML Location into the given HybridAutomata instantiate
  */
 private fun HybridAutomata.loadTransitions(from: String, transitions: List<Transition>?) {
     // For each transition that exists
@@ -238,7 +248,7 @@ private fun HybridAutomata.loadTransitions(from: String, transitions: List<Trans
 }
 
 /**
- * Imports a HAML Initialisation spec into the given HybridAutomata instance
+ * Imports a HAML Initialisation spec into the given HybridAutomata instantiate
  */
 private fun HybridAutomata.loadInitialisation(init: Initialisation?) {
     if(init != null) {
@@ -251,7 +261,7 @@ private fun HybridAutomata.loadInitialisation(init: Initialisation?) {
 }
 
 /**
- * Imports a set of HAML Function definitions into the given HybridAutomata instance
+ * Imports a set of HAML Function definitions into the given HybridAutomata instantiate
  */
 private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
     // We need to keep track of functions we know about and their return types
@@ -298,48 +308,46 @@ private fun VariableType.convertToParseTreeType(): ParseTreeVariableType {
 }
 
 /**
- * Imports a set of HAML Instances into the given HybridNetwork instance
+ * Imports a set of HAML Instances into the given HybridNetwork instantiate
  */
 private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
-    // For each instance that exists
+    // For each instantiate that exists
     for((name, instance) in instances) {
-        val instantiateId = this.instantiates.filter { it.value.name.equals(instance.type) }.keys.firstOrNull()
+        val instantiateId = getInstantiateIdForType(instance.type)
         if(instantiateId != null) {
-            // We create the associated instance
+            // We create the associated instantiate
             val automataInstance = AutomataInstance(instantiateId)
 
             // And then add all the parameters that should be set on it
             automataInstance.parameters.loadParseTreeItems(instance.parameters)
 
-            // Remembering that the instance name is the key in the Map they get stored in
+            // Remembering that the instantiate name is the key in the Map they get stored in
             this.instances[name] = automataInstance
         }
     }
 }
 
+private fun HybridNetwork.getInstantiateIdForType(type: String): UUID? {
+    val instantiateId = this.instantiates.filter { it.value.name.equals(type) }.keys.firstOrNull()
+
+    if(instantiateId != null)
+        return instantiateId
+
+    return this.parent?.getInstantiateIdForType(type)
+}
+
 /**
- * Imports a set of HAML Mappings into the given HybridNetwork instance
+ * Imports a set of HAML Mappings into the given HybridNetwork instantiate
  */
 private fun HybridNetwork.importMappings(mappings: Map<String, ParseTreeItem>?) {
     // For each mapping that exists
     if(mappings != null) {
         for((to, from) in mappings) {
-            // We need to check that the "to" part contains a dot, which is used to separate the instance from the
-            // input variable name
-            if(to.contains(".")) {
-                // Split the "to" field up into its Automata and Variable pairs
-                val toPair = AutomataVariablePair(to.substringBeforeLast("."), to.substringAfterLast("."))
+            // Generate the Automata and Variable Pair
+            val toPair = AutomataVariablePair.generate(to)
 
-                // And add it!
-                this.ioMapping[toPair] = from
-            }
-            else {
-                // Otherwise this is probably mapping to an output, in which case we leave the automata blank
-                val toPair = AutomataVariablePair("", to)
-
-                // And add it!
-                this.ioMapping[toPair] = from
-            }
+            // And add it!
+            this.ioMapping[toPair] = from
         }
     }
 }

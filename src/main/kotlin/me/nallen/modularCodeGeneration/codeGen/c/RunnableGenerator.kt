@@ -11,7 +11,7 @@ import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
  * The class that contains methods to do with the generation of the main runnable file for the system
  */
 object RunnableGenerator {
-    private var item: HybridItem = HybridItem()
+    private var item: HybridItem = HybridNetwork()
     private var config: Configuration = Configuration()
 
     private var requireSelfReferenceInFunctionCalls: Boolean = false

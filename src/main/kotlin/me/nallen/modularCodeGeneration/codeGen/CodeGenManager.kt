@@ -49,78 +49,91 @@ object CodeGenManager {
     fun createInstantiates(network: HybridNetwork, config: Configuration) {
         if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
             for((name, instance) in network.instances) {
-                val instantiate = network.getInstantiateForInstance(instance.instance)
-                if(instantiate != null && network.instances.count{it.value.instance == instance.instance} > 1) {
+                val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
+                if(instantiate != null) {
                     val instantiateId = UUID.randomUUID()
                     network.instantiates[instantiateId] = AutomataInstantiate(instantiate.definition, name)
-                    instance.instance = instantiateId
+                    instance.instantiate = instantiateId
                 }
             }
         }
         else {
             for((_, instance) in network.instances) {
-                val instantiate = network.getInstantiateForInstance(instance.instance)
-                val definition = network.getDefinitionForInstance(instance.instance)
+                val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
+                val definition = network.getDefinitionForInstantiateId(instance.instantiate)
 
-                if(instantiate != null && definition != null && network.instantiates.count{it.value.definition == instantiate.definition} > 1) {
+                if(instantiate != null && definition != null) {
                     instantiate.name = definition.name
 
-                    val instantiateIds = network.instantiates.filter{it.value.definition == instantiate.definition && it.key != instance.instance}.keys
+                    val instantiateIds = network.instantiates.filter{it.value.definition == instantiate.definition && it.key != instance.instantiate }.keys
 
-                    for((_, instance2) in network.instances.filter{instantiateIds.contains(it.value.instance)})
-                        instance2.instance = instance.instance
+                    for((_, instance2) in network.instances.filter{instantiateIds.contains(it.value.instantiate)})
+                        instance2.instantiate = instance.instantiate
 
-                    for(id in instantiateIds)
-                        network.instantiates.remove(id)
+                    println("${instantiate.name} => ${instance.instantiate}")
+                    //for(id in instantiateIds)
+                        //network.instantiates.remove(id)
                 }
             }
+        }
+
+        for((_, definition) in network.definitions) {
+            if(definition is HybridNetwork)
+                createInstantiates(definition, config)
         }
     }
 
     /**
-     * Creates a parametrised Hybrid Automata instance for the given AutomataInstance pair in a network.
+     * Creates a parametrised Hybrid Automata instantiate for the given AutomataInstance pair in a network.
      * All parameters will get their values set to the values provided in the AutomataInstance, or their default value
      * if not present in the AutomataInstance map.
      */
-    fun createParametrisedFsm(network: HybridNetwork, name: String, instance: AutomataInstance): HybridAutomata? {
-        // We need to make sure that the instance actually exists
-        val definition = network.getDefinitionForInstance(instance.instance)
+    fun createParametrisedItem(network: HybridNetwork, name: String, instance: AutomataInstance): HybridItem? {
+        // We need to make sure that the instantiate actually exists
+        val definition = network.getDefinitionForInstantiateId(instance.instantiate)
         if(definition != null) {
+            val type = definition.javaClass
+
             // This is currently a really hacky way to do a deep copy, JSON serialize it and then deserialize.
             // Bad for performance, but easy to do. Hopefully can be fixed later?
             val json = mapper.writeValueAsString(definition)
 
-            val automata = mapper.readValue<HybridAutomata>(json)
+            val item = mapper.readValue(json, type)
+
+            if(item is HybridNetwork)
+                item.parent = network
 
             // The name becomes the new name
-            automata.name = name
+            item.name = name
 
             val functionTypes = LinkedHashMap<String, VariableType?>()
 
-            // We need to parametrise every function
-            for(function in automata.functions) {
-                // All variables that are either inputs, or parameters, end up the same - they get set externally.
-                val inputs = ArrayList(function.inputs)
-                inputs.addAll(automata.variables.filter({it.locality == Locality.PARAMETER}).map({ VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) }))
+            if(item is HybridAutomata) {
+                // We need to parametrise every function
+                for(function in item.functions) {
+                    // All variables that are either inputs, or parameters, end up the same - they get set externally.
+                    val inputs = ArrayList(function.inputs)
+                    inputs.addAll(item.variables.filter({it.locality == Locality.PARAMETER}).map({ VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) }))
 
-                // So now we collect all internal variables given we know about the external inputs and parameters
-                function.logic.collectVariables(inputs, functionTypes)
+                    // So now we collect all internal variables given we know about the external inputs and parameters
+                    function.logic.collectVariables(inputs, functionTypes)
 
-                // Get the return type, and keep track of it too
-                function.returnType = function.logic.getReturnType(functionTypes)
-                functionTypes[function.name] = function.returnType
+                    // Get the return type, and keep track of it too
+                    function.returnType = function.logic.getReturnType(functionTypes)
+                    functionTypes[function.name] = function.returnType
+                }
             }
 
             // Now for the new automata, we want to set the value for each parameter
             for ((key, value) in instance.parameters) {
-                automata.setParameterValue(key, value)
+                item.setParameterValue(key, value)
             }
 
             // And then set parameters to their default value for any that weren't set
-            automata.setDefaultParametrisation()
+            item.setDefaultParametrisation()
 
             // And return the new parametrised automata
-            return automata
+            return item
         }
 
         // If we can't find a matching automata, then we just return null

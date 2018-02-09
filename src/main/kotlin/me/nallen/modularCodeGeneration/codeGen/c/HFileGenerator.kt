@@ -108,10 +108,10 @@ object HFileGenerator {
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 // If it's compile time then we need to include a type for each instantiation
                 for((_, instance) in network.instances) {
-                    val instantiate = network.getInstantiateForInstance(instance.instance)
-                    val definition = network.getDefinitionForInstance(instance.instance)
+                    val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
+                    val definition = network.getDefinitionForInstantiateId(instance.instantiate)
                     if(instantiate != null && definition != null) {
-                        // And the includes will be in a sub-directory of the instance type
+                        // And the includes will be in a sub-directory of the instantiate type
                         val subfolder = if(definition.name.equals(network.name, true)) { definition.name + " Files" } else { definition.name }
                         result.appendln("#include \"${Utils.createFolderName(subfolder)}/${Utils.createFileName(instantiate.name)}.h\"")
                     }
@@ -123,7 +123,7 @@ object HFileGenerator {
                 // So keep track of which types we've handled
                 val generated = ArrayList<UUID>()
                 for((_, instance) in network.instances) {
-                    val instantiate = network.getInstantiateForInstance(instance.instance)
+                    val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
                     if(instantiate != null) {
                         // Check if we've seen this type before
                         if (!generated.contains(instantiate.definition)) {
@@ -229,7 +229,7 @@ object HFileGenerator {
             result.appendln("${config.getIndent(1)}// Declare Daughter Automata")
             // Simply iterate over each object that we create
             for((name, instance) in network.instances) {
-                val instantiate = network.getInstantiateForInstance(instance.instance)
+                val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
                 if(instantiate != null) {
                     result.appendln("${config.getIndent(1)}${Utils.createTypeName(instantiate.name)} ${Utils.createVariableName(name, "data")};")
                 }

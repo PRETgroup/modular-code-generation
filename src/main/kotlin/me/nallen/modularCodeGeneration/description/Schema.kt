@@ -170,7 +170,7 @@ data class Initialisation(
  * An instantiation of a Hybrid Automata Definition
  */
 data class Instance(
-        // The previously declared definition that this instance instantiates
+        // The previously declared definition that this instantiate instantiates
         var type: String,
 
         // The values of any parameters inside the previous declaration. Any parameters which do not have an entry here

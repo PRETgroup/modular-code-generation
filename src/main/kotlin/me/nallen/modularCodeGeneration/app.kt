@@ -12,7 +12,7 @@ import kotlin.system.measureTimeMillis
  * The main program that gets run when you call 'gradle run'.
  */
 fun main(args: Array<String>) {
-    var item = HybridItem()
+    var item: HybridItem = HybridNetwork()
     var config = Configuration()
     var time: Long
 

@@ -35,7 +35,7 @@ object CFileGenerator {
             // We need to get a list of all objects we need to instantiate, and what type they should be
             objects.clear()
             for((name, instance) in item.instances) {
-                val instantiate = item.getInstantiateForInstance(instance.instance)
+                val instantiate = item.getInstantiateForInstantiateId(instance.instantiate)
                 if(instantiate != null) {
                     objects.add(CodeObject(name, instantiate.name))
                 }
@@ -597,7 +597,7 @@ object CFileGenerator {
     }
 
     /**
-     * Generates a string that creates an intermediate instance of a given Variable
+     * Generates a string that creates an intermediate instantiate of a given Variable
      */
     private fun generateIntermediateVariable(variable: Variable): String {
         // This will be of the same type, and start with the same value, just have a different name
@@ -605,7 +605,7 @@ object CFileGenerator {
     }
 
     /**
-     * Generates a string that updates a given Variable from its intermediate instance
+     * Generates a string that updates a given Variable from its intermediate instantiate
      */
     private fun updateFromIntermediateVariable(variable: Variable): String {
         // This sets the master copy of the variable to take the value of the intermediate version
@@ -625,8 +625,9 @@ object CFileGenerator {
         // Get a list of the inputs that we're assigning to, in a sorted order so it looks slightly nicer
         val keys = network.ioMapping.keys.sortedWith(compareBy({ it.automata }, { it.variable }))
 
-        // And get a map of all the instance names that we need to use here (they're formatted differently to variables)
+        // And get a map of all the instantiate names that we need to use here (they're formatted differently to variables)
         val customVariableNames = network.instances.mapValues({ "me->${ Utils.createVariableName(it.key, "data")}" })
+        //customVariableNames.putAll(network.variables.associate {  })
 
         // Now we go through each input
         var prev: String? = null
@@ -646,10 +647,10 @@ object CFileGenerator {
             val from = network.ioMapping[key]!!
             if(key.automata.isBlank())
                 // We are writing to an output of this automata
-                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
+                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
             else
                 // We are writing to an input of a sub-automata
-                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
+                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
         }
 
         result.appendln()
@@ -658,7 +659,7 @@ object CFileGenerator {
         // Let's start the run code
         result.appendln("${config.getIndent(1)}/* Run Automata */")
 
-        // We go through each instance we've created
+        // We go through each instantiate we've created
         var first = true
         for ((name, instance) in objects) {
             if (!first)

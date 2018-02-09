@@ -2,7 +2,6 @@ package me.nallen.modularCodeGeneration.codeGen.c
 
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
-import me.nallen.modularCodeGeneration.hybridAutomata.AutomataInstance
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 import java.util.*
@@ -11,7 +10,7 @@ import java.util.*
  * The class that contains methods to do with the generation of the MakeFile for the network
  */
 object MakefileGenerator {
-    private var item: HybridItem = HybridItem()
+    private var item: HybridItem = HybridNetwork()
     private var config: Configuration = Configuration()
 
     /**
@@ -26,9 +25,9 @@ object MakefileGenerator {
 
         // The final target is set by the networkName
         if(isRoot)
-            result.appendln("TARGET = ${item.name}")
+            result.appendln("TARGET = ${Utils.createFileName(item.name)}")
         else
-            result.appendln("TARGET = ${item.name}.a")
+            result.appendln("TARGET = ${Utils.createFileName(item.name)}.a")
 
         // Default compiler settings, using gcc
         result.appendln("CC ?= gcc")
@@ -36,6 +35,10 @@ object MakefileGenerator {
         result.appendln("CFLAGS ?= -c -O2 -Wall -I\$(BASEDIR)")
         result.appendln("LDFLAGS ?= -g -Wall")
         result.appendln("LDLIBS ?= -lm")
+        result.appendln("AR ?= ar")
+        result.appendln("ARFLAGS ?= cr")
+        result.appendln("AREXTRACT ?= x")
+        result.appendln("OBJECTSDIR ?= Objects")
         result.appendln()
 
         result.appendln("export")
@@ -45,29 +48,33 @@ object MakefileGenerator {
         result.appendln("build: \$(TARGET)")
         result.appendln()
 
+        // We keep track of the sources for when we link at the end
+        val sources = ArrayList<String>()
+
         if(isRoot) {
-            var dependency = "";
-            if(item is HybridNetwork) {
-                result.appendln(".PHONY: ${Utils.createFolderName(item.name, "Network")}/${item.name}.a")
-                result.appendln("${Utils.createFolderName(item.name, "Network")}/${item.name}.a:")
-                result.appendln("\t@\$(MAKE) -C ${Utils.createFolderName(item.name, "Network")}/ ${item.name}.a")
+            val deliminatedName = Utils.createFileName(item.name)
+            val dependency = if(item is HybridNetwork) {
+                result.appendln(".PHONY: ${Utils.createFolderName(item.name, "Network")}/$deliminatedName.a")
+                result.appendln("${Utils.createFolderName(item.name, "Network")}/$deliminatedName.a:")
+                result.appendln("\t@\$(MAKE) -C ${Utils.createFolderName(item.name, "Network")}/ $deliminatedName.a")
                 result.appendln()
 
-                dependency = "${Utils.createFolderName(item.name, "Network")}/${item.name}.a"
-            }
-            else {
-                val deliminatedName = Utils.createFileName(item.name)
+                "${Utils.createFolderName(item.name, "Network")}/$deliminatedName.a"
+            } else {
                 result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedName.c"), listOf("$deliminatedName.h", "\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
                 result.appendln()
 
-                dependency = "Objects/$deliminatedName.o"
+                "Objects/$deliminatedName.o"
             }
+
+            // Keep track of the sources
+            sources.add(dependency)
 
             // Create the compile command for the runnable main file
             result.append(generateCompileCommand("runnable", listOf("runnable.c"), listOf("\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
             result.appendln()
 
-            result.appendln("\$(TARGET): Objects/runnable.o $dependency")
+            result.appendln("\$(TARGET): \$(OBJECTSDIR)/runnable.o $dependency")
 
             // Let the user know what it's currently linking
             result.appendln("\t@echo Building \$(TARGET)...")
@@ -76,40 +83,54 @@ object MakefileGenerator {
             result.appendln()
         }
         else {
-            // We keep track of the sources for when we link at the end
-            val sources = ArrayList<String>()
-
-            // We can only generate code if there are any instances
-            if(item is HybridNetwork && item.instances.isNotEmpty()) {
+            // We can only generate code if this is a HybridNetwork
+            if(item is HybridNetwork) {
                 // Depending on the parametrisation method, we'll do things slightly differently
                 if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
-                    // Compile time parametrisation means compiling each instance
-                    for((_, instance) in item.instances) {
-                        val instantiate = item.getInstantiateForInstance(instance.instance)
-                        val definition = item.getDefinitionForInstance(instance.instance)
-                        if(instantiate != null && definition != null) {
+                    // Compile time parametrisation means compiling each instantiate
+                    for ((_, instance) in item.instances) {
+                        val instantiate = item.getInstantiateForInstantiateId(instance.instantiate)
+                        val definition = item.getDefinitionForInstantiateId(instance.instantiate)
+                        if (instantiate != null && definition != null) {
                             // Generate the file name that we'll be looking for
                             val deliminatedName = Utils.createFileName(instantiate.name)
 
                             // Generated the folder name that we'll be looking for
-                            val subfolder = if(definition.name.equals(item.name, true)) { definition.name + " Files" } else { definition.name }
+                            val subfolder = if (definition.name.equals(item.name, true)) {
+                                definition.name + " Files"
+                            } else {
+                                definition.name
+                            }
                             val deliminatedFolder = Utils.createFolderName(subfolder)
 
-                            // Create the compile command for the file
-                            result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedFolder/$deliminatedName.c"), listOf("$deliminatedFolder/$deliminatedName.h", "\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
-                            result.appendln()
+                            val dependency = if (definition is HybridNetwork) {
+                                result.appendln(".PHONY: $deliminatedFolder/$deliminatedName.a")
+                                result.appendln("$deliminatedFolder/$deliminatedName.a:")
+                                result.appendln("\t@\$(MAKE) -C $deliminatedFolder/ $deliminatedName.a")
+                                result.appendln()
+
+                                "$deliminatedFolder/$deliminatedName.a"
+                            } else {
+                                // Create the compile command for the file
+                                result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedFolder/$deliminatedName.c"), listOf("$deliminatedFolder/$deliminatedName.h", "\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
+                                result.appendln()
+
+                                "\$(OBJECTSDIR)/$deliminatedName.o"
+                            }
 
                             // Keep track of the sources
-                            sources.add("Objects/$deliminatedName.o")
+                            sources.add(dependency)
                         }
                     }
                 }
                 else {
                     // We only want to generate each definition once, so keep a track of them
                     val generated = ArrayList<UUID>()
-                    for((_, instance) in item.instances) {
-                        val instantiate = item.getInstantiateForInstance(instance.instance)
-                        if(instantiate != null) {
+                    for((key, instance) in item.getAllInstances()) {
+                        println("$key / ${instance.instantiate}")
+                        val instantiate = item.getInstantiateForInstantiateId(instance.instantiate, true)
+                        if (instantiate != null) {
+                            println("$key")
                             // Check if we've seen this type before
                             if (!generated.contains(instantiate.definition)) {
                                 // If we haven't seen it, keep track of it
@@ -123,7 +144,7 @@ object MakefileGenerator {
                                 result.appendln()
 
                                 // Keep track of the sources
-                                sources.add("Objects/$deliminatedName.o")
+                                sources.add("\$(OBJECTSDIR)/$deliminatedName.o")
                             }
                         }
                     }
@@ -138,7 +159,7 @@ object MakefileGenerator {
             result.appendln()
 
             // Keep track of the sources
-            sources.add("Objects/$deliminatedName.o")
+            sources.add("\$(OBJECTSDIR)/$deliminatedName.o")
 
             // Generate the archive command, with all the sources
             result.append(generateArchiveCommand("\$(TARGET)", sources))
@@ -150,9 +171,9 @@ object MakefileGenerator {
         result.appendln(".PHONY: clean")
         result.appendln("clean:")
         result.appendln("\t@echo Removing compiled binaries...")
-        result.appendln("\t@rm -rf \$(TARGET) Objects/* *~")
-        if(isRoot && item is HybridNetwork) {
-            result.appendln("\t@\$(MAKE) -C ${Utils.createFolderName(item.name, "Network")}/ clean")
+        result.appendln("\t@rm -rf \$(TARGET) \$(OBJECTSDIR)/* *~")
+        for(source in sources.filter({it.endsWith(".a") && it.contains("/")})) {
+            result.appendln("\t@\$(MAKE) -C ${source.substring(0, source.lastIndexOf("/"))}/ clean")
         }
         result.appendln()
 
@@ -168,7 +189,7 @@ object MakefileGenerator {
         val result = StringBuilder()
 
         // The output will be in the Objects directory
-        result.append("Objects/$name.o:")
+        result.append("\$(OBJECTSDIR)/$name.o:")
         // And we need to list all the dependencies we have (sources are also dependencies)
         for(source in sources) {
             result.append(" $source")
@@ -181,7 +202,8 @@ object MakefileGenerator {
         // Let the user know what it's currently compiling
         result.appendln("\t@echo Building $name...")
         // And then compile (making the directory if needed)
-        result.append("\t@mkdir -p Objects; \$(CC) \$(CFLAGS)")
+        result.appendln("\t@mkdir -p \$(OBJECTSDIR)")
+        result.append("\t@\$(CC) \$(CFLAGS)")
         if(sources.size == 1) {
             // If there's only one source then we use the shorthand for Makefile sources
             result.append(" \$<")
@@ -215,8 +237,18 @@ object MakefileGenerator {
 
         // Let the user know what it's currently linking
         result.appendln("\t@echo Building $output...")
+
+        // If we have any sub-libraries we need to include, let's get them
+        if(sources.any({it.endsWith(".a")})) {
+            result.appendln("\t@mkdir -p \$(OBJECTSDIR)")
+            // Iterate over every library and extract
+            for(source in sources.filter({it.endsWith(".a")}))
+                result.appendln("\t@cd \$(OBJECTSDIR) && \$(AR) \$(AREXTRACT) ../$source")
+        }
+
         // And add the archive command
-        result.appendln("\t@ar cr $output \$^")
+        result.appendln("\t@rm -f \$(TARGET)")
+        result.appendln("\t@\$(AR) \$(ARFLAGS) \$(TARGET) \$(OBJECTSDIR)/*.o")
 
         // Return the linker command
         return result.toString()

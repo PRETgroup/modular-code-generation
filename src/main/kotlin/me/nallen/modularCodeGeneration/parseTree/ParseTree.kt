@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonValue
  * children of each node are its arguments. Note that the order of these arguments may matter!
  *
  * A ParseTreeItem is the generic base object that all operations inherit from.
- * Creating an instance of this will automatically create the appropriate operation instance
+ * Creating an instantiate of this will automatically create the appropriate operation instantiate
  */
 sealed class ParseTreeItem(var type: String) {
     companion object Factory {
