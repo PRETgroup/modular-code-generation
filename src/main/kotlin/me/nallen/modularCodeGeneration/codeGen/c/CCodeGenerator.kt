@@ -13,7 +13,7 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 /**
- * The class that contains methods to do with the generation of C code for a Hybrid Network.
+ * The class that contains methods to do with the generation of C code for a Hybrid Item.
  *
  * All generated files and the generated code itself will follow proper C style conventions.
  */
@@ -28,8 +28,8 @@ class CCodeGenerator {
         private val delayedTypes = ArrayList<VariableType>()
 
         /**
-         * Generate C code for the FSM that represents a Hybrid Automata. The code will be placed into the provided
-         * directory, overwriting any contents that may already exist.
+         * Generate C code that captures the Hybrid Item. The code will be placed into the provided directory,
+         * overwriting any contents that may already exist.
          */
         private fun generateItem(item: HybridItem, dir: String, config: Configuration) {
             val outputDir = File(dir)
@@ -38,6 +38,7 @@ class CCodeGenerator {
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
+            // If it's a Network, then we also need to generate the sub-files
             if(item is HybridNetwork) {
                 generateNetworkItems(item, outputDir.absolutePath, config)
             }
@@ -49,7 +50,7 @@ class CCodeGenerator {
         }
 
         /**
-         * Generate C code for the overall runnable that represents a Hybrid Network. The code will be placed into the
+         * Generate C code for the overall runnable that represents a Hybrid Item. The code will be placed into the
          * provided directory, overwriting any contents that may already exist.
          */
         private fun generateRunnable(item: HybridItem, dir: String, config: Configuration = Configuration()) {
@@ -64,7 +65,7 @@ class CCodeGenerator {
         }
 
         /**
-         * Generate a Makefile for the overall program that represents a Hybrid Network. The code will be placed into
+         * Generate a Makefile for the overall program that represents a Hybrid Item. The code will be placed into
          * the provided directory, overwriting any contents that may already exist.
          */
         private fun generateMakefile(item: HybridItem, dir: String, config: Configuration, isRoot: Boolean = false) {
@@ -217,6 +218,7 @@ class CCodeGenerator {
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                 // Compile time parametrisation means creating a C file for each instantiate
                 for((_, instance) in network.instances) {
+                    // Get the instance of the item we want to generate
                     val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
                     if(instantiate != null) {
                         // Create the parametrised copy of the automata
@@ -244,6 +246,7 @@ class CCodeGenerator {
                 val generated = ArrayList<UUID>()
 
                 for((_, instance) in network.instances) {
+                    // Get the instance of the item we want to generate
                     val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
                     val definition = network.getDefinitionForInstantiateId(instance.instantiate)
                     if(instantiate != null && definition != null) {
@@ -268,7 +271,10 @@ class CCodeGenerator {
                 generateMakefile(network, outputDir.absolutePath, config)
         }
 
-        private fun makeItemsUnique(network: HybridNetwork, config: Configuration, assignedNames: ArrayList<String> = ArrayList()) {
+        /**
+         * Makes the set of instances within the given Network unique for the desired parametrisation method.
+         */
+        private fun makeItemsUnique(network: HybridNetwork, config: Configuration, assignedNames: ArrayList<String> = ArrayList()): ArrayList<String> {
             if(assignedNames.contains(createFileName(network.name)))
                 network.name += assignedNames.size
 
@@ -276,13 +282,17 @@ class CCodeGenerator {
 
             // Depending on the parametrisation method, we'll do things slightly differently
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
+                // Iterate over every instance
                 for((_, instance) in network.instances) {
+                    // Get the item we're currently checking
                     val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
                     if(instantiate != null) {
-                        if(assignedNames.contains(createFileName(instantiate.name))) {
+                        // Check if we've seen this item before
+                        if(assignedNames.contains(createFileName(instantiate.name)))
+                            // If we have, we add a number to the end
                             instantiate.name += assignedNames.size
-                        }
 
+                        // Keep track of what we've seen
                         assignedNames.add(createFileName(instantiate.name))
                     }
                 }
@@ -292,7 +302,9 @@ class CCodeGenerator {
 
                 // So keep track of which types we've handled
                 val generated = ArrayList<UUID>()
+                // Iterate over every instance
                 for((_, instance) in network.instances) {
+                    // Get the item we're currently checking
                     val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
                     if(instantiate != null) {
                         // Check if we've seen this type before
@@ -300,17 +312,26 @@ class CCodeGenerator {
                             // If we haven't seen it, keep track of it
                             generated.add(instantiate.definition)
 
+                            // Check if we've seen this item before
                             if (assignedNames.contains(createFileName(instantiate.name)))
+                            // If we have, we add a number to the end
                                 instantiate.name += assignedNames.size
 
+                            // Keep track of what we've seen
                             assignedNames.add(createFileName(instantiate.name))
                         }
                     }
                 }
             }
+
+            // Return the list of names we've seen so far
+            return assignedNames
         }
 
-
+        /**
+         * Generate code files for the given Hybrid Item (either a Network or Automata). The code will be placed into
+         * the provided directory, overwriting any contents that may already exist.
+         */
         fun generate(item: HybridItem, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
@@ -318,6 +339,7 @@ class CCodeGenerator {
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
+            // If we're generating code for a Hybrid Network, we need to create a sub-directory for the files
             val itemDir = if(item is HybridNetwork) {
                 File(outputDir, Utils.createFolderName(item.name, "Network"))
             }

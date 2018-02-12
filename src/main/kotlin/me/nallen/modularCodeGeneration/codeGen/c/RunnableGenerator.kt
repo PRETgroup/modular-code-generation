@@ -40,6 +40,8 @@ object RunnableGenerator {
         result.appendln("#include <string.h>")
         result.appendln()
 
+        // The root file that needs to be included will be in a different location depending on if it's a Network or a
+        // single Automata
         if(item is HybridNetwork)
             result.appendln("#include \"${Utils.createFolderName(item.name, "Network")}/${Utils.createFileName(item.name)}.h\"")
         else
@@ -184,15 +186,4 @@ object RunnableGenerator {
         // And return the logging code
         return result.toString()
     }
-
-    /**
-     * A class that captures an "object" (variable) in the code which has a name and a type
-     */
-    private data class CodeObject(
-            // The object / variable name
-            val name: String,
-
-            // The object / variable type
-            val type: String
-    )
 }

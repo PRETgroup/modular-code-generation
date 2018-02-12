@@ -13,7 +13,7 @@ import me.nallen.modularCodeGeneration.parseTree.VariableType
 import me.nallen.modularCodeGeneration.parseTree.Variable as ParseTreeVariable
 
 /**
- * The class that contains methods to do with the generation of Source Files for the Hybrid Automata
+ * The class that contains methods to do with the generation of Source Files for the Hybrid Item
  */
 object CFileGenerator {
     private var config: Configuration = Configuration()
@@ -23,18 +23,22 @@ object CFileGenerator {
 
     private var automata: HybridAutomata = HybridAutomata()
     private var objects: ArrayList<CodeObject> = ArrayList()
+
     /**
-     * Generates a string that represents the Source File for the given Hybrid Automata
+     * Generates a string that represents the Source File for the given Hybrid Item
      */
     fun generate(item: HybridItem, config: Configuration = Configuration()): String {
         this.config = config
         if(item is HybridAutomata)
             automata = item
 
+        // If we're generating code for a Hybrid Network
         if(item is HybridNetwork) {
             // We need to get a list of all objects we need to instantiate, and what type they should be
             objects.clear()
+            // Go through each instance
             for((name, instance) in item.instances) {
+                // And add the object we need to create
                 val instantiate = item.getInstantiateForInstantiateId(instance.instantiate)
                 if(instantiate != null) {
                     objects.add(CodeObject(name, instantiate.name))
@@ -57,8 +61,9 @@ object CFileGenerator {
         result.appendln("#include \"${Utils.createFileName(item.name)}.h\"")
         result.appendln()
 
+        // If this is an Automata, then we also want to add the custom functions
         if(item is HybridAutomata) {
-            // Now we need to generate the code for any custom functions, if any
+            //Generate the code for any custom functions, if any
             if(item.functions.size > 0)
                 result.appendln(generateCustomFunctions(item))
         }
@@ -128,7 +133,7 @@ object CFileGenerator {
     }
 
     /**
-     * Generates a string that captures the default parametrisation of the automaton
+     * Generates a string that captures the default parametrisation of the item
      */
     private fun generateParametrisationFunction(item: HybridItem): String {
         val result = StringBuilder()
@@ -144,6 +149,7 @@ object CFileGenerator {
         // There's at least one, so let's add the code
             result.append(Utils.performVariableFunctionForLocality(item, Locality.PARAMETER, CFileGenerator::generateParameterInitialisation, config, "Initialise Default"))
 
+        // If the item we're generating for is a Network
         if(item is HybridNetwork) {
             // We need to initialise every object
             var first = true
@@ -174,7 +180,7 @@ object CFileGenerator {
     }
 
     /**
-     * Generates a string that captures the initialisation of the automan, including state and variables
+     * Generates a string that captures the initialisation of the item, including state and variables (if applicable)
      */
     private fun generateInitialisationFunction(item: HybridItem): String {
         val result = StringBuilder()
@@ -207,9 +213,11 @@ object CFileGenerator {
             }
         }
 
+        // If it's an Automata then we have some extra logic to include
         if(item is HybridAutomata)
             result.append(generateAutomataIntialisationFunction(item))
 
+        // If it's a Network then we have some extra logic to include
         if(item is HybridNetwork) {
             // We need to initialise every object
             var first = true
@@ -229,6 +237,9 @@ object CFileGenerator {
         return result.toString()
     }
 
+    /**
+     * Generates initialisation code that's specific to Hybrid Automata, such as the state
+     */
     private fun generateAutomataIntialisationFunction(automata: HybridAutomata): String {
         val result = StringBuilder()
 
@@ -293,9 +304,11 @@ object CFileGenerator {
         // It's simply a function that takes a self reference as the only argument
         result.appendln("void ${Utils.createFunctionName(item.name, "Run")}(${Utils.createTypeName(item.name)}* me) {")
 
+        // If it's an Automata then we have some extra logic to include
         if(item is HybridAutomata)
             result.append(generateAutomataExecutionFunction(item))
 
+        // If it's a Network then we have some extra logic to include
         if(item is HybridNetwork)
             result.append(generateNetworkExecutionFunction(item))
 
@@ -306,6 +319,9 @@ object CFileGenerator {
         return result.toString()
     }
 
+    /**
+     * Generates execution code that's specific to Hybrid Automata
+     */
     private fun generateAutomataExecutionFunction(automata: HybridAutomata): String {
         val result = StringBuilder()
 
@@ -612,6 +628,9 @@ object CFileGenerator {
         return "me->${Utils.createVariableName(variable.name)} = ${Utils.createVariableName(variable.name)}_u;"
     }
 
+    /**
+     * Generates execution code that's specific to Hybrid Networks
+     */
     private fun generateNetworkExecutionFunction(network: HybridNetwork): String {
         val result = StringBuilder()
 
@@ -635,9 +654,11 @@ object CFileGenerator {
             if (prev != null && prev != key.automata)
                 result.appendln()
 
+            // Header for output mappings, when needed
             if(prev != key.automata && key.automata.isBlank())
                 result.appendln("${config.getIndent(1)}/* Output Mapping */")
 
+            // Header for variable mappings, when needed
             if(prev != key.automata && prev != null && prev.isBlank())
                 result.appendln("${config.getIndent(1)}/* Mappings */")
 

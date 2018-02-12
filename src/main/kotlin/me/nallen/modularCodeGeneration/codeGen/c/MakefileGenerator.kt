@@ -51,9 +51,12 @@ object MakefileGenerator {
         // We keep track of the sources for when we link at the end
         val sources = ArrayList<String>()
 
+        // The root Makefile (for the runnable) has a slightly different look
         if(isRoot) {
+            // We still need to compile the root item, which changes if it's a Network or Automata
             val deliminatedName = Utils.createFileName(item.name)
             val dependency = if(item is HybridNetwork) {
+                // If it's a Network, then we'll recursively call the Makefile for that network
                 result.appendln(".PHONY: ${Utils.createFolderName(item.name, "Network")}/$deliminatedName.a")
                 result.appendln("${Utils.createFolderName(item.name, "Network")}/$deliminatedName.a:")
                 result.appendln("\t@\$(MAKE) -C ${Utils.createFolderName(item.name, "Network")}/ $deliminatedName.a")
@@ -61,6 +64,7 @@ object MakefileGenerator {
 
                 "${Utils.createFolderName(item.name, "Network")}/$deliminatedName.a"
             } else {
+                // Otherwise it must be an Automata so we just add a normal compile command for it
                 result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedName.c"), listOf("$deliminatedName.h", "\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
                 result.appendln()
 
@@ -89,6 +93,7 @@ object MakefileGenerator {
                 if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
                     // Compile time parametrisation means compiling each instantiate
                     for ((_, instance) in item.instances) {
+                        // Get the item that we're generating a compile command for
                         val instantiate = item.getInstantiateForInstantiateId(instance.instantiate)
                         val definition = item.getDefinitionForInstantiateId(instance.instantiate)
                         if (instantiate != null && definition != null) {
@@ -103,7 +108,9 @@ object MakefileGenerator {
                             }
                             val deliminatedFolder = Utils.createFolderName(subfolder)
 
+                            // Depending on if it's a Network or Automata we'll do something different
                             val dependency = if (definition is HybridNetwork) {
+                                // If it's a network, we want to recurse through the makefile comamnds
                                 result.appendln(".PHONY: $deliminatedFolder/$deliminatedName.a")
                                 result.appendln("$deliminatedFolder/$deliminatedName.a:")
                                 result.appendln("\t@\$(MAKE) -C $deliminatedFolder/ $deliminatedName.a")
@@ -111,7 +118,7 @@ object MakefileGenerator {
 
                                 "$deliminatedFolder/$deliminatedName.a"
                             } else {
-                                // Create the compile command for the file
+                                // Otherwise it's an automata, so create the compile command for the file
                                 result.append(generateCompileCommand(deliminatedName, listOf("$deliminatedFolder/$deliminatedName.c"), listOf("$deliminatedFolder/$deliminatedName.h", "\$(BASEDIR)/${CCodeGenerator.CONFIG_FILE}")))
                                 result.appendln()
 
@@ -127,6 +134,7 @@ object MakefileGenerator {
                     // We only want to generate each definition once, so keep a track of them
                     val generated = ArrayList<UUID>()
                     for((_, instance) in item.getAllInstances()) {
+                        // Get the item that we're generating a compile command for
                         val instantiate = item.getInstantiateForInstantiateId(instance.instantiate, true)
                         if (instantiate != null) {
                             // Check if we've seen this type before

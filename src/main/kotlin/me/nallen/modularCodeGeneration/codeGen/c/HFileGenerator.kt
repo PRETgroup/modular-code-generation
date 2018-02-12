@@ -6,13 +6,13 @@ import me.nallen.modularCodeGeneration.hybridAutomata.*
 import java.util.*
 
 /**
- * The class that contains methods to do with the generation of Header Files for the Hybrid Automata
+ * The class that contains methods to do with the generation of Header Files for the Hybrid Item
  */
 object HFileGenerator {
     private var config: Configuration = Configuration()
 
     /**
-     * Generates a string that represents the Header File for the given Hybrid Automata
+     * Generates a string that represents the Header File for the given Hybrid Item
      */
     fun generate(item: HybridItem, config: Configuration = Configuration()): String {
         this.config = config
@@ -28,6 +28,7 @@ object HFileGenerator {
         // Add in any includes we need
         result.appendln(generateIncludes(item))
 
+        // If it's an Automata then we have some extra logic to include
         if(item is HybridAutomata)
             // Create the enum for the states this automata uses
             result.appendln(generateEnum(item))
@@ -60,7 +61,7 @@ object HFileGenerator {
     }
 
     /**
-     * Generates a string that represents the list of includes that are needed for the automata
+     * Generates a string that represents the list of includes that are needed for the item
      */
     private fun generateIncludes(item: HybridItem): String {
         val result = StringBuilder()
@@ -73,9 +74,9 @@ object HFileGenerator {
         result.appendln()
         // TODO: Check if FSM uses a math.h function (sqrt, pow, etc.)
 
-        if(item is HybridNetwork) {
+        // If it's a Network then we have some extra logic to include
+        if(item is HybridNetwork)
             result.appendln(generateNetworkIncludes(item))
-        }
 
         // Define the boolean type
         result.appendln("typedef int bool;")
@@ -164,8 +165,8 @@ object HFileGenerator {
     }
 
     /**
-     * Generates a string that represents the struct that holds all the data about the automata, including state and
-     * any variables
+     * Generates a string that represents the struct that holds all the data about the item, including state and any
+     * variables if needed
      */
     private fun generateStruct(item: HybridItem): String {
         val result = StringBuilder()
@@ -198,12 +199,13 @@ object HFileGenerator {
             result.appendln()
         }
 
-        if(item is HybridAutomata) {
+        // If it's an Automata then we have some extra logic to include
+        if(item is HybridAutomata)
             result.append(generateAutomataStruct(item))
-        }
-        else if(item is HybridNetwork) {
+
+        // If it's a Network then we have some extra logic to include
+        if(item is HybridNetwork)
             result.append(generateNetworkStruct(item))
-        }
 
         // Close the struct declaration with the type name (based on the automata name)
         result.appendln("} ${Utils.createTypeName(item.name)};")
@@ -211,6 +213,9 @@ object HFileGenerator {
         return result.toString()
     }
 
+    /**
+     * Generates the parts of the struct that are specific to an Automata, such as the state
+     */
     private fun generateAutomataStruct(automata: HybridAutomata): String {
         val result = StringBuilder()
 
@@ -221,6 +226,9 @@ object HFileGenerator {
         return result.toString()
     }
 
+    /**
+     * Generates the parts of the struct that are specific to a Network, such as any sub-network structs
+     */
     private fun generateNetworkStruct(network: HybridNetwork): String {
         val result = StringBuilder()
 
