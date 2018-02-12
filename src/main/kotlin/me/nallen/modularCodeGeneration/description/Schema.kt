@@ -70,9 +70,12 @@ sealed class DefinitionItem {
         // Method for creating from a String (used in JSON parsing)
         @JsonCreator @JvmStatic
         fun generate(node: JsonNode): DefinitionItem? {
+            // When creating, it needs to be an object
             if(node.isObject) {
                 val mapper = jacksonObjectMapper()
 
+                // Then we need to try guess what type we're actually trying to deserialize, this is done by checking
+                // if the object has a field named "instances"
                 return if(node.has("instances"))
                     mapper.treeToValue(node, Network::class.java)
                 else {

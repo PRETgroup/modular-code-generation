@@ -17,13 +17,13 @@ typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
 typealias HybridLocation = me.nallen.modularCodeGeneration.hybridAutomata.Location
 
 /**
- * An Importer which is capable of reading in a HAML Document specification and creating the associated Hybrid Network
+ * An Importer which is capable of reading in a HAML Document specification and creating the associated Hybrid Item
  * as described in the document.
  */
 class Importer {
     companion object Factory {
         /**
-         * Imports the HAML document at the specified path and converts it to a Hybrid Network.
+         * Imports the HAML document at the specified path and converts it to a Hybrid Item.
          *
          * The configuration settings stored in the HAML documents are also parsed and returned as a separate
          * Configuration object.
@@ -39,11 +39,14 @@ class Importer {
             // ... and convert it into a Schema object
             val schema = mapper.readValue(parsedFile, Schema::class.java)
 
+            // Depending on what type the schema contains, we'll generate a different type
             val item: HybridItem = when(schema.system) {
                 is Network -> {
+                    // Generate a Network
                     createHybridNetwork(schema.name, schema.system)
                 }
                 is Automata -> {
+                    // Generate an Automata
                     createHybridAutomata(schema.name, schema.system)
                 }
             }
@@ -113,6 +116,9 @@ class Importer {
     }
 }
 
+/**
+ * Creates a Hybrid Automata from a definition, with the given name
+ */
 private fun createHybridAutomata(name: String, definition: Automata): HybridAutomata {
     // Create the automata
     val automata = HybridAutomata()
@@ -132,6 +138,10 @@ private fun createHybridAutomata(name: String, definition: Automata): HybridAuto
     return automata
 }
 
+/**
+ * Creates a Hybrid Network from a definition, with the given name.
+ * Hybrid Networks also contain references to their parent network, if applicable
+ */
 private fun createHybridNetwork(name: String, definition: Network, parent: HybridNetwork? = null): HybridNetwork {
     // Now let's create the Hybrid Network
     val network = HybridNetwork()
@@ -152,6 +162,9 @@ private fun createHybridNetwork(name: String, definition: Network, parent: Hybri
     return network
 }
 
+/**
+ * Loads the properties that are used in both Networks and Automata from the definition
+ */
 private fun HybridItem.loadData(name: String, definition: DefinitionItem) {
     // Load the name
     this.name = name
@@ -181,21 +194,33 @@ private fun HybridNetwork.importItems(definitions: Map<String, DefinitionItem>) 
     }
 }
 
+/**
+ * Loads the given Network definition into this Hybrid Network
+ */
 private fun HybridNetwork.loadNetwork(name: String, definition: Network): UUID {
+    // Create the network
     val network = createHybridNetwork(name, definition, this)
 
+    // Add it with its unqiue ID
     val definitionUUID = UUID.randomUUID()
     this.definitions.put(definitionUUID, network)
 
+    // Return the ID for use elsewhere
     return definitionUUID
 }
 
+/**
+ * Loads the given Automata definition into this Hybrid Network
+ */
 private fun HybridNetwork.loadDefinition(name: String, definition: Automata): UUID {
+    // Create the automata
     val automata = createHybridAutomata(name, definition)
 
+    // Add it with its unqiue ID
     val definitionUUID = UUID.randomUUID()
     this.definitions.put(definitionUUID, automata)
 
+    // Return the ID for use elsewhere
     return definitionUUID
 }
 
@@ -327,12 +352,18 @@ private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
     }
 }
 
+/**
+ * Gets the instatiate Id that corresponds to the given name, recursively searching through parents if required
+ */
 private fun HybridNetwork.getInstantiateIdForType(type: String): UUID? {
+    // First try if it's within this network
     val instantiateId = this.instantiates.filter { it.value.name.equals(type) }.keys.firstOrNull()
 
+    // If we managed to find it, then return it
     if(instantiateId != null)
         return instantiateId
 
+    // Otherwise, check through the parent
     return this.parent?.getInstantiateIdForType(type)
 }
 

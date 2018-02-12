@@ -374,6 +374,6 @@ internal fun operandsCanExistTogether(first: Operand, second: Operand): Boolean 
 }
 
 /**
- * An instantiate of a Function Call, containing both its name and the number of parameters it takes
+ * An instance of a Function Call, containing both its name and the number of parameters it takes
  */
 internal data class Function(var name: String, var parameters: Int = 1)
