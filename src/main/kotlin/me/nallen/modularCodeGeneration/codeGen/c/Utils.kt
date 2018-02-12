@@ -1,7 +1,7 @@
 package me.nallen.modularCodeGeneration.codeGen.c
 
 import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.Locality
 import me.nallen.modularCodeGeneration.hybridAutomata.Variable
 import me.nallen.modularCodeGeneration.parseTree.*
@@ -46,12 +46,11 @@ object Utils {
      * The arbitrary function must take in a single Variable, and return a String. In addition, a comment can be added
      * at the start of the block of variables
      */
-    fun performVariableFunctionForLocality(automata: HybridAutomata, locality: Locality, function: (v: Variable) -> String, config: Configuration = Configuration(), comment: String? = null, depth: Int = 1): String {
+    fun performVariableFunctionForLocality(item: HybridItem, locality: Locality, function: (v: Variable) -> String, config: Configuration = Configuration(), comment: String? = null, depth: Int = 1): String {
         val result = StringBuilder()
 
         // We only need to do anything if there are any variables of the requested type
-        if(automata.variables.any{it.locality == locality}) {
-            result.appendln()
+        if(item.variables.any{it.locality == locality}) {
             // If we need to generate a comment
             if(comment != null)
                 // Generate the comment, at the correct indent, with the locality named after
@@ -59,12 +58,14 @@ object Utils {
 
             // Now for each variable of the right locality, we want to add the output of the arbitrary function with the
             // variable as input
-            automata.variables
+            item.variables
                     .filter{it.locality == locality}
                     .sortedBy { it.type }
                     .map { function(it) }
                     .filter { it.isNotEmpty() }
                     .forEach { result.appendln("${config.getIndent(depth)}$it") }
+
+            result.appendln()
         }
 
         // And now return the overall result
@@ -220,6 +221,7 @@ object Utils {
                     val builder = StringBuilder()
 
                     // For each part
+                    var first = true
                     for(part in parts) {
                         // If needed, deliminate by a period
                         if(builder.isNotEmpty()) builder.append(".")
@@ -229,7 +231,12 @@ object Utils {
                             builder.append(prefixData.customVariableNames[part]!!)
                         else
                             // Otherwise generate the C name for this variable
-                            builder.append("${prefixData.prefix}${Utils.createVariableName(part)}")
+                            if(first)
+                                builder.append("${prefixData.prefix}${Utils.createVariableName(part)}")
+                            else
+                                builder.append(Utils.createVariableName(part))
+
+                        first = false
                     }
 
                     // And return the final variable name

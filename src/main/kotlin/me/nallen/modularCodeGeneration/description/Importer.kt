@@ -10,24 +10,25 @@ import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
 import java.io.File
 import java.io.IOException
+import java.util.*
 
 typealias ParseTreeVariableType = me.nallen.modularCodeGeneration.parseTree.VariableType
 typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
 typealias HybridLocation = me.nallen.modularCodeGeneration.hybridAutomata.Location
 
 /**
- * An Importer which is capable of reading in a HAML Document specification and creating the associated Hybrid Network
+ * An Importer which is capable of reading in a HAML Document specification and creating the associated Hybrid Item
  * as described in the document.
  */
 class Importer {
     companion object Factory {
         /**
-         * Imports the HAML document at the specified path and converts it to a Hybrid Network.
+         * Imports the HAML document at the specified path and converts it to a Hybrid Item.
          *
          * The configuration settings stored in the HAML documents are also parsed and returned as a separate
          * Configuration object.
          */
-        fun import(path: String): Pair<HybridNetwork, Configuration> {
+        fun import(path: String): Pair<HybridItem, Configuration> {
             // Firstly we want to handle any includes that may exist in the file
             val parsedFile = parseIncludes(path)
 
@@ -38,25 +39,22 @@ class Importer {
             // ... and convert it into a Schema object
             val schema = mapper.readValue(parsedFile, Schema::class.java)
 
-            // Now let's create the Hybrid Network
-            val network = HybridNetwork()
-
-            // Import the name
-            network.name = schema.name
-
-            // Import the definitions
-            network.importAutomata(schema.definitions)
-
-            // Import the instances
-            network.importInstances(schema.instances)
-
-            // Import the mappings
-            network.importMappings(schema.mappings)
+            // Depending on what type the schema contains, we'll generate a different type
+            val item: HybridItem = when(schema.system) {
+                is Network -> {
+                    // Generate a Network
+                    createHybridNetwork(schema.name, schema.system)
+                }
+                is Automata -> {
+                    // Generate an Automata
+                    createHybridAutomata(schema.name, schema.system)
+                }
+            }
 
             // Create the configuration
             val config = schema.codegenConfig ?: Configuration()
 
-            return Pair(network, config)
+            return Pair(item, config)
         }
 
         /**
@@ -119,38 +117,115 @@ class Importer {
 }
 
 /**
+ * Creates a Hybrid Automata from a definition, with the given name
+ */
+private fun createHybridAutomata(name: String, definition: Automata): HybridAutomata {
+    // Create the automata
+    val automata = HybridAutomata()
+
+    // Load the common features
+    automata.loadData(name, definition)
+
+    // Add the locations (transitions are within locations)
+    automata.loadLocations(definition.locations)
+
+    // Set the initialisation
+    automata.loadInitialisation(definition.initialisation)
+
+    // And then any custom functions that it may contain
+    automata.loadFunctions(definition.functions)
+
+    return automata
+}
+
+/**
+ * Creates a Hybrid Network from a definition, with the given name.
+ * Hybrid Networks also contain references to their parent network, if applicable
+ */
+private fun createHybridNetwork(name: String, definition: Network, parent: HybridNetwork? = null): HybridNetwork {
+    // Now let's create the Hybrid Network
+    val network = HybridNetwork()
+    network.parent = parent
+
+    // Load the common features
+    network.loadData(name, definition)
+
+    // Import the definitions
+    network.importItems(definition.definitions)
+
+    // Import the instances
+    network.importInstances(definition.instances)
+
+    // Import the mappings
+    network.importMappings(definition.mappings)
+
+    return network
+}
+
+/**
+ * Loads the properties that are used in both Networks and Automata from the definition
+ */
+private fun HybridItem.loadData(name: String, definition: DefinitionItem) {
+    // Load the name
+    this.name = name
+
+    // Load all inputs
+    this.loadVariables(definition.inputs, Locality.EXTERNAL_INPUT)
+
+    // And all outputs
+    this.loadVariables(definition.outputs, Locality.EXTERNAL_OUTPUT)
+
+    // And all parameters
+    this.loadVariables(definition.parameters, Locality.PARAMETER)
+}
+
+/**
  * Imports all Definitions in the HAML spec into their respective HybridAutomata representations
  */
-private fun HybridNetwork.importAutomata(definitions: Map<String, Definition>) {
+private fun HybridNetwork.importItems(definitions: Map<String, DefinitionItem>) {
     // We want to add every definition, so iterate!
     for((name, definition) in definitions) {
-        // Create the automata
-        val automata = HybridAutomata(name)
+        val uuid = when(definition) {
+            is Automata -> this.loadDefinition(name, definition)
+            is Network -> this.loadNetwork(name, definition)
+        }
 
-        // Load all inputs
-        automata.loadVariables(definition.inputs, Locality.EXTERNAL_INPUT)
-
-        // And all outputs
-        automata.loadVariables(definition.outputs, Locality.EXTERNAL_OUTPUT)
-
-        // And all parameters
-        automata.loadVariables(definition.parameters, Locality.PARAMETER)
-
-        // Add the locations (transitions are within locations)
-        automata.loadLocations(definition.locations)
-
-        // Set the initialisation
-        automata.loadInitialisation(definition.initialisation)
-
-        // And then any custom functions that it may contain
-        automata.loadFunctions(definition.functions)
-
-        this.definitions.add(automata)
+        this.instantiates.put(UUID.randomUUID(), AutomataInstantiate(uuid, name))
     }
 }
 
 /**
- * Imports each Location in a HAML Definition into the given HybridAutomata instance
+ * Loads the given Network definition into this Hybrid Network
+ */
+private fun HybridNetwork.loadNetwork(name: String, definition: Network): UUID {
+    // Create the network
+    val network = createHybridNetwork(name, definition, this)
+
+    // Add it with its unqiue ID
+    val definitionUUID = UUID.randomUUID()
+    this.definitions.put(definitionUUID, network)
+
+    // Return the ID for use elsewhere
+    return definitionUUID
+}
+
+/**
+ * Loads the given Automata definition into this Hybrid Network
+ */
+private fun HybridNetwork.loadDefinition(name: String, definition: Automata): UUID {
+    // Create the automata
+    val automata = createHybridAutomata(name, definition)
+
+    // Add it with its unqiue ID
+    val definitionUUID = UUID.randomUUID()
+    this.definitions.put(definitionUUID, automata)
+
+    // Return the ID for use elsewhere
+    return definitionUUID
+}
+
+/**
+ * Imports each Location in a HAML Definition into the given HybridAutomata instantiate
  */
 private fun HybridAutomata.loadLocations(locations: Map<String, Location>?) {
     // For each location that exists
@@ -177,7 +252,7 @@ private fun HybridAutomata.loadLocations(locations: Map<String, Location>?) {
 }
 
 /**
- * Imports each Transition in a HAML Location into the given HybridAutomata instance
+ * Imports each Transition in a HAML Location into the given HybridAutomata instantiate
  */
 private fun HybridAutomata.loadTransitions(from: String, transitions: List<Transition>?) {
     // For each transition that exists
@@ -198,18 +273,20 @@ private fun HybridAutomata.loadTransitions(from: String, transitions: List<Trans
 }
 
 /**
- * Imports a HAML Initialisation spec into the given HybridAutomata instance
+ * Imports a HAML Initialisation spec into the given HybridAutomata instantiate
  */
-private fun HybridAutomata.loadInitialisation(init: Initialisation) {
-    // Initial state is 1:1 mapping
-    this.init.state = init.state
+private fun HybridAutomata.loadInitialisation(init: Initialisation?) {
+    if(init != null) {
+        // Initial state is 1:1 mapping
+        this.init.state = init.state
 
-    // And load all the initial valuations
-    this.init.valuations.loadParseTreeItems(init.valuations)
+        // And load all the initial valuations
+        this.init.valuations.loadParseTreeItems(init.valuations)
+    }
 }
 
 /**
- * Imports a set of HAML Function definitions into the given HybridAutomata instance
+ * Imports a set of HAML Function definitions into the given HybridAutomata instantiate
  */
 private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
     // We need to keep track of functions we know about and their return types
@@ -256,42 +333,52 @@ private fun VariableType.convertToParseTreeType(): ParseTreeVariableType {
 }
 
 /**
- * Imports a set of HAML Instances into the given HybridNetwork instance
+ * Imports a set of HAML Instances into the given HybridNetwork instantiate
  */
 private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
-    // For each instance that exists
+    // For each instantiate that exists
     for((name, instance) in instances) {
-        // We create the associated instance
-        val automataInstance = AutomataInstance(instance.type)
+        val instantiateId = getInstantiateIdForType(instance.type)
+        if(instantiateId != null) {
+            // We create the associated instantiate
+            val automataInstance = AutomataInstance(instantiateId)
 
-        // And then add all the parameters that should be set on it
-        automataInstance.parameters.loadParseTreeItems(instance.parameters)
+            // And then add all the parameters that should be set on it
+            automataInstance.parameters.loadParseTreeItems(instance.parameters)
 
-        // Remembering that the instance name is the key in the Map they get stored in
-        this.instances[name] = automataInstance
+            // Remembering that the instantiate name is the key in the Map they get stored in
+            this.instances[name] = automataInstance
+        }
     }
 }
 
 /**
- * Imports a set of HAML Mappings into the given HybridNetwork instance
+ * Gets the instatiate Id that corresponds to the given name, recursively searching through parents if required
+ */
+private fun HybridNetwork.getInstantiateIdForType(type: String): UUID? {
+    // First try if it's within this network
+    val instantiateId = this.instantiates.filter { it.value.name.equals(type) }.keys.firstOrNull()
+
+    // If we managed to find it, then return it
+    if(instantiateId != null)
+        return instantiateId
+
+    // Otherwise, check through the parent
+    return this.parent?.getInstantiateIdForType(type)
+}
+
+/**
+ * Imports a set of HAML Mappings into the given HybridNetwork instantiate
  */
 private fun HybridNetwork.importMappings(mappings: Map<String, ParseTreeItem>?) {
     // For each mapping that exists
     if(mappings != null) {
         for((to, from) in mappings) {
-            // We need to check that the "to" part contains a dot, which is used to separate the instance from the
-            // input variable name
-            if(to.contains(".")) {
-                // Split the "to" field up into its Automata and Variable pairs
-                val toPair = AutomataVariablePair(to.substringBeforeLast("."), to.substringAfterLast("."))
+            // Generate the Automata and Variable Pair
+            val toPair = AutomataVariablePair.generate(to)
 
-                // And add it!
-                this.ioMapping[toPair] = from
-            }
-            else {
-                // Invalid "to" given
-                throw IOException("Invalid IO Mapping provided for $from -> $to")
-            }
+            // And add it!
+            this.ioMapping[toPair] = from
         }
     }
 }
@@ -314,7 +401,7 @@ private fun MutableMap<String, ParseTreeItem>.loadParseTreeItems(items: Map<Stri
 /**
  * Imports a set of HAML Variables with a given locality into the given HybridAutomata
  */
-private fun HybridAutomata.loadVariables(variables: Map<String, VariableDefinition>?, type: Locality) {
+private fun HybridItem.loadVariables(variables: Map<String, VariableDefinition>?, type: Locality) {
     // Iterate over every variable we were given
     if(variables != null) {
         for((name, value) in variables) {

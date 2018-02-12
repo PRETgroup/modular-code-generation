@@ -1,33 +1,45 @@
 name: heart
 
-definitions:
-  Cell: !include cell.yaml
-  Path: !include path.yaml
+system:
+  outputs:
+    SA_v: REAL
+    RA_v: REAL
+    OS_v: REAL
+    Fast_v: REAL
+    AV_v: REAL
+    His_v: REAL
+    RBB_v: REAL
+    RVA_v: REAL
+    RV_v: REAL
 
-instances:
-  !include cells.yaml
-  !include paths.yaml
+  definitions:
+    Cell: !include cell.yaml
+    Path: !include path.yaml
 
-mappings:
-  !include mappings.yaml
+  instances:
+    !include cells.yaml
+    !include paths.yaml
+
+  mappings:
+    !include mappings.yaml
 
 codegenConfig:
   execution:
     stepSize: 0.00001
     simulationTime: 10
   logging:
-    enable: false
+    enable: true
     file: out.csv
     fields:
-      - SA.v
-      - RA.v
-      - OS.v
-      - Fast.v
-      - AV.v
-      - His.v
-      - RBB.v
-      - RVA.v
-      - RV.v
+      - SA_v
+      - RA_v
+      - OS_v
+      - Fast_v
+      - AV_v
+      - His_v
+      - RBB_v
+      - RVA_v
+      - RV_v
   parametrisationMethod: COMPILE_TIME
   maximumInterTransitions: 1
   requireOneIntraTransitionPerTick: false

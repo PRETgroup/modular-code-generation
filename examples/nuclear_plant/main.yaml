@@ -1,127 +1,133 @@
 name: nuclear_plant
 
-definitions:
-  Plant:
-    inputs:
-      add1: BOOLEAN
-      remove1: BOOLEAN
-      add2: BOOLEAN
-      remove2: BOOLEAN
-    outputs:
-      x: REAL
-    locations:
-      p1:
-        invariant: '!add1 && !add2'
-        flow:
-          x: 0.1 * x - 50
-        transitions:
-          - to: p2
-            guard: add1
-            update:
-              x: 550
-          - to: p3
-            guard: add2
-            update:
-              x: 550
-      p2:
-        invariant: '!remove1'
-        flow:
-          x: 0.1 * x - 56
-        transitions:
-          - to: p1
-            guard: remove1
-            update:
-              x: 510
-      p3:
-        invariant: '!remove2'
-        flow:
-          x: 0.1 * x - 60
-        transitions:
-          - to: p1
-            guard: remove2
-            update:
-              x: 510
-    initialisation:
-      state: p1
-      valuations:
-        x: 510
+system:
+  outputs:
+    plant_x: REAL
 
-  Controller:
-    inputs:
-      x: REAL
-    outputs:
-      add1: BOOLEAN
-      remove1: BOOLEAN
-      add2: BOOLEAN
-      remove2: BOOLEAN
-    locations:
-      c1:
-        invariant: x <= 550 || (y1 < 15 && y2 < 15)
-        flow:
-          y1: 1
-          y2: 1
-        transitions:
-          - to: c2
-            guard: x > 550 && y1 >= 15 && y2 < 15
-            update:
-              add1: true
-              remove1: false
-              add2: false
-              remove2: false
-          - to: c3
-            guard: x > 550 && y2 >= 15
-            update:
-              add1: false
-              remove1: false
-              add2: true
-              remove2: false
-      c2:
-        invariant: x > 510
-        flow:
-          y1: 1
-          y2: 1
-        transitions:
-          - to: c1
-            guard: x <= 510
-            update:
-              add1: false
-              remove1: true
-              add2: false
-              remove2: false
-              y1: 0
-      c3:
-        invariant: x > 510
-        flow:
-          y1: 1
-          y2: 1
-        transitions:
-          - to: c1
-            guard: x <= 510
-            update:
-              add1: false
-              remove1: false
-              add2: false
-              remove2: true
-              y2: 0
-    initialisation:
-      state: c1
-      valuations:
-        x: 510
-        y1: 0
-        y2: 0
+  definitions:
+    Plant:
+      inputs:
+        add1: BOOLEAN
+        remove1: BOOLEAN
+        add2: BOOLEAN
+        remove2: BOOLEAN
+      outputs:
+        x: REAL
+      locations:
+        p1:
+          invariant: '!add1 && !add2'
+          flow:
+            x: 0.1 * x - 50
+          transitions:
+            - to: p2
+              guard: add1
+              update:
+                x: 550
+            - to: p3
+              guard: add2
+              update:
+                x: 550
+        p2:
+          invariant: '!remove1'
+          flow:
+            x: 0.1 * x - 56
+          transitions:
+            - to: p1
+              guard: remove1
+              update:
+                x: 510
+        p3:
+          invariant: '!remove2'
+          flow:
+            x: 0.1 * x - 60
+          transitions:
+            - to: p1
+              guard: remove2
+              update:
+                x: 510
+      initialisation:
+        state: p1
+        valuations:
+          x: 510
 
-instances:
-  Plant: Plant
-  Controller: Controller
+    Controller:
+      inputs:
+        x: REAL
+      outputs:
+        add1: BOOLEAN
+        remove1: BOOLEAN
+        add2: BOOLEAN
+        remove2: BOOLEAN
+      locations:
+        c1:
+          invariant: x <= 550 || (y1 < 15 && y2 < 15)
+          flow:
+            y1: 1
+            y2: 1
+          transitions:
+            - to: c2
+              guard: x > 550 && y1 >= 15 && y2 < 15
+              update:
+                add1: true
+                remove1: false
+                add2: false
+                remove2: false
+            - to: c3
+              guard: x > 550 && y2 >= 15
+              update:
+                add1: false
+                remove1: false
+                add2: true
+                remove2: false
+        c2:
+          invariant: x > 510
+          flow:
+            y1: 1
+            y2: 1
+          transitions:
+            - to: c1
+              guard: x <= 510
+              update:
+                add1: false
+                remove1: true
+                add2: false
+                remove2: false
+                y1: 0
+        c3:
+          invariant: x > 510
+          flow:
+            y1: 1
+            y2: 1
+          transitions:
+            - to: c1
+              guard: x <= 510
+              update:
+                add1: false
+                remove1: false
+                add2: false
+                remove2: true
+                y2: 0
+      initialisation:
+        state: c1
+        valuations:
+          x: 510
+          y1: 0
+          y2: 0
+
+  instances:
+    Plant: Plant
+    Controller: Controller
 
 
-mappings:
-  Plant.add1: Controller.add1
-  Plant.remove1: Controller.remove1
-  Plant.add2: Controller.add2
-  Plant.remove2: Controller.remove2
+  mappings:
+    plant_x: Plant.x
 
-  Controller.x: Plant.x
+    Plant.add1: Controller.add1
+    Plant.remove1: Controller.remove1
+    Plant.add2: Controller.add2
+    Plant.remove2: Controller.remove2
+
+    Controller.x: Plant.x
 
 codegenConfig:
   execution:
@@ -130,8 +136,6 @@ codegenConfig:
   logging:
     enable: true
     file: out.csv
-    fields:
-      - Plant.x
   parametrisationMethod: COMPILE_TIME
   maximumInterTransitions: 1
   requireOneIntraTransitionPerTick: false

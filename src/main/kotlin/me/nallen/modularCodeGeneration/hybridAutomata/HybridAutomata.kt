@@ -8,16 +8,14 @@ import me.nallen.modularCodeGeneration.parseTree.Variable as ParseTreeVariable
  */
 
 data class HybridAutomata(
-        var name: String = "HA",
+        override var name: String = "HA",
 
         val locations: ArrayList<Location> = ArrayList(),
         val edges: ArrayList<Edge> = ArrayList(),
         var init: Initialisation = Initialisation(""),
 
-        val functions: ArrayList<FunctionDefinition> = ArrayList(),
-
-        val variables: ArrayList<Variable> = ArrayList()
-) {
+        val functions: ArrayList<FunctionDefinition> = ArrayList()
+) : HybridItem() {
     fun addLocation(location: Location): HybridAutomata {
         /*if(locations.any({it.name == location.name}))
             throw IllegalArgumentException("Location with name ${location.name} already exists!")*/
@@ -78,32 +76,8 @@ data class HybridAutomata(
         return this
     }
 
-    fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null, delayableBy: ParseTreeItem? = null): HybridAutomata {
-        if(!variables.any({it.name == item})) {
-            variables.add(Variable(item, VariableType.REAL, locality, default, delayableBy))
-
-            if(default != null)
-                checkParseTreeForNewContinuousVariable(default)
-        }
-
-        return this
-    }
-
-    fun addEvent(item: String, locality: Locality = Locality.INTERNAL, delayableBy: ParseTreeItem? = null): HybridAutomata {
-        if(!variables.any({it.name == item})) {
-            variables.add(Variable(item, VariableType.BOOLEAN, locality, delayableBy = delayableBy))
-        }
-
-        return this
-    }
-
-    fun setParameterValue(key: String, value: ParseTreeItem) {
-        // Check parameter exists
-        if(!variables.any({it.locality == Locality.PARAMETER && it.name == key}))
-            return
-
-        // Remove parameter from list
-        variables.removeIf({it.locality == Locality.PARAMETER && it.name == key})
+    override fun setParameterValue(key: String, value: ParseTreeItem) {
+        super.setParameterValue(key, value)
 
         // Parametrise all transitions
         for(edge in edges) {
@@ -144,39 +118,6 @@ data class HybridAutomata(
             }
 
             function.logic.setParameterValue(key, value)
-        }
-
-        // Parametrise delayables
-        for(variable in variables.filter({it.canBeDelayed()})) {
-            variable.delayableBy!!.setParameterValue(key, value)
-        }
-    }
-
-    fun setDefaultParametrisation() {
-        for(variable in variables.filter({it.locality == Locality.PARAMETER && it.defaultValue != null})) {
-            this.setParameterValue(variable.name, variable.defaultValue!!)
-        }
-    }
-
-    /* Private Methods */
-
-    private fun checkParseTreeForNewContinuousVariable(item: ParseTreeItem, locality: Locality = Locality.INTERNAL) {
-        if(item is ParseTreeVariable) {
-            addContinuousVariable(item.name, locality)
-        }
-
-        for(child in item.getChildren()) {
-            checkParseTreeForNewContinuousVariable(child)
-        }
-    }
-
-    private fun checkParseTreeForNewEvent(item: ParseTreeItem, locality: Locality = Locality.INTERNAL) {
-        if(item is ParseTreeVariable) {
-            addEvent(item.name, locality)
-        }
-
-        for(child in item.getChildren()) {
-            checkParseTreeForNewEvent(child, locality)
         }
     }
 }

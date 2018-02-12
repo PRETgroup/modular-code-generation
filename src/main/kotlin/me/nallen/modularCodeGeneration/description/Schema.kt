@@ -1,6 +1,11 @@
 package me.nallen.modularCodeGeneration.description
 
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.util.TokenBuffer
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.parseTree.Program
@@ -9,44 +14,78 @@ import me.nallen.modularCodeGeneration.parseTree.Program
  * The root object of the HAML Document
  */
 data class Schema(
-        // The name of this Hybrid Network
+        // The name of this HAML Document
         var name: String,
 
-        // A set of definitions of Hybrid Automata that can be instantiated
-        var definitions: Map<String, Definition>,
-
-        // A set of instances of previously defined Hybrid Automata
-        var instances: Map<String, Instance>,
-
-        // A set of mappings that determine the value of each input of each Instance
-        var mappings: Map<String, ParseTreeItem>?,
+        // The main item that describes the system
+        val system: DefinitionItem,
 
         // A list of settings available for the default code generation logic in this tool
-        var codegenConfig: Configuration?
+        var codegenConfig: Configuration? = null
 )
+
+/**
+ * The object that captures a Hybrid Network, including mappings and instantiations.
+ * A Network can instantiate further networks inside of it, to create a hierarchical structure.
+ */
+class Network: DefinitionItem() {
+    // A set of definitions of Hybrid Automata or Hybrid Networks that can be instantiated
+    var definitions: Map<String, DefinitionItem> = HashMap()
+
+    // A set of instances of previously defined Hybrid Automata or Hybrid Networks
+    var instances: Map<String, Instance> = HashMap()
+
+    // A set of mappings that determine the value of each input of each Instance
+    var mappings: Map<String, ParseTreeItem>? = null
+}
 
 /**
  * The object that captures a Hybrid Automata and its logic
  */
-data class Definition(
-        // The variables that this Hybrid Automata accepts as inputs
-        var inputs: Map<String, VariableDefinition>?,
+class Automata: DefinitionItem() {
+    // The locations that exist inside this Hybrid Automata
+    var locations: Map<String, Location>? = null
 
-        // The variables that this Hybrid Automata emits as outputs
-        var outputs: Map<String, VariableDefinition>?,
+    // A set of functions that exist inside this Hybrid Automata
+    var functions: Map<String, Function>? = null
 
-        // The parameters that are available for configuration of this Hybrid Automata
-        var parameters: Map<String, VariableDefinition>?,
+    // Sets the initialisation options for the Hybrid Automata (location, variable states, etc.)
+    var initialisation: Initialisation? = null
+}
 
-        // The locations that exist inside this Hybrid Automata
-        var locations: Map<String, Location>?,
+/**
+ * An abstract (sealed) class to support Polymorphism of Networks and Automata
+ */
+sealed class DefinitionItem {
+    // The variables that this Hybrid Item accepts as inputs
+    var inputs: Map<String, VariableDefinition>? = null
 
-        // A set of functions that exist inside this Hybrid Automata
-        var functions: Map<String, Function>?,
+    // The variables that this Hybrid Item emits as outputs
+    var outputs: Map<String, VariableDefinition>? = null
 
-        // Sets the initialisation options for the Hybrid Automata (location, variable states, etc.)
-        var initialisation: Initialisation
-)
+    // The parameters that are available for configuration of this Hybrid Automata
+    var parameters: Map<String, VariableDefinition>? = null
+
+    companion object Factory {
+        // Method for creating from a String (used in JSON parsing)
+        @JsonCreator @JvmStatic
+        fun generate(node: JsonNode): DefinitionItem? {
+            // When creating, it needs to be an object
+            if(node.isObject) {
+                val mapper = jacksonObjectMapper()
+
+                // Then we need to try guess what type we're actually trying to deserialize, this is done by checking
+                // if the object has a field named "instances"
+                return if(node.has("instances"))
+                    mapper.treeToValue(node, Network::class.java)
+                else {
+                    mapper.treeToValue(node, Automata::class.java)
+                }
+            }
+            return null
+        }
+    }
+}
 
 /**
  * Information about a variable that exists within a Hybrid Automata
@@ -134,7 +173,7 @@ data class Initialisation(
  * An instantiation of a Hybrid Automata Definition
  */
 data class Instance(
-        // The previously declared definition that this instance instantiates
+        // The previously declared definition that this instantiate instantiates
         var type: String,
 
         // The values of any parameters inside the previous declaration. Any parameters which do not have an entry here

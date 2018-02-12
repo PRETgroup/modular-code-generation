@@ -26,25 +26,25 @@ class CodeGenTests : StringSpec() {
                         var config = imported.second
 
                         config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
-                        CodeGenManager.generateForNetwork(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                        CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
                         if(canMake) {
                             "make".runCommand(File("build/tmp/codegen")) shouldBe 0
                         }
 
                         config = config.copy(indentSize = -1, parametrisationMethod = ParametrisationMethod.RUN_TIME, logging = Logging())
-                        CodeGenManager.generateForNetwork(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                        CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
                         if(canMake) {
                             "make".runCommand(File("build/tmp/codegen")) shouldBe 0
                         }
 
                         config = config.copy(maximumInterTransitions = 4, requireOneIntraTransitionPerTick = true)
-                        CodeGenManager.generateForNetwork(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                        CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
                         if(canMake) {
                             "make".runCommand(File("build/tmp/codegen")) shouldBe 0
                         }
 
                         config = config.copy(maximumInterTransitions = 4, requireOneIntraTransitionPerTick = false)
-                        CodeGenManager.generateForNetwork(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                        CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
                         if(canMake) {
                             "make".runCommand(File("build/tmp/codegen")) shouldBe 0
                         }

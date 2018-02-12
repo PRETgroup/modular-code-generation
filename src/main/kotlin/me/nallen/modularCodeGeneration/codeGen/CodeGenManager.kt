@@ -7,6 +7,7 @@ import me.nallen.modularCodeGeneration.hybridAutomata.Locality
 import me.nallen.modularCodeGeneration.parseTree.*
 import me.nallen.modularCodeGeneration.parseTree.Variable
 import java.io.File
+import java.util.*
 
 typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
 
@@ -24,7 +25,7 @@ object CodeGenManager {
      *
      * A set of configuration properties can also be set to modify the structure of the generated code
      */
-    fun generateForNetwork(network: HybridNetwork, language: CodeGenLanguage, dir: String, config: Configuration = Configuration()) {
+    fun generate(item: HybridItem, language: CodeGenLanguage, dir: String, config: Configuration = Configuration()) {
         val outputDir = File(dir)
 
         // If the desired output directory already exists and is a file, then we stop!
@@ -35,56 +36,103 @@ object CodeGenManager {
         outputDir.deleteRecursively()
         outputDir.mkdirs()
 
+        if(item is HybridNetwork)
+            createInstantiates(item, config)
+
         // Depending on the language, we want to call a different generator.
         // Currently only C code is supported, so this looks a bit boring
         when(language) {
-            CodeGenLanguage.C -> CCodeGenerator.generateNetwork(network, dir, config)
+            CodeGenLanguage.C -> CCodeGenerator.generate(item, dir, config)
+        }
+    }
+
+    fun createInstantiates(network: HybridNetwork, config: Configuration) {
+        if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
+            for((name, instance) in network.instances) {
+                val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
+                if(instantiate != null) {
+                    val instantiateId = UUID.randomUUID()
+                    network.instantiates[instantiateId] = AutomataInstantiate(instantiate.definition, name)
+                    instance.instantiate = instantiateId
+                }
+            }
+        }
+        else {
+            for((_, instance) in network.instances) {
+                val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
+                val definition = network.getDefinitionForInstantiateId(instance.instantiate)
+
+                if(instantiate != null && definition != null) {
+                    instantiate.name = definition.name
+
+                    val instantiateIds = network.instantiates.filter{it.value.definition == instantiate.definition && it.key != instance.instantiate }.keys
+
+                    for((_, instance2) in network.instances.filter{instantiateIds.contains(it.value.instantiate)})
+                        instance2.instantiate = instance.instantiate
+
+                    for(id in instantiateIds)
+                        network.instantiates.remove(id)
+                }
+            }
+        }
+
+        for((_, definition) in network.definitions) {
+            if(definition is HybridNetwork)
+                createInstantiates(definition, config)
         }
     }
 
     /**
-     * Creates a parametrised Hybrid Automata instance for the given AutomataInstance pair in a network.
+     * Creates a parametrised Hybrid Automata instantiate for the given AutomataInstance pair in a network.
      * All parameters will get their values set to the values provided in the AutomataInstance, or their default value
      * if not present in the AutomataInstance map.
      */
-    fun createParametrisedFsm(network: HybridNetwork, name: String, instance: AutomataInstance): HybridAutomata? {
-        // We need to make sure that the instance actually exists
-        if(network.definitions.any({it.name == instance.automata})) {
+    fun createParametrisedItem(network: HybridNetwork, name: String, instance: AutomataInstance): HybridItem? {
+        // We need to make sure that the instantiate actually exists
+        val definition = network.getDefinitionForInstantiateId(instance.instantiate)
+        if(definition != null) {
+            val type = definition.javaClass
+
             // This is currently a really hacky way to do a deep copy, JSON serialize it and then deserialize.
             // Bad for performance, but easy to do. Hopefully can be fixed later?
-            val json = mapper.writeValueAsString(network.definitions.first({ it.name == instance.automata }))
+            val json = mapper.writeValueAsString(definition)
 
-            val automata = mapper.readValue<HybridAutomata>(json)
+            val item = mapper.readValue(json, type)
+
+            if(item is HybridNetwork)
+                item.parent = network
 
             // The name becomes the new name
-            automata.name = name
+            item.name = name
 
             val functionTypes = LinkedHashMap<String, VariableType?>()
 
-            // We need to parametrise every function
-            for(function in automata.functions) {
-                // All variables that are either inputs, or parameters, end up the same - they get set externally.
-                val inputs = ArrayList(function.inputs)
-                inputs.addAll(automata.variables.filter({it.locality == Locality.PARAMETER}).map({ VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) }))
+            if(item is HybridAutomata) {
+                // We need to parametrise every function
+                for(function in item.functions) {
+                    // All variables that are either inputs, or parameters, end up the same - they get set externally.
+                    val inputs = ArrayList(function.inputs)
+                    inputs.addAll(item.variables.filter({it.locality == Locality.PARAMETER}).map({ VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) }))
 
-                // So now we collect all internal variables given we know about the external inputs and parameters
-                function.logic.collectVariables(inputs, functionTypes)
+                    // So now we collect all internal variables given we know about the external inputs and parameters
+                    function.logic.collectVariables(inputs, functionTypes)
 
-                // Get the return type, and keep track of it too
-                function.returnType = function.logic.getReturnType(functionTypes)
-                functionTypes[function.name] = function.returnType
+                    // Get the return type, and keep track of it too
+                    function.returnType = function.logic.getReturnType(functionTypes)
+                    functionTypes[function.name] = function.returnType
+                }
             }
 
             // Now for the new automata, we want to set the value for each parameter
             for ((key, value) in instance.parameters) {
-                automata.setParameterValue(key, value)
+                item.setParameterValue(key, value)
             }
 
             // And then set parameters to their default value for any that weren't set
-            automata.setDefaultParametrisation()
+            item.setDefaultParametrisation()
 
             // And return the new parametrised automata
-            return automata
+            return item
         }
 
         // If we can't find a matching automata, then we just return null
@@ -96,52 +144,26 @@ object CodeGenManager {
      * This is based off of the provided Configuration properties where the set of logging fields can be provided or, if
      * the field is omitted, all outputs are logged by default
      */
-    fun collectFieldsToLog(network: HybridNetwork, config: Configuration): List<LoggingField> {
+    fun collectFieldsToLog(item: HybridItem, config: Configuration): List<LoggingField> {
         // The list that we'll use to store logging fields
         val toLog = ArrayList<LoggingField>()
 
         // Check if the user provided any logging fields
         if(config.logging.fields == null) {
-            // The user did not, so let's collect all outputs and log them
-            // Iterate over every instance
-            for((name, instance) in network.instances) {
-                // Fetch the automata that the instance implements
-                if(network.definitions.any({it.name == instance.automata})) {
-                    val definition = network.definitions.first({it.name == instance.automata})
-
-                    // Fetch all outputs inside that definition
-                    val outputs = definition.variables.filter({it.locality == Locality.EXTERNAL_OUTPUT})
-                    // And add to the logging fields list
-                    outputs.mapTo(toLog) { LoggingField(name, it.name, it.type) }
-                }
-            }
-
+            // Fetch all outputs inside the definition
+            val outputs = item.variables.filter({it.locality == Locality.EXTERNAL_OUTPUT})
+            // And add to the logging fields list
+            outputs.mapTo(toLog) { LoggingField(it.name, it.type) }
         }
         else {
             // The user specified some logging fields they want, so let's go through each one
             for(field in config.logging.fields) {
-                // Should be of the format instance.output so it should contain a period
-                if(field.contains(".")) {
-                    // Get the instance and output names
-                    val machine = field.substringBeforeLast(".")
-                    val variable = field.substringAfterLast(".")
+                // Check that a variable of the same name exists in the definition
+                if(item.variables.any({it.locality == Locality.EXTERNAL_OUTPUT && it.name == field})) {
+                    val output = item.variables.first({it.locality == Locality.EXTERNAL_OUTPUT && it.name == field})
 
-                    // Check that the instance exists
-                    if(network.instances.containsKey(machine)) {
-                        val instance = network.instances[machine]!!
-                        // Check that a definition exists for that instance
-                        if(network.definitions.any({it.name == instance.automata})) {
-                            val definition = network.definitions.first({it.name == instance.automata})
-
-                            // Finally check that a variable of the same name exists in that definition
-                            if(definition.variables.any({it.locality == Locality.EXTERNAL_OUTPUT && it.name == variable})) {
-                                val output = definition.variables.first({it.locality == Locality.EXTERNAL_OUTPUT && it.name == variable})
-
-                                // Yay we found everything we needed to, now we can add it to the logging fields list
-                                toLog.add(LoggingField(machine, output.name, output.type))
-                            }
-                        }
-                    }
+                    // Yay we found everything we needed to, now we can add it to the logging fields list
+                    toLog.add(LoggingField(output.name, output.type))
                 }
             }
         }
@@ -372,9 +394,6 @@ enum class SaturationDirection {
  * A class that captures a field to be logged
  */
 data class LoggingField(
-        // The instance to which this variable belongs
-        val machine: String,
-
         // The variable to be logged
         val variable: String,
 

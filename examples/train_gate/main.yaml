@@ -1,86 +1,93 @@
 name: train_gate
 
-definitions:
-  Train:
-    outputs:
-      gateRequestUp: BOOLEAN
-      gateRequestDown: BOOLEAN
-      position: REAL
-    parameters:
-      trainSpeed:
-        type: REAL
-        default: 1
-    locations:
-      t1:
-        invariant: position < 5
-        flow:
-          position: trainSpeed
-        transitions:
-          - to: t2
-            guard: position == 5
-            update:
-              gateRequestUp: true
-              gateRequestDown: false
-      t2:
-        invariant: position >= 5 && position < 15
-        flow:
-          position: trainSpeed
-        transitions:
-          - to: t3
-            guard: position == 15
-            update:
-              gateRequestUp: false
-              gateRequestDown: true
-      t3:
-        invariant: position >= 15 && position < 25
-        flow:
-          position: trainSpeed
-        transitions:
-          - to: t1
-            guard: position == 25
-            update:
-              position: 0
-              gateRequestUp: false
-              gateRequestDown: false
-    initialisation:
-      state: t1
-      valuations:
-        position: 0
+system:
+  outputs:
+    train_pos: REAL
+    gate_pos: REAL
+  definitions:
+    Train:
+      outputs:
+        gateRequestUp: BOOLEAN
+        gateRequestDown: BOOLEAN
+        position: REAL
+      parameters:
+        trainSpeed:
+          type: REAL
+          default: 1
+      locations:
+        t1:
+          invariant: position < 5
+          flow:
+            position: trainSpeed
+          transitions:
+            - to: t2
+              guard: position == 5
+              update:
+                gateRequestUp: true
+                gateRequestDown: false
+        t2:
+          invariant: position >= 5 && position < 15
+          flow:
+            position: trainSpeed
+          transitions:
+            - to: t3
+              guard: position == 15
+              update:
+                gateRequestUp: false
+                gateRequestDown: true
+        t3:
+          invariant: position >= 15 && position < 25
+          flow:
+            position: trainSpeed
+          transitions:
+            - to: t1
+              guard: position == 25
+              update:
+                position: 0
+                gateRequestUp: false
+                gateRequestDown: false
+      initialisation:
+        state: t1
+        valuations:
+          position: 0
 
-  Gate:
-    inputs:
-      gateRequestUp: BOOLEAN
-      gateRequestDown: BOOLEAN
-    outputs:
-      position: REAL
-    locations:
-      g1:
-        invariant: '!gateRequestUp'
-        flow:
-          position: (0 - position) / 2
-        transitions:
-          - to: g2
-            guard: gateRequestUp
-      g2:
-        invariant: '!gateRequestDown'
-        flow:
-          position: (11 - position) / 2
-        transitions:
-          - to: g1
-            guard: gateRequestDown
-    initialisation:
-      state: g1
-      valuations:
-        position: 0
+    Gate:
+      inputs:
+        gateRequestUp: BOOLEAN
+        gateRequestDown: BOOLEAN
+      outputs:
+        position: REAL
+      locations:
+        g1:
+          invariant: '!gateRequestUp'
+          flow:
+            position: (0 - position) / 2
+          transitions:
+            - to: g2
+              guard: gateRequestUp
+        g2:
+          invariant: '!gateRequestDown'
+          flow:
+            position: (11 - position) / 2
+          transitions:
+            - to: g1
+              guard: gateRequestDown
+      initialisation:
+        state: g1
+        valuations:
+          position: 0
 
-instances:
-  Train: Train
-  Gate: Gate
+  instances:
+    Train: Train
+    Gate: Gate
 
 
-mappings:
-  Gate.gateRequestUp: Train.gateRequestUp
-  Gate.gateRequestDown: Train.gateRequestDown
+  mappings:
+    train_pos: Train.position
+    gate_pos: Gate.position
+
+    Gate.gateRequestUp: Train.gateRequestUp
+    Gate.gateRequestDown: Train.gateRequestDown
 
 codegenConfig:
   execution:
@@ -89,9 +96,6 @@ codegenConfig:
   logging:
     enable: true
     file: out.csv
-    fields:
-      - Train.position
-      - Gate.position
   parametrisationMethod: COMPILE_TIME
   maximumInterTransitions: 1
   requireOneIntraTransitionPerTick: false

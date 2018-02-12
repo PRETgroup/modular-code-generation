@@ -3,14 +3,17 @@ package me.nallen.modularCodeGeneration.codeGen.c
 import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
-import me.nallen.modularCodeGeneration.hybridAutomata.AutomataInstance
+import me.nallen.modularCodeGeneration.codeGen.c.Utils.createFileName
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 import me.nallen.modularCodeGeneration.parseTree.VariableType
 import java.io.File
+import java.util.*
+import kotlin.collections.ArrayList
 
 /**
- * The class that contains methods to do with the generation of C code for a Hybrid Network.
+ * The class that contains methods to do with the generation of C code for a Hybrid Item.
  *
  * All generated files and the generated code itself will follow proper C style conventions.
  */
@@ -21,28 +24,36 @@ class CCodeGenerator {
         const val CONFIG_FILE = "config.h"
         const val DELAYABLE_HEADER = "delayable.h"
 
+        // We need to keep track of the variables we need to delay
+        private val delayedTypes = ArrayList<VariableType>()
+
         /**
-         * Generate C code for the FSM that represents a Hybrid Automata. The code will be placed into the provided
-         * directory, overwriting any contents that may already exist.
+         * Generate C code that captures the Hybrid Item. The code will be placed into the provided directory,
+         * overwriting any contents that may already exist.
          */
-        private fun generateFsm(automata: HybridAutomata, dir: String, config: Configuration = Configuration()) {
+        private fun generateItem(item: HybridItem, dir: String, config: Configuration) {
             val outputDir = File(dir)
 
             // If the directory doesn't already exist, we want to create it
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
+            // If it's a Network, then we also need to generate the sub-files
+            if(item is HybridNetwork) {
+                generateNetworkItems(item, outputDir.absolutePath, config)
+            }
+
             // Generate the Header File
-            File(outputDir, "${Utils.createFileName(automata.name)}.h").writeText(HFileGenerator.generate(automata, config))
+            File(outputDir, "${Utils.createFileName(item.name)}.h").writeText(HFileGenerator.generate(item, config))
             // Generate the Source File
-            File(outputDir, "${Utils.createFileName(automata.name)}.c").writeText(CFileGenerator.generate(automata, config))
+            File(outputDir, "${Utils.createFileName(item.name)}.c").writeText(CFileGenerator.generate(item, config))
         }
 
         /**
-         * Generate C code for the overall runnable that represents a Hybrid Network. The code will be placed into the
+         * Generate C code for the overall runnable that represents a Hybrid Item. The code will be placed into the
          * provided directory, overwriting any contents that may already exist.
          */
-        private fun generateRunnable(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
+        private fun generateRunnable(item: HybridItem, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             // If the directory doesn't already exist, we want to create it
@@ -50,14 +61,14 @@ class CCodeGenerator {
                 outputDir.mkdirs()
 
             // Generate the Runnable File
-            File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(network, config))
+            File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(item, config))
         }
 
         /**
-         * Generate a Makefile for the overall program that represents a Hybrid Network. The code will be placed into
+         * Generate a Makefile for the overall program that represents a Hybrid Item. The code will be placed into
          * the provided directory, overwriting any contents that may already exist.
          */
-        private fun generateMakefile(name: String, instances: Map<String, AutomataInstance>, dir: String, config: Configuration = Configuration()) {
+        private fun generateMakefile(item: HybridItem, dir: String, config: Configuration, isRoot: Boolean = false) {
             val outputDir = File(dir)
 
             // If the directory doesn't already exist, we want to create it
@@ -65,7 +76,7 @@ class CCodeGenerator {
                 outputDir.mkdirs()
 
             // Generate the Makefile
-            File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(name, instances, config))
+            File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(item, config, isRoot))
         }
 
         /**
@@ -193,60 +204,157 @@ class CCodeGenerator {
          * Generate all the files needed in the C Code generation of the given Hybrid Network. The code will be
          * generated into the provided directory, overwriting any contents that may exist
          */
-        fun generateNetwork(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
+        private fun generateNetworkItems(network: HybridNetwork, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
             // If the directory doesn't already exist, we want to create it
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
-            // We need to keep track of the variables we need to delay
-            val delayedTypes = ArrayList<VariableType>()
+            //For C Code we need to make sure each type is unique, so let's do that
+            makeItemsUnique(network, config)
 
             // Depending on the parametrisation method, we'll do things slightly differently
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
-                // Compile time parametrisation means creating a C file for each instance
-                for((name, instance) in network.instances) {
-                    // Create the parametrised copy of the automata
-                    val automata = CodeGenManager.createParametrisedFsm(network, name, instance) ?: throw IllegalArgumentException("Unable to find base machine $name to instantiate!")
+                // Compile time parametrisation means creating a C file for each instantiate
+                for((_, instance) in network.instances) {
+                    // Get the instance of the item we want to generate
+                    val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
+                    if(instantiate != null) {
+                        // Create the parametrised copy of the automata
+                        val definition = network.getDefinitionForDefinitionId(instantiate.definition)
 
-                    // Add all the delayed types that we've found
-                    delayedTypes.addAll(automata.variables.filter({it.canBeDelayed()}).map({it.type}))
+                        val item = CodeGenManager.createParametrisedItem(network, instantiate.name, instance)
 
-                    // We need to create a sub-folder for all the instances. We can run into issues if this is the same
-                    // name as the overall system, so check for that too
-                    val subfolder = if(instance.automata.equals(network.name, true)) { instance.automata + " Files" } else { instance.automata }
+                        if(definition == null || item == null)
+                            throw IllegalArgumentException("Unable to find base machine ${instantiate.name} to instantiate!")
 
-                    // Generate the code for the parametrised automata
-                    generateFsm(automata, File(outputDir, Utils.createFolderName(subfolder)).absolutePath, config)
+                        // Add all the delayed types that we've found
+                        delayedTypes.addAll(item.variables.filter({it.canBeDelayed()}).map({it.type}))
+
+                        // We need to create a sub-folder for all the instances. We can run into issues if this is the same
+                        // name as the overall system, so check for that too
+                        val subfolder = if(definition.name.equals(network.name, true)) { definition.name + " Files" } else { definition.name }
+
+                        // Generate the code for the parametrised item
+                        generateItem(item, File(outputDir, Utils.createFolderName(subfolder)).absolutePath, config)
+                    }
                 }
             }
             else  {
                 // We only want to generate each definition once, so keep a track of them
-                val generated = ArrayList<String>()
+                val generated = ArrayList<UUID>()
 
                 for((_, instance) in network.instances) {
-                    // Only generate if we haven't generated this definition before
-                    if (!generated.contains(instance.automata)) {
-                        generated.add(instance.automata)
+                    // Get the instance of the item we want to generate
+                    val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
+                    val definition = network.getDefinitionForInstantiateId(instance.instantiate)
+                    if(instantiate != null && definition != null) {
+                        // Only generate if we haven't generated this definition before
+                        if (!generated.contains(instantiate.definition)) {
+                            generated.add(instantiate.definition)
 
-                        // Get the definition of the unparametrised automata
-                        val automata = network.definitions.first({ it.name == instance.automata })
+                            definition.name = instantiate.name
 
-                        // Add all the delayed types that we've found
-                        delayedTypes.addAll(automata.variables.filter({it.canBeDelayed()}).map({it.type}))
+                            // Add all the delayed types that we've found
+                            delayedTypes.addAll(definition.variables.filter({it.canBeDelayed()}).map({it.type}))
 
-                        // Generate code for the unparametrised automata
-                        generateFsm(automata, outputDir.absolutePath, config)
+                            // Generate code for the unparametrised item
+                            generateItem(definition, outputDir.absolutePath, config)
+                        }
                     }
                 }
             }
 
+            // Generate Makefile
+            if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME || network.parent == null)
+                generateMakefile(network, outputDir.absolutePath, config)
+        }
+
+        /**
+         * Makes the set of instances within the given Network unique for the desired parametrisation method.
+         */
+        private fun makeItemsUnique(network: HybridNetwork, config: Configuration, assignedNames: ArrayList<String> = ArrayList()): ArrayList<String> {
+            if(assignedNames.contains(createFileName(network.name)))
+                network.name += assignedNames.size
+
+            assignedNames.add(createFileName(network.name))
+
+            // Depending on the parametrisation method, we'll do things slightly differently
+            if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
+                // Iterate over every instance
+                for((_, instance) in network.instances) {
+                    // Get the item we're currently checking
+                    val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
+                    if(instantiate != null) {
+                        // Check if we've seen this item before
+                        if(assignedNames.contains(createFileName(instantiate.name)))
+                            // If we have, we add a number to the end
+                            instantiate.name += assignedNames.size
+
+                        // Keep track of what we've seen
+                        assignedNames.add(createFileName(instantiate.name))
+                    }
+                }
+            }
+            else  {
+                // Otherwise it's run time which means we only need to include once per definition type
+
+                // So keep track of which types we've handled
+                val generated = ArrayList<UUID>()
+                // Iterate over every instance
+                for((_, instance) in network.instances) {
+                    // Get the item we're currently checking
+                    val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
+                    if(instantiate != null) {
+                        // Check if we've seen this type before
+                        if (!generated.contains(instantiate.definition)) {
+                            // If we haven't seen it, keep track of it
+                            generated.add(instantiate.definition)
+
+                            // Check if we've seen this item before
+                            if (assignedNames.contains(createFileName(instantiate.name)))
+                            // If we have, we add a number to the end
+                                instantiate.name += assignedNames.size
+
+                            // Keep track of what we've seen
+                            assignedNames.add(createFileName(instantiate.name))
+                        }
+                    }
+                }
+            }
+
+            // Return the list of names we've seen so far
+            return assignedNames
+        }
+
+        /**
+         * Generate code files for the given Hybrid Item (either a Network or Automata). The code will be placed into
+         * the provided directory, overwriting any contents that may already exist.
+         */
+        fun generate(item: HybridItem, dir: String, config: Configuration = Configuration()) {
+            val outputDir = File(dir)
+
+            // If the directory doesn't already exist, we want to create it
+            if(!outputDir.exists())
+                outputDir.mkdirs()
+
+            // If we're generating code for a Hybrid Network, we need to create a sub-directory for the files
+            val itemDir = if(item is HybridNetwork) {
+                File(outputDir, Utils.createFolderName(item.name, "Network"))
+            }
+            else {
+                outputDir
+            }
+
+            // Generate the current item
+            generateItem(item, itemDir.absolutePath, config)
+
             // Generate runnable
-            generateRunnable(network, outputDir.absolutePath, config)
+            generateRunnable(item, outputDir.absolutePath, config)
 
             // Generate Makefile
-            generateMakefile(network.name, network.instances, outputDir.absolutePath, config)
+            generateMakefile(item, outputDir.absolutePath, config, true)
 
             // Generate Config file
             generateConfigFile(outputDir.absolutePath, config)
