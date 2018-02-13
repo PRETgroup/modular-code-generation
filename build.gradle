@@ -33,6 +33,7 @@ dependencies {
   compile "com.fasterxml.jackson.module:jackson-module-kotlin:2.9.3"
   compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.3"
   compile "com.xenomachina:kotlin-argparser:2.0.3"
+  compile "com.hubspot.jinjava:jinjava:2.3.6"
 }
 
 jacocoTestReport {
