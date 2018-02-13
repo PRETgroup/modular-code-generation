@@ -94,7 +94,6 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
             }
         }
 
-        println("$name Total ${collection.size}")
         return collection
     }
 
