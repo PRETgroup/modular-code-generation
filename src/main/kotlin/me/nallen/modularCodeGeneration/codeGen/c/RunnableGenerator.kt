@@ -46,9 +46,9 @@ object RunnableGenerator {
 
         // Create the context
         val context = RunnableContext(
+                config,
                 rootItem,
-                loggingFields,
-                config
+                loggingFields
         )
 
         val res = jinjava.renderForResult(template, context.map)
@@ -58,15 +58,15 @@ object RunnableGenerator {
     }
 
     data class RunnableContext(val map: MutableMap<String, Any?>) {
+        var config: Configuration by map
         var item: CodeItem by map
         var loggingFields: List<CLoggingField> by map
-        var config: Configuration by map
 
-        constructor(item: CodeItem, loggingFields: List<CLoggingField>, config: Configuration) : this(
+        constructor(config: Configuration, item: CodeItem, loggingFields: List<CLoggingField>) : this(
                 mutableMapOf(
+                        "config" to config,
                         "item" to item,
-                        "loggingFields" to loggingFields,
-                        "config" to config
+                        "loggingFields" to loggingFields
                 )
         )
     }
