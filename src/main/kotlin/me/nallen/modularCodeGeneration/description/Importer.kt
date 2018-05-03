@@ -4,13 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.description.cellml.Schema
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import java.io.File
 
 /**
- * An Importer which is capable of reading in a HAML Document specification and creating the associated Hybrid Item
- * as described in the document.
+ * An Importer which is capable of reading in a specification and creating the associated Hybrid Item as described in
+ * the document.
  */
 class Importer {
     companion object Factory {
@@ -27,15 +26,20 @@ class Importer {
             if(!file.exists() || !file.isFile)
                 throw Exception("Whoops")
 
-            // Now we want to read the file as a YAML file...
+            // Now we want to try read the file as a YAML file...
             val mapper = ObjectMapper(YAMLFactory())
             val schema = mapper.registerModule(KotlinModule()).readTree(file)
 
+            // Check if we could actually import it as a YAML file
             if(schema != null) {
+                // And if it looks like a HAML file
                 if(schema.has("haml")) {
                     return me.nallen.modularCodeGeneration.description.haml.Importer.import(path)
                 }
             }
+
+            // Otherwise, let's try it as an XML file
+
 
             throw Exception("Unknown format provided for file")
         }
