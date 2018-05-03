@@ -3,7 +3,7 @@ package me.nallen.modularCodeGeneration
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.specs.StringSpec
 import me.nallen.modularCodeGeneration.codeGen.*
-import me.nallen.modularCodeGeneration.description.haml.Importer
+import me.nallen.modularCodeGeneration.description.Importer
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
