@@ -1,6 +1,6 @@
 # Hybrid Automata Modelling Language (HAML)
 
-#### Version: 0.1.1
+#### Version: 0.1.2
 
 ## Introduction
 
@@ -85,6 +85,7 @@ The root object for the HAML Document.
 
 | Name | Type | Description |
 |---|---|---|
+| haml | String | **Required.** The HAML version that this specification conforms to. |
 | name | String | **Required.** The name of this Hybrid Network. |
 | system | [Network](#network) \| [Automata](#automata) | **Required.** The main item that describes the system. Which could be either a [Network](#network) or single [Automata](#automata). |
 | codegenConfig | [Codegen Configuration](#codegen-configuration) | A list of settings available for the default code generation logic in this tool.<br/><br/> **Default:** A default instance of [Codegen Configuration](#codegen-configuration). |
@@ -92,6 +93,8 @@ The root object for the HAML Document.
 #### Example
 
 ```yaml
+haml: 0.1.2
+
 name: heart
 
 system:
@@ -557,6 +560,8 @@ Some example documents are provided below.
 ### Water Heater
 
 ```yaml
+haml: 0.1.2
+
 name: water_heater
 
 system:
@@ -666,5 +671,6 @@ codegenConfig:
 
 | Version | Date | Notes |
 |---|---|---|
+| 0.1.2 | 2018-05-03 | Added `haml` definition to root object |
 | 0.1.1 | 2018-02-08 | Updated to support hierarchy of Networks |
-| 0.1.0 | 2017-01-20 | Initial release |
+| 0.1.0 | 2018-01-20 | Initial release |
