@@ -1,4 +1,4 @@
-package me.nallen.modularCodeGeneration.description
+package me.nallen.modularCodeGeneration.description.haml
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
@@ -9,7 +9,6 @@ import me.nallen.modularCodeGeneration.parseTree.Literal
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
 import java.io.File
-import java.io.IOException
 import java.util.*
 
 typealias ParseTreeVariableType = me.nallen.modularCodeGeneration.parseTree.VariableType

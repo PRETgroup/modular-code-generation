@@ -3,7 +3,7 @@ package me.nallen.modularCodeGeneration
 import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.mainBody
 import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
-import me.nallen.modularCodeGeneration.description.Importer
+import me.nallen.modularCodeGeneration.description.haml.Importer
 
 /**
  * The program that gets run for the CLI Application.
