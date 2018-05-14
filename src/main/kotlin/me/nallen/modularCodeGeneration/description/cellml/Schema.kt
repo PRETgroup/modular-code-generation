@@ -19,7 +19,11 @@ data class Model(
 
         @JacksonXmlElementWrapper(useWrapping = false)
         @JacksonXmlProperty(localName = "component")
-        var components: List<Component>?
+        var components: List<Component>?,
+
+        @JacksonXmlElementWrapper(useWrapping = false)
+        @JacksonXmlProperty(localName = "connection")
+        var connections: List<Connection>?
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -110,6 +114,38 @@ data class Variable(
         @JacksonXmlProperty(isAttribute = true, localName = "private_interface")
         var privateInterface: InterfaceType = InterfaceType.NONE
 )
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "connection")
+data class Connection(
+        @JacksonXmlProperty(localName = "map_components")
+        var components: MapComponents,
+
+        @JacksonXmlElementWrapper(useWrapping = false)
+        @JacksonXmlProperty(localName = "map_variables")
+        var variables: List<MapVariables>
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "map_components")
+data class MapComponents(
+        @JacksonXmlProperty(isAttribute = true, localName = "component_1")
+        var component1: String,
+
+        @JacksonXmlProperty(isAttribute = true, localName = "component_2")
+        var component2: String
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "map_variables")
+data class MapVariables(
+        @JacksonXmlProperty(isAttribute = true, localName = "variable_1")
+        var variable1: String,
+
+        @JacksonXmlProperty(isAttribute = true, localName = "variable_2")
+        var variable2: String
+)
+
 
 
 
