@@ -144,6 +144,8 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
                     Operand.DIVIDE -> Divide(stack[stack.size-2], stack[stack.size-1])
                     Operand.SQUARE_ROOT -> SquareRoot(stack[stack.size-1])
                     Operand.EXPONENTIAL -> Exponential(stack[stack.size-1])
+                    Operand.SCIENTIFIC_NOTATION_NEGATIVE -> Literal(String.format("%sE-%s", stack[stack.size-2].getString(), stack[stack.size-1].getString()))
+                    Operand.SCIENTIFIC_NOTATION_POSITIVE -> Literal(String.format("%sE+%s", stack[stack.size-2].getString(), stack[stack.size-1].getString()))
                 }
 
                 // If we were able to extract an operator (i.e. it wasn't a bracket or function separator)
