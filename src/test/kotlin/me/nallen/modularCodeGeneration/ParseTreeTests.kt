@@ -35,6 +35,9 @@ class ParseTreeTests : StringSpec() {
                 EquationSet("2 + b", "2 + b"),
                 EquationSet("a || false", "a || false"),
                 EquationSet("true && test()", "true && test()"),
+                EquationSet("1.2E-6", "1.2E-6", 1.2E-6),
+                EquationSet("9.52E+10", "9.52E+10", 9.52E10),
+                EquationSet("1.23E5", "1.23E5", 1.23E5),
 
                 EquationSet("my_custom_function(a, b c)"),
                 EquationSet("my_custom_function(a, b, c"),
