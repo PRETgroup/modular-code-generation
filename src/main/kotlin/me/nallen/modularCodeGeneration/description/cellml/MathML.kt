@@ -200,33 +200,179 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
     }
 }
 
-sealed class MathItem
+sealed class MathItem {
+    abstract fun generateString(): String
+    abstract fun calculateUnits(): SimpleUnit
+}
 
 data class Apply(
         val id: String?,
         val operation: Operation,
         val arguments: List<MathItem> = ArrayList()
-): MathItem()
+): MathItem() {
+    override fun calculateUnits(): SimpleUnit {
+        return when(operation) {
+            Operation.EQ -> TODO()
+            Operation.NEQ -> TODO()
+            Operation.GT -> TODO()
+            Operation.LT -> TODO()
+            Operation.GEQ -> TODO()
+            Operation.LEQ -> TODO()
+            Operation.PLUS -> TODO()
+            Operation.MINUS -> TODO()
+            Operation.TIMES -> TODO()
+            Operation.DIVIDE -> TODO()
+            Operation.POWER -> TODO()
+            Operation.ROOT -> TODO()
+            Operation.ABS -> TODO()
+            Operation.EXP -> TODO()
+            Operation.LN -> TODO()
+            Operation.LOG -> TODO()
+            Operation.FLOOR -> TODO()
+            Operation.CEILING -> TODO()
+            Operation.FACTORIAL -> TODO()
+            Operation.AND -> TODO()
+            Operation.OR -> TODO()
+            Operation.XOR -> TODO()
+            Operation.NOT -> TODO()
+            Operation.DIFF -> TODO()
+            Operation.SIN -> TODO()
+            Operation.COS -> TODO()
+            Operation.TAN -> TODO()
+            Operation.SEC -> TODO()
+            Operation.CSC -> TODO()
+            Operation.COT -> TODO()
+            Operation.SINH -> TODO()
+            Operation.COSH -> TODO()
+            Operation.TANH -> TODO()
+            Operation.SECH -> TODO()
+            Operation.CSCH -> TODO()
+            Operation.COTH -> TODO()
+            Operation.ARCSIN -> TODO()
+            Operation.ARCCOS -> TODO()
+            Operation.ARCTAN -> TODO()
+            Operation.ARCCOSH -> TODO()
+            Operation.ARCCOT -> TODO()
+            Operation.ARCCOTH -> TODO()
+            Operation.ARCCSC -> TODO()
+            Operation.ARCCSCH -> TODO()
+            Operation.ARCSEC -> TODO()
+            Operation.ARCSECH -> TODO()
+            Operation.ARCSINH -> TODO()
+            Operation.ARCTANH -> TODO()
+        }
+    }
+
+    override fun generateString(): String {
+        return when(operation) {
+            Operation.EQ -> TODO()
+            Operation.NEQ -> TODO()
+            Operation.GT -> TODO()
+            Operation.LT -> TODO()
+            Operation.GEQ -> TODO()
+            Operation.LEQ -> TODO()
+            Operation.PLUS -> TODO()
+            Operation.MINUS -> TODO()
+            Operation.TIMES -> TODO()
+            Operation.DIVIDE -> TODO()
+            Operation.POWER -> TODO()
+            Operation.ROOT -> TODO()
+            Operation.ABS -> TODO()
+            Operation.EXP -> TODO()
+            Operation.LN -> TODO()
+            Operation.LOG -> TODO()
+            Operation.FLOOR -> TODO()
+            Operation.CEILING -> TODO()
+            Operation.FACTORIAL -> TODO()
+            Operation.AND -> TODO()
+            Operation.OR -> TODO()
+            Operation.XOR -> TODO()
+            Operation.NOT -> TODO()
+            Operation.DIFF -> TODO()
+            Operation.SIN -> TODO()
+            Operation.COS -> TODO()
+            Operation.TAN -> TODO()
+            Operation.SEC -> TODO()
+            Operation.CSC -> TODO()
+            Operation.COT -> TODO()
+            Operation.SINH -> TODO()
+            Operation.COSH -> TODO()
+            Operation.TANH -> TODO()
+            Operation.SECH -> TODO()
+            Operation.CSCH -> TODO()
+            Operation.COTH -> TODO()
+            Operation.ARCSIN -> TODO()
+            Operation.ARCCOS -> TODO()
+            Operation.ARCTAN -> TODO()
+            Operation.ARCCOSH -> TODO()
+            Operation.ARCCOT -> TODO()
+            Operation.ARCCOTH -> TODO()
+            Operation.ARCCSC -> TODO()
+            Operation.ARCCSCH -> TODO()
+            Operation.ARCSEC -> TODO()
+            Operation.ARCSECH -> TODO()
+            Operation.ARCSINH -> TODO()
+            Operation.ARCTANH -> TODO()
+        }
+    }
+}
 
 sealed class MathValue : MathItem()
 
 data class Cn(
         val units: String,
         val value: Double
-): MathValue()
+): MathValue() {
+    override fun calculateUnits(): SimpleUnit {
+        TODO()
+    }
+
+    override fun generateString(): String {
+        return value.toString()
+    }
+}
 
 data class Ci(
         val name: String
-): MathValue()
+): MathValue() {
+    override fun calculateUnits(): SimpleUnit {
+        TODO()
+    }
+
+    override fun generateString(): String {
+        TODO()
+    }
+}
 
 data class Bvar(
         val variable: Ci,
         val degree: Degree? = null
-): MathItem()
+): MathItem() {
+    override fun calculateUnits(): SimpleUnit {
+        TODO()
+    }
+
+    override fun generateString(): String {
+        TODO()
+    }
+}
 
 data class Degree(
         val order: MathValue
-): MathItem()
+): MathItem() {
+    override fun calculateUnits(): SimpleUnit {
+        val orderUnits = order.calculateUnits()
+
+        if(orderUnits !is CompositeUnit || orderUnits.baseUnits.isNotEmpty())
+            throw Exception("<degree> requires child to be dimensionless")
+
+        return orderUnits
+    }
+
+    override fun generateString(): String {
+        return order.generateString()
+    }
+}
 
 enum class Operation {
     EQ, NEQ, GT, LT, GEQ, LEQ,

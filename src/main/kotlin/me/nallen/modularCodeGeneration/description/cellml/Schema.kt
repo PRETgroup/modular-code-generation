@@ -60,8 +60,8 @@ data class Unit(
 ) {
     @JsonCreator
     constructor(units: String, offset: Double = 0.0,
-                prefix: Any?, exponent: Double = 0.0,
-                multiplier: Double = 0.0): this(units, offset, 0, exponent, multiplier) {
+                prefix: Any?, exponent: Double = 1.0,
+                multiplier: Double = 1.0): this(units, offset, 0, exponent, multiplier) {
         if(prefix is Int)
             this.prefix = prefix
         else if(prefix is String) {
@@ -186,3 +186,8 @@ fun prefixToPowerOfTen(prefix: String): Int {
         else -> throw IllegalArgumentException("Invalid prefix provided: " + prefix)
     }
 }
+
+open class SimpleUnit
+data class BaseUnit(val name: String): SimpleUnit()
+data class BaseUnitInstance(val baseUnit: BaseUnit, var exponent: Double = 1.0)
+data class CompositeUnit(val baseUnits: List<BaseUnitInstance> = listOf(), val multiply: Double = 1.0, val offset: Double = 0.0): SimpleUnit()
