@@ -1,11 +1,8 @@
 package me.nallen.modularCodeGeneration.description.cellml
 
 import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
@@ -225,10 +222,29 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
 
     val location = Location("q0")
 
+    val variablesMap = HashMap<String, String>()
+
+    if(component.variables != null) {
+        for(variable in component.variables) {
+            if(!unitsMap.containsKey(variable.units))
+                throw Exception("Unknown units provided: ${variable.units}")
+
+            variablesMap.put(variable.name, variable.units)
+        }
+    }
+
     if(component.maths != null) {
         for(math in component.maths) {
             for(mathItem in math.items) {
+                val result = parseMathEquation(mathItem, variablesMap, unitsMap)
 
+                if(result != null) {
+                    val (variable, expression, flow) = result
+                    if(flow)
+                        location.flow.put(variable, expression)
+                    else
+                        location.update.put(variable, expression)
+                }
             }
         }
     }
@@ -237,10 +253,32 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
 
     item.locations.add(location)
 
-    if(component.variables != null)
-        item.parseVariables(component.variables)
-
     return item
+}
+
+private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>, unitsMap: Map<String, SimpleUnit>): Triple<String, ParseTreeItem, Boolean>? {
+    if(item !is Apply)
+        return null
+
+    /*if(item.operation != Operation.EQ)
+        return null
+
+    if(item.arguments.size != 2)
+        return null
+
+    println(item.arguments[0])
+    println(item.arguments[0].calculateUnits(variablesMap, unitsMap))
+
+    println(item.arguments[1])
+    println(item.arguments[1].calculateUnits(variablesMap, unitsMap))
+    println()
+
+    if(!item.arguments[0].calculateUnits(variablesMap, unitsMap).canMapTo(item.arguments[1].calculateUnits(variablesMap, unitsMap)))
+        return null
+
+    //println(item.arguments[1].generateString())*/
+
+    return Triple("x", ParseTreeItem.generate("y"), true)
 }
 
 private fun HybridItem.parseVariables(variables: List<Variable>) {

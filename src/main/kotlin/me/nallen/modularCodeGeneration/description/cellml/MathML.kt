@@ -1,19 +1,12 @@
 package me.nallen.modularCodeGeneration.description.cellml
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
-import com.fasterxml.jackson.databind.node.IntNode
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText
 import java.util.*
 
 @JsonDeserialize(using = MathDeserializer::class)
@@ -136,7 +129,32 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
         if(operation == null)
             throw Exception("No operator found for <apply> element")
 
-        return Apply(id, operation, arguments)
+        return when(operation) {
+            Operation.EQ -> NAryOperation.create(id, operation, arguments)
+            Operation.NEQ -> BinaryOperation.create(id, operation, arguments)
+            Operation.GT -> NAryOperation.create(id, operation, arguments)
+            Operation.LT -> NAryOperation.create(id, operation, arguments)
+            Operation.GEQ -> NAryOperation.create(id, operation, arguments)
+            Operation.LEQ -> NAryOperation.create(id, operation, arguments)
+            Operation.PLUS -> NAryOperation.create(id, operation, arguments)
+            Operation.MINUS -> Minus.create(id, arguments)
+            Operation.TIMES -> NAryOperation.create(id, operation, arguments)
+            Operation.DIVIDE -> BinaryOperation.create(id, operation, arguments)
+            Operation.POWER -> BinaryOperation.create(id, operation, arguments)
+            Operation.ROOT -> TODO("ROOT")
+            Operation.ABS -> UnaryOperation.create(id, operation, arguments)
+            Operation.EXP -> UnaryOperation.create(id, operation, arguments)
+            Operation.LN -> UnaryOperation.create(id, operation, arguments)
+            Operation.LOG -> TODO("LOG")
+            Operation.FLOOR -> UnaryOperation.create(id, operation, arguments)
+            Operation.CEILING -> UnaryOperation.create(id, operation, arguments)
+            Operation.FACTORIAL -> UnaryOperation.create(id, operation, arguments)
+            Operation.AND -> NAryOperation.create(id, operation, arguments)
+            Operation.OR -> NAryOperation.create(id, operation, arguments)
+            Operation.XOR -> NAryOperation.create(id, operation, arguments)
+            Operation.NOT -> UnaryOperation.create(id, operation, arguments)
+            Operation.DIFF -> Diff.create(id, arguments)
+        }
     }
 
     private fun createCi(value: Any?): Ci {
@@ -201,121 +219,103 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
 }
 
 sealed class MathItem {
-    abstract fun generateString(): String
-    abstract fun calculateUnits(): SimpleUnit
+    abstract fun generateString(variableUnits: Map<String, SimpleUnit> = mapOf()): String
+    abstract fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit
 }
 
-data class Apply(
-        val id: String?,
-        val operation: Operation,
-        val arguments: List<MathItem> = ArrayList()
+sealed class Apply(
+        open val id: String?,
+        val operation: Operation
 ): MathItem() {
-    override fun calculateUnits(): SimpleUnit {
-        return when(operation) {
-            Operation.EQ -> TODO()
-            Operation.NEQ -> TODO()
-            Operation.GT -> TODO()
-            Operation.LT -> TODO()
-            Operation.GEQ -> TODO()
-            Operation.LEQ -> TODO()
-            Operation.PLUS -> TODO()
-            Operation.MINUS -> TODO()
-            Operation.TIMES -> TODO()
-            Operation.DIVIDE -> TODO()
-            Operation.POWER -> TODO()
-            Operation.ROOT -> TODO()
-            Operation.ABS -> TODO()
-            Operation.EXP -> TODO()
-            Operation.LN -> TODO()
-            Operation.LOG -> TODO()
-            Operation.FLOOR -> TODO()
-            Operation.CEILING -> TODO()
-            Operation.FACTORIAL -> TODO()
-            Operation.AND -> TODO()
-            Operation.OR -> TODO()
-            Operation.XOR -> TODO()
-            Operation.NOT -> TODO()
-            Operation.DIFF -> TODO()
-            Operation.SIN -> TODO()
-            Operation.COS -> TODO()
-            Operation.TAN -> TODO()
-            Operation.SEC -> TODO()
-            Operation.CSC -> TODO()
-            Operation.COT -> TODO()
-            Operation.SINH -> TODO()
-            Operation.COSH -> TODO()
-            Operation.TANH -> TODO()
-            Operation.SECH -> TODO()
-            Operation.CSCH -> TODO()
-            Operation.COTH -> TODO()
-            Operation.ARCSIN -> TODO()
-            Operation.ARCCOS -> TODO()
-            Operation.ARCTAN -> TODO()
-            Operation.ARCCOSH -> TODO()
-            Operation.ARCCOT -> TODO()
-            Operation.ARCCOTH -> TODO()
-            Operation.ARCCSC -> TODO()
-            Operation.ARCCSCH -> TODO()
-            Operation.ARCSEC -> TODO()
-            Operation.ARCSECH -> TODO()
-            Operation.ARCSINH -> TODO()
-            Operation.ARCTANH -> TODO()
-        }
+    override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun generateString(): String {
-        return when(operation) {
-            Operation.EQ -> TODO()
-            Operation.NEQ -> TODO()
-            Operation.GT -> TODO()
-            Operation.LT -> TODO()
-            Operation.GEQ -> TODO()
-            Operation.LEQ -> TODO()
-            Operation.PLUS -> TODO()
-            Operation.MINUS -> TODO()
-            Operation.TIMES -> TODO()
-            Operation.DIVIDE -> TODO()
-            Operation.POWER -> TODO()
-            Operation.ROOT -> TODO()
-            Operation.ABS -> TODO()
-            Operation.EXP -> TODO()
-            Operation.LN -> TODO()
-            Operation.LOG -> TODO()
-            Operation.FLOOR -> TODO()
-            Operation.CEILING -> TODO()
-            Operation.FACTORIAL -> TODO()
-            Operation.AND -> TODO()
-            Operation.OR -> TODO()
-            Operation.XOR -> TODO()
-            Operation.NOT -> TODO()
-            Operation.DIFF -> TODO()
-            Operation.SIN -> TODO()
-            Operation.COS -> TODO()
-            Operation.TAN -> TODO()
-            Operation.SEC -> TODO()
-            Operation.CSC -> TODO()
-            Operation.COT -> TODO()
-            Operation.SINH -> TODO()
-            Operation.COSH -> TODO()
-            Operation.TANH -> TODO()
-            Operation.SECH -> TODO()
-            Operation.CSCH -> TODO()
-            Operation.COTH -> TODO()
-            Operation.ARCSIN -> TODO()
-            Operation.ARCCOS -> TODO()
-            Operation.ARCTAN -> TODO()
-            Operation.ARCCOSH -> TODO()
-            Operation.ARCCOT -> TODO()
-            Operation.ARCCOTH -> TODO()
-            Operation.ARCCSC -> TODO()
-            Operation.ARCCSCH -> TODO()
-            Operation.ARCSEC -> TODO()
-            Operation.ARCSECH -> TODO()
-            Operation.ARCSINH -> TODO()
-            Operation.ARCTANH -> TODO()
+    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+}
+
+data class Diff(
+        override val id: String?,
+        val bvar: Bvar,
+        val argument: MathItem
+): Apply(id, Operation.DIFF) {
+    companion object Factory {
+        fun create(id: String?, arguments: List<MathItem>): Apply {
+            if(arguments.size != 2)
+                throw Exception("Invalid number of arguments provided to <diff>")
+
+            if(arguments[0] !is Bvar)
+                throw Exception("Invalid argument provided to <diff>")
+
+            return Diff(id, arguments[0] as Bvar, arguments[1])
         }
     }
 }
+
+data class Minus(
+        override val id: String?,
+        val argument1: MathItem,
+        val argument2: MathItem?
+): Apply(id, Operation.MINUS) {
+    companion object Factory {
+        fun create(id: String?, arguments: List<MathItem>): Apply {
+            if(arguments.isEmpty() || arguments.size > 2)
+                throw Exception("Invalid number of arguments provided to <minus>")
+
+            return Minus(id, arguments[0], arguments.getOrNull(1))
+        }
+    }
+}
+
+data class UnaryOperation(
+        override val id: String?,
+        val operation2: Operation,
+        val argument: MathItem
+): Apply(id, operation2) {
+    companion object Factory {
+        fun create(id: String?, operation: Operation, arguments: List<MathItem>): UnaryOperation {
+            if(arguments.size != 1)
+                throw Exception("Invalid number of arguments provided to <${operation.getIdentifier()}>")
+
+            return UnaryOperation(id, operation, arguments[0])
+        }
+    }
+}
+
+data class BinaryOperation(
+        override val id: String?,
+        val operation2: Operation,
+        val left: MathItem,
+        val right: MathItem
+): Apply(id, operation2) {
+    companion object Factory {
+        fun create(id: String?, operation: Operation, arguments: List<MathItem>): BinaryOperation {
+            if(arguments.size != 2)
+                throw Exception("Invalid number of arguments provided to <${operation.getIdentifier()}>")
+
+            return BinaryOperation(id, operation, arguments[0], arguments[1])
+        }
+    }
+}
+
+data class NAryOperation(
+        override val id: String?,
+        val operation2: Operation,
+        val arguments: List<MathItem>
+): Apply(id, operation2) {
+    companion object Factory {
+        fun create(id: String?, operation: Operation, arguments: List<MathItem>): NAryOperation {
+            if(arguments.size < 0)
+                throw Exception("Invalid number of arguments provided to <${operation.getIdentifier()}>")
+
+            return NAryOperation(id, operation, arguments)
+        }
+    }
+}
+
+
 
 sealed class MathValue : MathItem()
 
@@ -323,11 +323,14 @@ data class Cn(
         val units: String,
         val value: Double
 ): MathValue() {
-    override fun calculateUnits(): SimpleUnit {
-        TODO()
+    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
+        if(!unitsMap.containsKey(units))
+            throw Exception("Unknown units provided: $units")
+
+        return unitsMap[units]!!
     }
 
-    override fun generateString(): String {
+    override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
         return value.toString()
     }
 }
@@ -335,11 +338,11 @@ data class Cn(
 data class Ci(
         val name: String
 ): MathValue() {
-    override fun calculateUnits(): SimpleUnit {
+    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
         TODO()
     }
 
-    override fun generateString(): String {
+    override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
         TODO()
     }
 }
@@ -348,11 +351,11 @@ data class Bvar(
         val variable: Ci,
         val degree: Degree? = null
 ): MathItem() {
-    override fun calculateUnits(): SimpleUnit {
+    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
         TODO()
     }
 
-    override fun generateString(): String {
+    override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
         TODO()
     }
 }
@@ -360,8 +363,8 @@ data class Bvar(
 data class Degree(
         val order: MathValue
 ): MathItem() {
-    override fun calculateUnits(): SimpleUnit {
-        val orderUnits = order.calculateUnits()
+    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
+        val orderUnits = order.calculateUnits(variableUnits, unitsMap)
 
         if(orderUnits !is CompositeUnit || orderUnits.baseUnits.isNotEmpty())
             throw Exception("<degree> requires child to be dimensionless")
@@ -369,8 +372,8 @@ data class Degree(
         return orderUnits
     }
 
-    override fun generateString(): String {
-        return order.generateString()
+    override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
+        return order.generateString(mapOf())
     }
 }
 
@@ -378,9 +381,9 @@ enum class Operation {
     EQ, NEQ, GT, LT, GEQ, LEQ,
     PLUS, MINUS, TIMES, DIVIDE, POWER, ROOT, ABS, EXP, LN, LOG, FLOOR, CEILING, FACTORIAL,
     AND, OR, XOR, NOT,
-    DIFF,
-    SIN, COS, TAN, SEC, CSC, COT, SINH, COSH, TANH, SECH, CSCH, COTH,
-    ARCSIN, ARCCOS, ARCTAN, ARCCOSH, ARCCOT, ARCCOTH, ARCCSC, ARCCSCH, ARCSEC, ARCSECH, ARCSINH, ARCTANH;
+    DIFF;
+    /*SIN, COS, TAN, SEC, CSC, COT, SINH, COSH, TANH, SECH, CSCH, COTH,
+    ARCSIN, ARCCOS, ARCTAN, ARCCOSH, ARCCOT, ARCCOTH, ARCCSC, ARCCSCH, ARCSEC, ARCSECH, ARCSINH, ARCTANH;*/
 
     companion object Factory {
         fun getForIdentifier(name: String): Operation? {
@@ -415,6 +418,35 @@ enum class Operation {
 
         fun isValidIdentifier(name: String): Boolean {
             return getForIdentifier(name) != null
+        }
+    }
+
+    fun getIdentifier(): String {
+        return when(this) {
+            Operation.EQ -> "eq"
+            Operation.NEQ -> "neq"
+            Operation.GT -> "gt"
+            Operation.LT -> "lt"
+            Operation.GEQ -> "geq"
+            Operation.LEQ -> "leq"
+            Operation.PLUS -> "plus"
+            Operation.MINUS -> "minus"
+            Operation.TIMES -> "times"
+            Operation.DIVIDE -> "divide"
+            Operation.POWER -> "power"
+            Operation.ROOT -> "root"
+            Operation.ABS -> "abs"
+            Operation.EXP -> "exp"
+            Operation.LN -> "ln"
+            Operation.LOG -> "log"
+            Operation.FLOOR -> "floor"
+            Operation.CEILING -> "ceiling"
+            Operation.FACTORIAL -> "factorial"
+            Operation.AND -> "and"
+            Operation.OR -> "or"
+            Operation.XOR -> "xor"
+            Operation.NOT -> "not"
+            Operation.DIFF -> "diff"
         }
     }
 }

@@ -187,7 +187,19 @@ fun prefixToPowerOfTen(prefix: String): Int {
     }
 }
 
-open class SimpleUnit
+open class SimpleUnit {
+    fun canMapTo(other: SimpleUnit): Boolean {
+        if(this is BaseUnit && other is BaseUnit) {
+            return true
+        }
+        else if(this is CompositeUnit && other is CompositeUnit) {
+            return true
+        }
+        else {
+            return false
+        }
+    }
+}
 data class BaseUnit(val name: String): SimpleUnit()
 data class BaseUnitInstance(val baseUnit: BaseUnit, var exponent: Double = 1.0)
 data class CompositeUnit(val baseUnits: List<BaseUnitInstance> = listOf(), val multiply: Double = 1.0, val offset: Double = 0.0): SimpleUnit()
