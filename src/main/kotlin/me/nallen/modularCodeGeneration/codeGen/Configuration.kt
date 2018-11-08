@@ -41,6 +41,9 @@ data class Configuration(
         // And then repeat by the requested depth
         return indent.repeat(depth)
     }
+
+    val runTimeParametrisation: Boolean = parametrisationMethod == ParametrisationMethod.RUN_TIME
+    val compileTimeParametrisation: Boolean = parametrisationMethod == ParametrisationMethod.COMPILE_TIME
 }
 
 /**
