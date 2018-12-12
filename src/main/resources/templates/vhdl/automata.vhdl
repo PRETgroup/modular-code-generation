@@ -3,26 +3,19 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.config.all;
-
--- States
-type {{ item.enumName }} is (
-    {%- for location in item.locations %}
-    {{ location.macroName }}
-    {%- if not loop.last -%} , {%- endif %}
-    {%- endfor %}
-);
+use work.lib.all;
 
 -- Entity
 entity {{ item.name }} is
     port (
-        clk : in std_logic;
+        clk : in std_logic
 
 {%- for variable in item.variables %}
-    {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs'  %}
+    {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
         {% ifchanged variable.locality %}
         -- Declare {{ variable.locality }}
         {% endifchanged -%}
-        {{ variable.io }} : {{variable.direction }} {{ variable.type }};
+        {{ variable.io }} : {{variable.direction }} {{ variable.type }}
     {%- endif %}
 {%- endfor %}
 
@@ -31,6 +24,14 @@ end;
 
 -- Architecture
 architecture behavior of {{ item.name }} is
+    -- States
+    type {{ item.enumName }} is (
+{%- for location in item.locations %}
+        {{ location.macroName }}
+    {%- if not loop.last -%} , {%- endif %}
+{%- endfor %}
+    );
+
     -- Declare State
     signal state : {{ item.enumName }} := {{ item.initialLocation }};
 

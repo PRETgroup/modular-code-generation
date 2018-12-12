@@ -30,7 +30,7 @@ object Utils {
         // Switch on the type, and return the appropriate VHDL type
         return when(type) {
             null -> "void"
-            VariableType.BOOLEAN -> "std_logic"
+            VariableType.BOOLEAN -> "boolean"
             VariableType.REAL -> "signed(31 downto 0)"
         }
     }
@@ -39,7 +39,7 @@ object Utils {
         // Switch on the type, and return the appropriate default initial value
         return when(type) {
             null -> "void"
-            VariableType.BOOLEAN -> "'0'"
+            VariableType.BOOLEAN -> "false"
             VariableType.REAL -> "(others => '0')"
         }
     }
@@ -142,12 +142,6 @@ object Utils {
                 if(item.value.toDoubleOrNull() != null) {
                     "to_signed(${convertToFixedPoint(item.value.toDouble())}, 32)"
                 }
-                else if(item.value.matches(Regex("true|false", RegexOption.IGNORE_CASE))) {
-                    if(item.value.toBoolean())
-                        "'1'"
-                    else
-                        "'0'"
-                }
                 else {
                     item.value
                 }
@@ -194,7 +188,7 @@ object Utils {
             is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)
             is Negative -> "-" + padOperand(item, item.operandA, prefixData)
             is Multiply -> "FP_MULT(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
-            is Divide -> padOperand(item, item.operandA, prefixData) + " / " + padOperand(item, item.operandB, prefixData)
+            is Divide -> "FP_DIV(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
             is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Exponential -> "exp(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
         }

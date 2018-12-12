@@ -2,17 +2,19 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.lib.all;
+
 -- Entity
 entity {{ item.name }} is
     port (
-        clk : in std_logic;
+        clk : in std_logic
 
 {%- for variable in item.variables %}
-    {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs'  %}
+    {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
         {% ifchanged variable.locality %}
         -- Declare {{ variable.locality }}
         {% endifchanged -%}
-        {{ variable.io }} : {{variable.direction }} {{ variable.type }};
+        {{ variable.io }} : {{variable.direction }} {{ variable.type }}
     {%- endif %}
 {%- endfor %}
 
@@ -38,10 +40,10 @@ architecture behavior of {{ item.name }} is
 {%- for component in item.components %}
     component {{ component.name }} is
         port(
-            clk : in std_logic;
+            clk : in std_logic
     {%- for variable in component.variables %}
-        {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs' %}
-            {{ variable.io }} : {{variable.direction }} {{ variable.type }};
+        {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
+            {{ variable.io }} : {{variable.direction }} {{ variable.type }}
         {%- endif %}
     {%- endfor %}
         );
@@ -55,9 +57,9 @@ begin
 {%- for instance in item.instances %}
     {{ instance.name }} : component {{ instance.type }}
         port map(
-            clk => clk,
-    {%- for mapping in instance.mappings %}
-            {{ mapping.left }} => {{ mapping.right }};
+            clk => clk
+    {%- for mapping in instance.mappings %},
+            {{ mapping.left }} => {{ mapping.right }}
     {%- endfor %}
         );
 {% endfor %}

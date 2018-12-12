@@ -158,7 +158,6 @@ object NetworkGenerator {
         }
 
         for((destination, value) in item.ioMapping) {
-            println(signalNameMap)
             if(destination.automata.isEmpty()) {
                 rootItem.mappings.add(MappingObject(
                         Utils.createVariableName(signalNameMap[destination.variable] ?: destination.variable),

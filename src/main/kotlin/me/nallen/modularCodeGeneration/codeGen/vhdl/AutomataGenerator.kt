@@ -100,7 +100,7 @@ object AutomataGenerator {
 
             for((_, toLocation, guard, update) in item.edges.filter{it.fromLocation == location.name }) {
                 val transitionObject = TransitionObject(
-                        Utils.generateCodeForParseTreeItem(guard),
+                        Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("", signalNameMap)),
                         ArrayList(),
                         ArrayList(),
                         toLocation,
@@ -108,7 +108,7 @@ object AutomataGenerator {
                 )
 
                 for((variable, equation) in update) {
-                    transitionObject.update.add(UpdateObject(Utils.createVariableName(variable), Utils.generateCodeForParseTreeItem(equation)))
+                    transitionObject.update.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("", signalNameMap))))
                 }
 
                 transitionList.add(transitionObject)

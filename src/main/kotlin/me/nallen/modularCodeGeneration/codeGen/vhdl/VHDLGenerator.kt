@@ -21,6 +21,7 @@ class VHDLGenerator {
     companion object {
         const val SYSTEM = "system.vhdl"
         const val CONFIG_FILE = "config.vhdl"
+        const val LIBRARY_FILE = "lib.vhdl"
 
         // We need to keep track of the variables we need to delay
         private val delayedTypes = ArrayList<VariableType>()
@@ -94,6 +95,8 @@ class VHDLGenerator {
 
             // And write the content
             File(outputDir, CONFIG_FILE).writeText(content.toString())
+
+            File(outputDir, LIBRARY_FILE).writeText(this::class.java.classLoader.getResource("templates/vhdl/lib.vhdl").readText())
         }
 
         /**
