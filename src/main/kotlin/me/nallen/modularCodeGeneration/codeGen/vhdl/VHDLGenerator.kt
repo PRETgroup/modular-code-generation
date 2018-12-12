@@ -45,6 +45,10 @@ class VHDLGenerator {
                 // Generate the Source File for the Automata
                 File(outputDir, "${Utils.createFileName(item.name)}.vhdl").writeText(AutomataGenerator.generate(item, config))
             }
+            else if(item is HybridNetwork) {
+                // Generate the Source File for the Network
+                File(outputDir, "${Utils.createFileName(item.name)}.vhdl").writeText(NetworkGenerator.generate(item, config))
+            }
         }
 
         /**
@@ -86,7 +90,7 @@ class VHDLGenerator {
             content.appendln("")
             content.appendln("    constant step_size : signed(31 downto 0) := to_signed(${Utils.convertToFixedPoint(config.execution.stepSize, 16)}, 32); -- ${config.execution.stepSize}")
             content.appendln("")
-            content.appendln("end package settings;")
+            content.appendln("end package config;")
 
             // And write the content
             File(outputDir, CONFIG_FILE).writeText(content.toString())
@@ -108,7 +112,7 @@ class VHDLGenerator {
 
             // Depending on the parametrisation method, we'll do things slightly differently
             if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
-                // Compile time parametrisation means creating a C file for each instantiate
+                // Compile time parametrisation means creating a VHDL file for each instantiate
                 for((_, instance) in network.instances) {
                     // Get the instance of the item we want to generate
                     val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)

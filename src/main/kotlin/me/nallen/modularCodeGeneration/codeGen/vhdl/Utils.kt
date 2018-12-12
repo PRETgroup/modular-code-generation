@@ -45,37 +45,6 @@ object Utils {
     }
 
     /**
-     * Generates a string that does some arbitrary function on all variables of a given locality inside an automata.
-     * The arbitrary function must take in a single Variable, and return a String. In addition, a comment can be added
-     * at the start of the block of variables
-     */
-    fun performVariableFunctionForLocality(item: HybridItem, locality: Locality, function: (v: Variable) -> String, config: Configuration = Configuration(), comment: String? = null, depth: Int = 1): String {
-        val result = StringBuilder()
-
-        // We only need to do anything if there are any variables of the requested type
-        if(item.variables.any{it.locality == locality}) {
-            // If we need to generate a comment
-            if(comment != null)
-                // Generate the comment, at the correct indent, with the locality named after
-                result.appendln("${config.getIndent(depth)}-- $comment ${locality.getTextualName()}")
-
-            // Now for each variable of the right locality, we want to add the output of the arbitrary function with the
-            // variable as input
-            item.variables
-                    .filter{it.locality == locality}
-                    .sortedBy { it.type }
-                    .map { function(it) }
-                    .filter { it.isNotEmpty() }
-                    .forEach { result.appendln("${config.getIndent(depth)}$it") }
-
-            result.appendln()
-        }
-
-        // And now return the overall result
-        return result.toString()
-    }
-
-    /**
      * Generates a Folder Name from the given string(s) that conforms to C style guidelines
      */
     fun createFolderName(vararg original: String): String {
@@ -159,57 +128,30 @@ object Utils {
         // For each possible ParseTreeItem we have a different output string that will be generated
         // We recursively call these generation functions until we reach the end of the tree
         return when (item) {
-            is And -> padOperand(item, item.operandA, prefixData) + " && " + padOperand(item, item.operandB, prefixData)
-            is Or -> padOperand(item, item.operandA, prefixData) + " || " + padOperand(item, item.operandB, prefixData)
-            is Not -> "!" + padOperand(item, item.operandA, prefixData)
+            is And -> padOperand(item, item.operandA, prefixData) + " and " + padOperand(item, item.operandB, prefixData)
+            is Or -> padOperand(item, item.operandA, prefixData) + " or " + padOperand(item, item.operandB, prefixData)
+            is Not -> "not " + padOperand(item, item.operandA, prefixData)
             is GreaterThan -> padOperand(item, item.operandA, prefixData) + " > " + padOperand(item, item.operandB, prefixData)
             is GreaterThanOrEqual -> padOperand(item, item.operandA, prefixData) + " >= " + padOperand(item, item.operandB, prefixData)
             is LessThanOrEqual -> padOperand(item, item.operandA, prefixData) + " <= " + padOperand(item, item.operandB, prefixData)
             is LessThan -> padOperand(item, item.operandA, prefixData) + " < " + padOperand(item, item.operandB, prefixData)
-            is Equal -> padOperand(item, item.operandA, prefixData) + " == " + padOperand(item, item.operandB, prefixData)
+            is Equal -> padOperand(item, item.operandA, prefixData) + " = " + padOperand(item, item.operandB, prefixData)
             is NotEqual -> padOperand(item, item.operandA, prefixData) + " != " + padOperand(item, item.operandB, prefixData)
-            is FunctionCall -> {
-                // Functions have a lot of extra logic we need to do
-                // Firstly we should check if it's a delayed function call, which will have special handling
-                if(item.functionName == "delayed") {
-                    // If the name matches, and it has the correct number of arguments
-                    if(item.arguments.size == 2) {
-                        // The first argument also should be a Variable
-                        if(item.arguments[0] is me.nallen.modularCodeGeneration.parseTree.Variable) {
-                            // Get the variable name we want to delay
-                            val varName = item.arguments[0].getString()
-
-                            // If we are able to delay this variable
-                            if(prefixData.delayedVariableTypes.containsKey(varName)) {
-                                // Generate the Delayable call for this variable. It requires the type of the variable,
-                                // the name of the variable (to point to the struct), and the time that we want to fetch
-                                // from
-                                return "${createFunctionName("Delayable", generateVHDLType(prefixData.delayedVariableTypes[varName]), "Get")}(" +
-                                        "&${generateCodeForParseTreeItem(item.arguments[0], prefixData)}_delayed, " +
-                                        "${generateCodeForParseTreeItem(item.arguments[1], prefixData)})"
-                            }
-                        }
-                    }
+            is FunctionCall -> throw NotImplementedError("Custom functions are currently not supported in VHDL Generation")
+            is Literal -> {
+                if(item.value.toDoubleOrNull() != null) {
+                    "to_signed(${convertToFixedPoint(item.value.toDouble())}, 32)"
                 }
-
-                // Otherwise, let's build a function
-                val builder = StringBuilder()
-
-                // If we're in run time parametrisation, we pass the automata struct into the function for parameters
-                if(prefixData.requireSelfReferenceInFunctionCalls)
-                    builder.append("me")
-
-                // Now add each argument to the function
-                for(argument in item.arguments) {
-                    // If needed, deliminate by a comma
-                    if(builder.isNotEmpty()) builder.append(", ")
-                    builder.append(generateCodeForParseTreeItem(argument, prefixData))
+                else if(item.value.matches(Regex("true|false", RegexOption.IGNORE_CASE))) {
+                    if(item.value.toBoolean())
+                        "'1'"
+                    else
+                        "'0'"
                 }
-
-                // And then return the final function name
-                return "${Utils.createFunctionName(item.functionName)}($builder)"
+                else {
+                    item.value
+                }
             }
-            is Literal -> item.value
             is me.nallen.modularCodeGeneration.parseTree.Variable -> {
                 // Variables also have a bit of extra logic that's needed
 
@@ -219,6 +161,12 @@ object Utils {
                     return padOperand(parent ?: item, item.value!!, prefixData)
                 else {
                     // Otherwise we want to generate this variable
+
+                    // If we have a pre-determined value for this variable
+                    if(prefixData.customVariableNames.containsKey(item.name))
+                        // Then use that
+                        return prefixData.customVariableNames[item.name]!!
+
                     // It may consist of data inside structs, separated by periods
                     val parts = item.name.split(".")
                     val builder = StringBuilder()
@@ -226,18 +174,14 @@ object Utils {
                     // For each part
                     var first = true
                     for(part in parts) {
-                        // If needed, deliminate by a period
-                        if(builder.isNotEmpty()) builder.append(".")
-                        // If we have a pre-determined value for this variable
-                        if(prefixData.customVariableNames.containsKey(part))
-                            // Then use that
-                            builder.append(prefixData.customVariableNames[part]!!)
+                        // If needed, deliminate by an underscore
+                        if(!first) builder.append("_")
+
+                        // Generate the C name for this variable
+                        if(first)
+                            builder.append("${prefixData.prefix}${Utils.createVariableName(part)}")
                         else
-                            // Otherwise generate the C name for this variable
-                            if(first)
-                                builder.append("${prefixData.prefix}${Utils.createVariableName(part)}")
-                            else
-                                builder.append(Utils.createVariableName(part))
+                            builder.append(Utils.createVariableName(part))
 
                         first = false
                     }
@@ -249,7 +193,7 @@ object Utils {
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
             is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)
             is Negative -> "-" + padOperand(item, item.operandA, prefixData)
-            is Multiply -> padOperand(item, item.operandA, prefixData) + " * " + padOperand(item, item.operandB, prefixData)
+            is Multiply -> "FP_MULT(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
             is Divide -> padOperand(item, item.operandA, prefixData) + " / " + padOperand(item, item.operandB, prefixData)
             is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Exponential -> "exp(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
@@ -299,13 +243,6 @@ object Utils {
     data class PrefixData(
             // A prefix that should be placed before all variable names
             val prefix: String,
-
-            // Whether or not to require the first argument of a custom function call to be a self-reference to the
-            // object's struct
-            val requireSelfReferenceInFunctionCalls: Boolean = false,
-
-            // A set of the variables that can be delayed, and their types
-            val delayedVariableTypes: Map<String, VariableType> = HashMap(),
 
             // A set of variables whose names should be something other than the style convention
             val customVariableNames: Map<String, String> = DEFAULT_CUSTOM_VARIABLES

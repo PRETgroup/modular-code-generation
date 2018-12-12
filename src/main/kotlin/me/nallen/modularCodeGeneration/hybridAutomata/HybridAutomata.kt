@@ -164,6 +164,15 @@ enum class Locality {
             Locality.PARAMETER -> "Parameters"
         }
     }
+
+    fun getShortName(): String {
+        return when(this) {
+            Locality.INTERNAL -> "Int"
+            Locality.EXTERNAL_INPUT -> "In"
+            Locality.EXTERNAL_OUTPUT -> "Out"
+            Locality.PARAMETER -> "Param"
+        }
+    }
 }
 
 data class FunctionDefinition(
