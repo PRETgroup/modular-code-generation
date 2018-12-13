@@ -173,7 +173,8 @@ object AutomataGenerator {
                 functionObject.inputs.add(variableObject)
             }
 
-            for(internal in func.logic.variables.filter({it.locality == ParseTreeLocality.INTERNAL})) {
+            for(internal in func.logic.variables.filter({it.locality == ParseTreeLocality.INTERNAL})
+                    .filterNot({item.variables.any { search -> search.locality == Locality.PARAMETER && search.name == it.name }})) {
                 var defaultValue: Any = Utils.generateDefaultInitForType(internal.type)
                 var defaultValueString = "Unassigned default value"
                 if(internal.defaultValue != null) {
