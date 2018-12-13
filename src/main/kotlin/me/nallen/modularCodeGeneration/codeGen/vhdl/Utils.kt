@@ -133,6 +133,15 @@ object Utils {
         }
     }
 
+    fun generateBasicVHDLType(type: VariableType?): String {
+        // Switch on the type, and return the appropriate VHDL type
+        return when(type) {
+            null -> "void"
+            VariableType.BOOLEAN -> "boolean"
+            VariableType.REAL -> "signed"
+        }
+    }
+
     fun generateDefaultInitForType(type: VariableType?): String {
         // Switch on the type, and return the appropriate default initial value
         return when(type) {
@@ -265,7 +274,20 @@ object Utils {
             is LessThan -> padOperand(item, item.operandA, prefixData) + " < " + padOperand(item, item.operandB, prefixData)
             is Equal -> padOperand(item, item.operandA, prefixData) + " = " + padOperand(item, item.operandB, prefixData)
             is NotEqual -> padOperand(item, item.operandA, prefixData) + " != " + padOperand(item, item.operandB, prefixData)
-            is FunctionCall -> throw NotImplementedError("Custom functions are currently not supported in VHDL Generation")
+            is FunctionCall -> {
+                // Otherwise, let's build a function
+                val builder = StringBuilder()
+
+                // Now add each argument to the function
+                for(argument in item.arguments) {
+                    // If needed, deliminate by a comma
+                    if(builder.isNotEmpty()) builder.append(", ")
+                    builder.append(generateCodeForParseTreeItem(argument, prefixData))
+                }
+
+                // And then return the final function name
+                return "${Utils.createFunctionName(item.functionName)}($builder)"
+            }
             is Literal -> {
                 if(item.value.toDoubleOrNull() != null) {
                     "to_signed(${convertToFixedPoint(item.value.toDouble())}, 32)"
@@ -311,32 +333,32 @@ object Utils {
      *
      * This will recursively go through the Program to generate the string, including adding brackets where necessary
      */
-    fun generateCodeForProgram(program: Program, config: Configuration, depth: Int = 0, prefixData: PrefixData = PrefixData("")): String {
+    fun generateCodeForProgram(program: Program, depth: Int = 0, prefixData: PrefixData = PrefixData("")): String {
         val builder = StringBuilder()
 
-        // First, we want to declare and initialise any internal variables that exist in this program
-        program.variables.filter({it.locality == ParseTreeLocality.INTERNAL})
-                .filterNot { prefixData.customVariableNames.containsKey(it.name) }
-                .forEach { builder.appendln("${config.getIndent(depth)}${Utils.generateVHDLType(it.type)} ${Utils.createVariableName(it.name)};") }
-        if(builder.isNotEmpty())
-            builder.appendln()
+        val indent = "    ".repeat(depth)
 
         // Now, we need to go through each line
-        program.lines
-                .map {
-                    // And convert the ProgramLine into a string representation
-                    // Note that some of these will recursively call this method, as they contain their own bodies
-                    // (such as If statements)
-                    when(it) {
-                        is Statement -> "${Utils.generateCodeForParseTreeItem(it.logic, prefixData)};"
-                        is Assignment -> "${Utils.generateCodeForParseTreeItem(it.variableName, prefixData)} = ${Utils.generateCodeForParseTreeItem(it.variableValue, prefixData)};"
-                        is Return -> "return ${Utils.generateCodeForParseTreeItem(it.logic, prefixData)};"
-                        is IfStatement -> "if(${Utils.generateCodeForParseTreeItem(it.condition, prefixData)}) {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData)}\n}"
-                        is ElseIfStatement -> "else if(${Utils.generateCodeForParseTreeItem(it.condition, prefixData)}) {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData)}\n}"
-                        is ElseStatement -> "else {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData)}\n}"
-                    }
+        program.lines.forEachIndexed { index, line ->
+            // And convert the ProgramLine into a string representation
+            // Note that some of these will recursively call this method, as they contain their own bodies
+            // (such as If statements)
+            builder.appendln(when(line) {
+                is Statement -> "${Utils.generateCodeForParseTreeItem(line.logic, prefixData)};"
+                is Assignment -> "${Utils.generateCodeForParseTreeItem(line.variableName, prefixData)} := ${Utils.generateCodeForParseTreeItem(line.variableValue, prefixData)};"
+                is Return -> "return ${Utils.generateCodeForParseTreeItem(line.logic, prefixData)};"
+                is IfStatement -> "if ${Utils.generateCodeForParseTreeItem(line.condition, prefixData)} then\n${Utils.generateCodeForProgram(line.body, 1, prefixData)}\n"
+                is ElseIfStatement -> "elsif ${Utils.generateCodeForParseTreeItem(line.condition, prefixData)} then\n${Utils.generateCodeForProgram(line.body, 1, prefixData)}\n"
+                is ElseStatement -> "else\n${Utils.generateCodeForProgram(line.body, 1, prefixData)}\n"
+            }.prependIndent(indent))
+
+            // If we're in a conditional block we need to check if we need to add an end
+            if(line is IfStatement || line is ElseIfStatement || line is ElseStatement) {
+                if(index+1 >= program.lines.size || !(program.lines[index+1] is IfStatement || program.lines[index+1] is ElseIfStatement || program.lines[index+1] is ElseStatement)) {
+                    builder.appendln("end if;\n".prependIndent(indent))
                 }
-                .forEach { builder.appendln(it.prependIndent(config.getIndent(depth))) }
+            }
+        }
 
         // And return the total program
         return builder.toString().trimEnd()

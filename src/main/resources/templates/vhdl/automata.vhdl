@@ -52,6 +52,28 @@ architecture behavior of {{ item.name }} is
 {%- endif %}
 {%- endfor %}
 
+{%- if item.customFunctions|length > 0 %}
+
+    -- Declare Custom Functions
+    {%- for function in item.customFunctions %}
+    function {{ function.name }}(
+        {%- for input in function.inputs -%}
+            {%- if not loop.first %}, {% endif -%}
+            {{ input.signal }}: {{ input.type }}
+        {%- endfor -%}
+    )
+            return {{ function.returnType }} is
+        {%- for variable in function.variables %}
+        variable {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; -- {{ variable.initialValueString }}
+        {%- endfor %}
+    begin
+        {%- for line in function.logic %}
+        {{ line }}
+        {%- endfor %}
+    end {{ function.name }};
+    {%- endfor %}
+{%- endif %}
+
 begin
 
 {%- for variable in item.variables %}

@@ -133,6 +133,82 @@ object AutomataGenerator {
         }
         rootItem.initialLocation = Utils.createMacroName(item.name, item.init.state)
 
+        for(func in item.functions) {
+            val functionObject = CustomFunctionObject(
+                    Utils.createFunctionName(func.name),
+                    Utils.generateBasicVHDLType(func.returnType),
+                    ArrayList(),
+                    ArrayList(),
+                    ArrayList()
+            )
+
+            for(input in func.inputs) {
+                var defaultValue: Any = Utils.generateDefaultInitForType(input.type)
+                var defaultValueString = "Unassigned default value"
+                if(input.defaultValue != null) {
+                    defaultValue = try {
+                        input.defaultValue!!.evaluate()
+                    } catch(e: IllegalArgumentException) {
+                        Utils.generateCodeForParseTreeItem(input.defaultValue!!)
+                    }
+                    defaultValueString = input.defaultValue!!.getString()
+
+                    if(defaultValue is Boolean)
+                        defaultValue = if(defaultValue) { "true" } else { "false" }
+                    else if(defaultValue is Double)
+                        defaultValue = "to_signed(${Utils.convertToFixedPoint(defaultValue)}, 32)"
+                }
+
+                val variableObject = VariableObject(
+                        Locality.EXTERNAL_INPUT.getTextualName(),
+                        Locality.EXTERNAL_INPUT.getShortName().toLowerCase(),
+                        Utils.generateVHDLType(input.type),
+                        Utils.createVariableName(input.name, Locality.EXTERNAL_INPUT.getShortName()),
+                        Utils.createVariableName(input.name),
+                        Utils.createVariableName(input.name, "update"),
+                        defaultValue.toString(),
+                        defaultValueString
+                )
+
+                functionObject.inputs.add(variableObject)
+            }
+
+            for(internal in func.logic.variables.filter({it.locality == ParseTreeLocality.INTERNAL})) {
+                var defaultValue: Any = Utils.generateDefaultInitForType(internal.type)
+                var defaultValueString = "Unassigned default value"
+                if(internal.defaultValue != null) {
+                    defaultValue = try {
+                        internal.defaultValue!!.evaluate()
+                    } catch(e: IllegalArgumentException) {
+                        Utils.generateCodeForParseTreeItem(internal.defaultValue!!)
+                    }
+                    defaultValueString = internal.defaultValue!!.getString()
+
+                    if(defaultValue is Boolean)
+                        defaultValue = if(defaultValue) { "true" } else { "false" }
+                    else if(defaultValue is Double)
+                        defaultValue = "to_signed(${Utils.convertToFixedPoint(defaultValue)}, 32)"
+                }
+
+                val variableObject = VariableObject(
+                        Locality.INTERNAL.getTextualName(),
+                        Locality.INTERNAL.getShortName().toLowerCase(),
+                        Utils.generateVHDLType(internal.type),
+                        Utils.createVariableName(internal.name, Locality.EXTERNAL_INPUT.getShortName()),
+                        Utils.createVariableName(internal.name),
+                        Utils.createVariableName(internal.name, "update"),
+                        defaultValue.toString(),
+                        defaultValueString
+                )
+
+                functionObject.variables.add(variableObject)
+            }
+
+            functionObject.logic.addAll(Utils.generateCodeForProgram(func.logic).split("\n"))
+
+            rootItem.customFunctions.add(functionObject)
+        }
+
         // Create the context
         val context = AutomataFileContext(
                 config,
@@ -161,6 +237,7 @@ object AutomataGenerator {
             var name: String,
             var parameters: MutableList<VariableObject> = ArrayList(),
             var variables: MutableList<VariableObject> = ArrayList(),
+            var customFunctions: MutableList<CustomFunctionObject> = ArrayList(),
             var enumName: String = "",
             var locations: MutableList<LocationObject> = ArrayList(),
             var initialLocation: String = ""
@@ -175,6 +252,14 @@ object AutomataGenerator {
             var variable: String,
             var initialValue: String,
             var initialValueString: String
+    )
+
+    data class CustomFunctionObject(
+            var name: String,
+            var returnType: String,
+            var inputs: MutableList<VariableObject>,
+            var variables: MutableList<VariableObject>,
+            var logic: MutableList<String>
     )
 
     data class LocationObject(
