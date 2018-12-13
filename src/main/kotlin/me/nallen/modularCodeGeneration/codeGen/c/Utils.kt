@@ -46,11 +46,14 @@ object Utils {
      * The arbitrary function must take in a single Variable, and return a String. In addition, a comment can be added
      * at the start of the block of variables
      */
-    fun performVariableFunctionForLocality(item: HybridItem, locality: Locality, function: (v: Variable) -> String, config: Configuration = Configuration(), comment: String? = null, depth: Int = 1): String {
+    fun performVariableFunctionForLocality(item: HybridItem, locality: Locality, function: (v: Variable) -> String, config: Configuration = Configuration(), comment: String? = null, depth: Int = 1, blankStart: Boolean = false, blankEnd: Boolean = true): String {
         val result = StringBuilder()
 
         // We only need to do anything if there are any variables of the requested type
         if(item.variables.any{it.locality == locality}) {
+            if(blankStart)
+                result.appendln()
+
             // If we need to generate a comment
             if(comment != null)
                 // Generate the comment, at the correct indent, with the locality named after
@@ -65,7 +68,8 @@ object Utils {
                     .filter { it.isNotEmpty() }
                     .forEach { result.appendln("${config.getIndent(depth)}$it") }
 
-            result.appendln()
+            if(blankEnd)
+                result.appendln()
         }
 
         // And now return the overall result
