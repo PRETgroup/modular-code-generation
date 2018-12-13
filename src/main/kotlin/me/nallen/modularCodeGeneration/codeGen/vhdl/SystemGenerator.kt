@@ -34,7 +34,6 @@ object SystemGenerator {
         )
 
         for(variable in item.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
-            println(variable)
             if(variable.canBeDelayed()) {
                 throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
             }
