@@ -189,8 +189,8 @@ object Utils {
             is Negative -> "-" + padOperand(item, item.operandA, prefixData)
             is Multiply -> "FP_MULT(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
             is Divide -> "FP_DIV(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
-            is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
-            is Exponential -> "exp(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+            is SquareRoot -> throw NotImplementedError("Square Root is currently not supported in VHDL Generation")
+            is Exponential -> throw NotImplementedError("Exponential is currently not supported in VHDL Generation")
         }
     }
 

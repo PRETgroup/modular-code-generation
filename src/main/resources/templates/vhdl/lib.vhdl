@@ -25,7 +25,7 @@ package body lib is
     function FP_DIV(x: signed; y: signed)
             return signed is
     begin
-        return RESIZE(SHIFT_LEFT(x / y, x'length/2), x'length);
+        return RESIZE(SHIFT_LEFT(RESIZE(x, x'length + x'length/2), x'length/2) / y, x'length);
     end FP_DIV;
 
 end package body lib;

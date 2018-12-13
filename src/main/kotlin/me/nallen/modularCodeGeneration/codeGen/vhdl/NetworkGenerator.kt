@@ -26,7 +26,7 @@ object NetworkGenerator {
         val template = this::class.java.classLoader.getResource("templates/vhdl/network.vhdl").readText()
 
         // Generate data about the root item
-        val rootItem = NetworkFileObject(item.name)
+        val rootItem = NetworkFileObject(Utils.createTypeName(item.name))
 
         val signalNameMap = HashMap<String, String>()
 
@@ -44,7 +44,11 @@ object NetworkGenerator {
             var defaultValue: Any = Utils.generateDefaultInitForType(variable.type)
             var defaultValueString = "Unassigned default value"
             if(default != null) {
-                defaultValue = default.evaluate()
+                defaultValue = try {
+                    default.evaluate()
+                } catch(e: IllegalArgumentException) {
+                    Utils.generateCodeForParseTreeItem(default)
+                }
                 defaultValueString = default.getString()
 
                 if(defaultValue is Boolean)
@@ -69,12 +73,17 @@ object NetworkGenerator {
             else
                 signalNameMap[variable.name] = variableObject.signal
 
-            rootItem.variables.add(variableObject)
+            if(variable.locality == Locality.PARAMETER)
+                rootItem.parameters.add(variableObject)
+            else
+                rootItem.variables.add(variableObject)
         }
 
         // Depending on the parametrisation method, we'll do things slightly differently
         if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
-            // Compile time parametrisation means each sub-item will have its own component
+            // We only want to generate each definition once (because generics), so keep track of them
+            val generated = ArrayList<UUID>()
+
             for((_, instance) in item.instances) {
                 // Get the instance of the item we want to generate
                 val instantiate = item.getInstantiateForInstantiateId(instance.instantiate)
@@ -82,13 +91,21 @@ object NetworkGenerator {
                     val definition = item.getDefinitionForDefinitionId(instantiate.definition) ?: throw IllegalArgumentException("Unable to find base machine ${instantiate.name} to instantiate!")
 
                     val component = ComponentObject(
-                            Utils.createTypeName(instantiate.name)
+                            Utils.createTypeName(definition.name)
                     )
 
                     val instanceObject = InstanceObject(
                             Utils.createVariableName(instantiate.name),
-                            Utils.createTypeName(instantiate.name)
+                            Utils.createVariableName(instantiate.name, "inst"),
+                            Utils.createTypeName(definition.name)
                     )
+
+                    for((param, value) in instance.parameters) {
+                        instanceObject.parameters.add(MappingObject(
+                                Utils.createVariableName(param),
+                                Utils.generateCodeForParseTreeItem(value)
+                        ))
+                    }
 
                     for(variable in definition.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
                         if(variable.canBeDelayed()) {
@@ -104,7 +121,11 @@ object NetworkGenerator {
                         var defaultValue: Any = Utils.generateDefaultInitForType(variable.type)
                         var defaultValueString = "Unassigned default value"
                         if(default != null) {
-                            defaultValue = default.evaluate()
+                            defaultValue = try {
+                                default.evaluate()
+                            } catch(e: IllegalArgumentException) {
+                                Utils.generateCodeForParseTreeItem(default)
+                            }
                             defaultValueString = default.getString()
 
                             if(defaultValue is Boolean)
@@ -124,7 +145,10 @@ object NetworkGenerator {
                                 defaultValueString
                         )
 
-                        component.variables.add(variableObject)
+                        if(variable.locality == Locality.PARAMETER)
+                            component.parameters.add(variableObject)
+                        else
+                            component.variables.add(variableObject)
 
                         if(variable.locality == Locality.EXTERNAL_OUTPUT || variable.locality == Locality.EXTERNAL_INPUT) {
                             val localSignal = VariableObject(
@@ -148,13 +172,18 @@ object NetworkGenerator {
                         }
                     }
 
-                    rootItem.components.add(component)
+                    if (!generated.contains(instantiate.definition)) {
+                        generated.add(instantiate.definition)
+
+                        rootItem.components.add(component)
+                    }
+
                     rootItem.instances.add(instanceObject)
                 }
             }
         }
         else  {
-            throw NotImplementedError("Not yet implemented")
+            throw NotImplementedError("Run Time Parametrisation is not yet implemented for VHDL")
         }
 
         for((destination, value) in item.ioMapping) {
@@ -198,6 +227,7 @@ object NetworkGenerator {
 
     data class NetworkFileObject(
             var name: String,
+            var parameters: MutableList<VariableObject> = ArrayList(),
             var variables: MutableList<VariableObject> = ArrayList(),
             var components: MutableList<ComponentObject> = ArrayList(),
             var instances: MutableList<InstanceObject> = ArrayList(),
@@ -217,12 +247,15 @@ object NetworkGenerator {
 
     data class ComponentObject(
             var name: String,
+            var parameters: MutableList<VariableObject> = ArrayList(),
             var variables: MutableList<VariableObject> = ArrayList()
     )
 
     data class InstanceObject(
             var name: String,
+            var id: String,
             var type: String,
+            var parameters: MutableList<MappingObject> = ArrayList(),
             var mappings: MutableList<MappingObject> = ArrayList()
     )
 

@@ -110,117 +110,23 @@ class VHDLGenerator {
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
-            //For C Code we need to make sure each type is unique, so let's do that
-            makeItemsUnique(network, config)
+            // We only want to generate each definition once (because generics), so keep track of them
+            val generated = ArrayList<UUID>()
 
-            // Depending on the parametrisation method, we'll do things slightly differently
-            if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
-                // Compile time parametrisation means creating a VHDL file for each instantiate
-                for((_, instance) in network.instances) {
-                    // Get the instance of the item we want to generate
-                    val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
-                    if(instantiate != null) {
-                        // Create the parametrised copy of the automata
-                        val definition = network.getDefinitionForDefinitionId(instantiate.definition)
+            for((_, instance) in network.instances) {
+                // Get the instance of the item we want to generate
+                val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
+                val definition = network.getDefinitionForInstantiateId(instance.instantiate)
+                if(instantiate != null && definition != null) {
+                    // Only generate if we haven't generated this definition before
+                    if (!generated.contains(instantiate.definition)) {
+                        generated.add(instantiate.definition)
 
-                        val item = CodeGenManager.createParametrisedItem(network, instantiate.name, instance)
-
-                        if(definition == null || item == null)
-                            throw IllegalArgumentException("Unable to find base machine ${instantiate.name} to instantiate!")
-
-                        // Add all the delayed types that we've found
-                        delayedTypes.addAll(item.variables.filter({it.canBeDelayed()}).map({it.type}))
-
-                        // We need to create a sub-folder for all the instances. We can run into issues if this is the same
-                        // name as the overall system, so check for that too
-                        val subfolder = if(definition.name.equals(network.name, true)) { definition.name + " Files" } else { definition.name }
-
-                        // Generate the code for the parametrised item
-                        generateItem(item, File(outputDir, Utils.createFolderName(subfolder)).absolutePath, config)
+                        // Generate code for the item
+                        generateItem(definition, outputDir.absolutePath, config)
                     }
                 }
             }
-            else  {
-                // We only want to generate each definition once, so keep a track of them
-                val generated = ArrayList<UUID>()
-
-                for((_, instance) in network.instances) {
-                    // Get the instance of the item we want to generate
-                    val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
-                    val definition = network.getDefinitionForInstantiateId(instance.instantiate)
-                    if(instantiate != null && definition != null) {
-                        // Only generate if we haven't generated this definition before
-                        if (!generated.contains(instantiate.definition)) {
-                            generated.add(instantiate.definition)
-
-                            definition.name = instantiate.name
-
-                            // Add all the delayed types that we've found
-                            delayedTypes.addAll(definition.variables.filter({it.canBeDelayed()}).map({it.type}))
-
-                            // Generate code for the unparametrised item
-                            generateItem(definition, outputDir.absolutePath, config)
-                        }
-                    }
-                }
-            }
-        }
-
-        /**
-         * Makes the set of instances within the given Network unique for the desired parametrisation method.
-         */
-        private fun makeItemsUnique(network: HybridNetwork, config: Configuration, assignedNames: ArrayList<String> = ArrayList()): ArrayList<String> {
-            if(assignedNames.contains(createFileName(network.name)))
-                network.name += assignedNames.size
-
-            assignedNames.add(createFileName(network.name))
-
-            // Depending on the parametrisation method, we'll do things slightly differently
-            if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
-                // Iterate over every instance
-                for((_, instance) in network.instances) {
-                    // Get the item we're currently checking
-                    val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
-                    if(instantiate != null) {
-                        // Check if we've seen this item before
-                        if(assignedNames.contains(createFileName(instantiate.name)))
-                            // If we have, we add a number to the end
-                            instantiate.name += assignedNames.size
-
-                        // Keep track of what we've seen
-                        assignedNames.add(createFileName(instantiate.name))
-                    }
-                }
-            }
-            else  {
-                // Otherwise it's run time which means we only need to include once per definition type
-
-                // So keep track of which types we've handled
-                val generated = ArrayList<UUID>()
-                // Iterate over every instance
-                for((_, instance) in network.instances) {
-                    // Get the item we're currently checking
-                    val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
-                    if(instantiate != null) {
-                        // Check if we've seen this type before
-                        if (!generated.contains(instantiate.definition)) {
-                            // If we haven't seen it, keep track of it
-                            generated.add(instantiate.definition)
-
-                            // Check if we've seen this item before
-                            if (assignedNames.contains(createFileName(instantiate.name)))
-                            // If we have, we add a number to the end
-                                instantiate.name += assignedNames.size
-
-                            // Keep track of what we've seen
-                            assignedNames.add(createFileName(instantiate.name))
-                        }
-                    }
-                }
-            }
-
-            // Return the list of names we've seen so far
-            return assignedNames
         }
 
         /**
@@ -250,11 +156,6 @@ class VHDLGenerator {
 
             // Generate Config file
             generateConfigFile(outputDir.absolutePath, config)
-
-            // Generate Delayable files if needed
-            if(delayedTypes.isNotEmpty()) {
-                throw NotImplementedError("Delayed Types are currently not supported in VHDL Generation")
-            }
         }
     }
 }

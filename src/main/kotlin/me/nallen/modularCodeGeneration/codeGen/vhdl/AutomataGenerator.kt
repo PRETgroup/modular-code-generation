@@ -24,7 +24,7 @@ object AutomataGenerator {
         val template = this::class.java.classLoader.getResource("templates/vhdl/automata.vhdl").readText()
 
         // Generate data about the root item
-        val rootItem = AutomataFileObject(item.name)
+        val rootItem = AutomataFileObject(Utils.createTypeName(item.name))
 
         val signalNameMap = HashMap<String, String>()
 
@@ -42,7 +42,11 @@ object AutomataGenerator {
             var defaultValue: Any = Utils.generateDefaultInitForType(variable.type)
             var defaultValueString = "Unassigned default value"
             if(default != null) {
-                defaultValue = default.evaluate()
+                defaultValue = try {
+                    default.evaluate()
+                } catch(e: IllegalArgumentException) {
+                    Utils.generateCodeForParseTreeItem(default)
+                }
                 defaultValueString = default.getString()
 
                 if(defaultValue is Boolean)
@@ -67,7 +71,10 @@ object AutomataGenerator {
             else
                 signalNameMap[variable.name] = variableObject.signal
 
-            rootItem.variables.add(variableObject)
+            if(variable.locality == Locality.PARAMETER)
+                rootItem.parameters.add(variableObject)
+            else
+                rootItem.variables.add(variableObject)
         }
 
         rootItem.enumName = Utils.createMacroName(item.name, "State")
@@ -152,6 +159,7 @@ object AutomataGenerator {
 
     data class AutomataFileObject(
             var name: String,
+            var parameters: MutableList<VariableObject> = ArrayList(),
             var variables: MutableList<VariableObject> = ArrayList(),
             var enumName: String = "",
             var locations: MutableList<LocationObject> = ArrayList(),

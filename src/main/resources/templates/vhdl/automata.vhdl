@@ -7,6 +7,14 @@ use work.lib.all;
 
 -- Entity
 entity {{ item.name }} is
+{%- if item.parameters|length > 0 %}
+    generic(
+    {%- for parameter in item.parameters %}
+        {{ parameter.signal }} : {{ parameter.type }} := {{ parameter.initialValue }}
+        {%- if not loop.last -%} ; {%- endif %} -- {{ parameter.initialValueString }}
+    {%- endfor %}
+    );
+{% endif %}
     port (
         clk : in std_logic
 
