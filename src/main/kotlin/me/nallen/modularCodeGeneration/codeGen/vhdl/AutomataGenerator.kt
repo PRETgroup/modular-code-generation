@@ -50,7 +50,7 @@ object AutomataGenerator {
                 defaultValueString = default.getString()
 
                 if(defaultValue is Boolean)
-                    defaultValue = if(defaultValue) { "'1'" } else { "'0'" }
+                    defaultValue = if(defaultValue) { "true" } else { "false" }
                 else if(defaultValue is Double)
                     defaultValue = "to_signed(${Utils.convertToFixedPoint(defaultValue)}, 32)"
             }

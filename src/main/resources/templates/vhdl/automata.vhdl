@@ -77,7 +77,7 @@ begin
 {%- endfor %}
 
     begin
-        if(clk'event and clk = '1') then
+        if clk'event and clk = '1' then
             -- Run the state machine for transition logic
 {%- for location in item.locations %}
             {% if not loop.first -%} els {%- endif -%}

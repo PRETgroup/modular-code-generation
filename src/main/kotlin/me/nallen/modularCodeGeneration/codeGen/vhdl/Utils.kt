@@ -19,6 +19,104 @@ object Utils {
     // defined in another file
     val DEFAULT_CUSTOM_VARIABLES = mapOf("STEP_SIZE" to "STEP_SIZE")
 
+    private val KEYWORDS = arrayOf("abs",
+            "access",
+            "after",
+            "alias",
+            "all",
+            "and",
+            "architecture",
+            "array",
+            "assert",
+            "attribute",
+            "begin",
+            "block",
+            "body",
+            "buffer",
+            "bus",
+            "case",
+            "component",
+            "configuration",
+            "constant",
+            "disconnect",
+            "downto",
+            "else",
+            "elsif",
+            "end",
+            "entity",
+            "exit",
+            "file",
+            "for",
+            "function",
+            "generate",
+            "generic",
+            "group",
+            "guarded",
+            "if",
+            "impure",
+            "in",
+            "inertial",
+            "inout",
+            "is",
+            "label",
+            "library",
+            "linkage",
+            "literal",
+            "loop",
+            "map",
+            "mod",
+            "nand",
+            "new",
+            "next",
+            "nor",
+            "not",
+            "null",
+            "of",
+            "on",
+            "open",
+            "or",
+            "others",
+            "out",
+            "package",
+            "port",
+            "postponed",
+            "procedure",
+            "process",
+            "pure",
+            "range",
+            "record",
+            "register",
+            "reject",
+            "rem",
+            "report",
+            "return",
+            "rol",
+            "ror",
+            "select",
+            "severity",
+            "shared",
+            "signal",
+            "sla",
+            "sll",
+            "sra",
+            "srl",
+            "subtype",
+            "then",
+            "to",
+            "transport",
+            "type",
+            "unaffected",
+            "units",
+            "until",
+            "use",
+            "variable",
+            "wait",
+            "when",
+            "while",
+            "with",
+            "xnor",
+            "xor")
+
     fun convertToFixedPoint(number: Number, fractionalBits: Int = 16): Int {
         return (number.toDouble() * Math.pow(2.0, fractionalBits.toDouble())).roundToInt()
     }
@@ -49,7 +147,12 @@ object Utils {
      */
     fun createFolderName(vararg original: String): String {
         // Folder Names use UpperCamelCase
-        return original.convertWordDelimiterConvention(NamingConvention.UPPER_CAMEL_CASE)
+        var out = original.convertWordDelimiterConvention(NamingConvention.UPPER_CAMEL_CASE)
+        if(KEYWORDS.contains(out.toLowerCase())) {
+            out = createFolderName("f", *original)
+        }
+
+        return out
     }
 
     /**
@@ -57,7 +160,12 @@ object Utils {
      */
     fun createFileName(vararg original: String): String {
         // File Names use snake_case
-        return original.convertWordDelimiterConvention(NamingConvention.SNAKE_CASE)
+        var out = original.convertWordDelimiterConvention(NamingConvention.SNAKE_CASE)
+        if(KEYWORDS.contains(out.toLowerCase())) {
+            out = createFileName("f", *original)
+        }
+
+        return out
     }
 
     /**
@@ -65,7 +173,12 @@ object Utils {
      */
     fun createTypeName(vararg original: String): String {
         // Type Names use UpperCamelCase
-        return original.convertWordDelimiterConvention(NamingConvention.UPPER_CAMEL_CASE)
+        var out = original.convertWordDelimiterConvention(NamingConvention.UPPER_CAMEL_CASE)
+        if(KEYWORDS.contains(out.toLowerCase())) {
+            out = createTypeName("p", *original)
+        }
+
+        return out
     }
 
     /**
@@ -73,7 +186,12 @@ object Utils {
      */
     fun createVariableName(vararg original: String): String {
         // Variable Names use snake_case
-        return original.convertWordDelimiterConvention(NamingConvention.SNAKE_CASE)
+        var out = original.convertWordDelimiterConvention(NamingConvention.SNAKE_CASE)
+        if(KEYWORDS.contains(out.toLowerCase())) {
+            out = createVariableName("p", *original)
+        }
+
+        return out
     }
 
     /**
@@ -81,7 +199,12 @@ object Utils {
      */
     fun createFunctionName(vararg original: String): String {
         // Function Names use UpperCamelCase
-        return original.convertWordDelimiterConvention(NamingConvention.UPPER_CAMEL_CASE)
+        var out = original.convertWordDelimiterConvention(NamingConvention.UPPER_CAMEL_CASE)
+        if(KEYWORDS.contains(out.toLowerCase())) {
+            out = createFunctionName("p", *original)
+        }
+
+        return out
     }
 
     /**
@@ -89,7 +212,12 @@ object Utils {
      */
     fun createMacroName(vararg original: String): String {
         // Macro Names use UPPER_SNAKE_CASE
-        return original.convertWordDelimiterConvention(NamingConvention.UPPER_SNAKE_CASE)
+        var out = original.convertWordDelimiterConvention(NamingConvention.UPPER_SNAKE_CASE)
+        if(KEYWORDS.contains(out.toLowerCase())) {
+            out = createMacroName("p", *original)
+        }
+
+        return out
     }
 
     /**
@@ -163,25 +291,8 @@ object Utils {
 
                     // It may consist of data inside structs, separated by periods
                     val parts = item.name.split(".")
-                    val builder = StringBuilder()
 
-                    // For each part
-                    var first = true
-                    for(part in parts) {
-                        // If needed, deliminate by an underscore
-                        if(!first) builder.append("_")
-
-                        // Generate the C name for this variable
-                        if(first)
-                            builder.append("${prefixData.prefix}${Utils.createVariableName(part)}")
-                        else
-                            builder.append(Utils.createVariableName(part))
-
-                        first = false
-                    }
-
-                    // And return the final variable name
-                    return builder.toString()
+                    return Utils.createVariableName(*parts.toTypedArray())
                 }
             }
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
