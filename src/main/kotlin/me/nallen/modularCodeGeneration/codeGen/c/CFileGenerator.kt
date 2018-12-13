@@ -21,7 +21,7 @@ object CFileGenerator {
     private var requireSelfReferenceInFunctionCalls: Boolean = false
     private val delayedVariableTypes: HashMap<String, VariableType> = HashMap()
 
-    private var automata: HybridAutomata = HybridAutomata()
+    private var automata: HybridItem = HybridAutomata()
     private var objects: ArrayList<CodeObject> = ArrayList()
 
     /**
@@ -29,8 +29,7 @@ object CFileGenerator {
      */
     fun generate(item: HybridItem, config: Configuration = Configuration()): String {
         this.config = config
-        if(item is HybridAutomata)
-            automata = item
+        automata = item
 
         // If we're generating code for a Hybrid Network
         if(item is HybridNetwork) {
@@ -191,11 +190,31 @@ object CFileGenerator {
         // Create the method, which just takes in a self reference
         result.appendln("void ${Utils.createFunctionName(item.name, "Init")}(${Utils.createTypeName(item.name)}* me) {")
 
+        // If it's an Automata then we have some extra logic to include
+        if(item is HybridAutomata)
+            result.append(generateAutomataIntialisationFunction(item))
+
+        // If it's a Network then we have some extra logic to include
+        if(item is HybridNetwork) {
+            // We need to initialise every object
+
+            if(objects.size > 0)
+                result.appendln("${config.getIndent(1)}// Initialise Sub-objects")
+            var first = true
+            for ((name, instance) in objects) {
+                if (!first)
+                    result.appendln()
+                first = false
+
+                result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Init")}(&me->${Utils.createVariableName(name, "data")});")
+            }
+        }
+
         // Now we want to initialise all outputs from the automaton
-        result.append(Utils.performVariableFunctionForLocality(item, Locality.EXTERNAL_OUTPUT, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
+        result.append(Utils.performVariableFunctionForLocality(item, Locality.EXTERNAL_OUTPUT, CFileGenerator::generateVariableInitialisation, config, "Initialise", blankStart = true, blankEnd = false))
 
         // As well as any internal variables
-        result.append(Utils.performVariableFunctionForLocality(item, Locality.INTERNAL, CFileGenerator::generateVariableInitialisation, config, "Initialise"))
+        result.append(Utils.performVariableFunctionForLocality(item, Locality.INTERNAL, CFileGenerator::generateVariableInitialisation, config, "Initialise", blankStart = true, blankEnd = false))
 
         // Now we need to look for delayed variables to initialise too
         if (item.variables.any({ it.canBeDelayed() })) {
@@ -213,22 +232,7 @@ object CFileGenerator {
             }
         }
 
-        // If it's an Automata then we have some extra logic to include
-        if(item is HybridAutomata)
-            result.append(generateAutomataIntialisationFunction(item))
 
-        // If it's a Network then we have some extra logic to include
-        if(item is HybridNetwork) {
-            // We need to initialise every object
-            var first = true
-            for ((name, instance) in objects) {
-                if (!first)
-                    result.appendln()
-                first = false
-
-                result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Init")}(&me->${Utils.createVariableName(name, "data")});")
-            }
-        }
 
         // Close the method
         result.appendln("}")
@@ -258,9 +262,13 @@ object CFileGenerator {
         var initValue: String = generateDefaultInitForType(variable.type)
 
         // But, if an initial value for the variable is provided then let's use that
-        if(automata.init.valuations.containsKey(variable.name)) {
+        if(automata is HybridAutomata && (automata as HybridAutomata).init.valuations.containsKey(variable.name)) {
             // Generate code that represents the initial value for the variable
-            initValue = Utils.generateCodeForParseTreeItem(automata.init.valuations[variable.name] !!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))
+            initValue = Utils.generateCodeForParseTreeItem((automata as HybridAutomata).init.valuations[variable.name] !!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))
+        }
+        else if(automata is HybridNetwork && (automata as HybridNetwork).ioMapping.containsKey(AutomataVariablePair("", variable.name))) {
+            val customVariableNames = (automata as HybridNetwork).instances.mapValues({ "me->${ Utils.createVariableName(it.key, "data")}" })
+            initValue = Utils.generateCodeForParseTreeItem((automata as HybridNetwork).ioMapping[AutomataVariablePair("", variable.name)] !!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customVariableNames))
         }
 
         // Now we can return the code that initialises the variable
