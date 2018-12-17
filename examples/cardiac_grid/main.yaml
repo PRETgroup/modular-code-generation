@@ -1,0 +1,205 @@
+name: cardiac_grid
+
+system:
+  outputs:
+    cell_v: REAL
+
+  definitions:
+    Cell:
+      inputs:
+        g: REAL
+      outputs:
+        v: REAL
+      parameters:
+        C1:
+          type: REAL
+          default: 29100
+        C2:
+          type: REAL
+          default: -1600
+        C3:
+          type: REAL
+          default: 0.0009988
+        C4:
+          type: REAL
+          default: -530
+        C5:
+          type: REAL
+          default: 120
+        C6:
+          type: REAL
+          default: 1000
+        vT:
+          type: REAL
+          default: 44.5
+        vR:
+          type: REAL
+          default: 30
+        vOmax:
+          type: REAL
+          default: 131.1
+      locations:
+        RP:
+          invariant: v == 0 && g < vT
+          flow:
+            v: 0
+            t: 1
+          transitions:
+            - to: ST
+              guard: g >= vT
+              update:
+                theta: C3 / t
+        ST:
+          invariant: v < vT && g > 0
+          flow:
+            v: C6 * g
+            t: 1
+          transitions:
+            - to: RRP
+              guard: g <= 0 && v < vT
+            - to: UP
+              guard: v >= vT
+        UP:
+          invariant: v < vOmax - 80 * theta
+          flow:
+            v: C1
+            t: 1
+          transitions:
+            - to: ERP
+              guard: v >= vOmax - 80 * theta
+        ERP:
+          invariant: v > vR
+          flow:
+            v: f(theta)
+            t: 1
+          transitions:
+            - to: RRP
+              guard: v <= vR
+              update:
+                t: 0
+        RRP:
+          invariant: v > 0 && g < vT
+          flow:
+            v: C2
+            t: 1
+          transitions:
+            - to: ST
+              guard: g >= vT
+              update:
+                theta: C3 / t
+      functions:
+        f:
+          inputs:
+            theta: REAL
+          logic: |
+            return C4 - C5 * theta
+      initialisation:
+        state: RP
+        valuations:
+          v: 0
+          t: 0
+
+    Stimulator:
+      outputs:
+        v: REAL
+      parameters:
+        rate:
+          type: REAL
+          default: 1
+        pulse_width:
+          type: REAL
+          default: 0.01
+        amplitude:
+          type: REAL
+          default: 131.1
+      locations:
+        count:
+          invariant: t < rate
+          flow:
+            t: 1
+          transitions:
+            - to: stimulate
+              guard: t >= rate
+              update:
+                t: 0
+                v: amplitude
+        stimulate:
+          invariant: t < pulse_width
+          flow:
+            t: 1
+          transitions:
+            - to: count
+              guard: t >= pulse_width
+              update:
+                t: 0
+                v: 0
+      initialisation:
+        state: count
+
+  instances:
+    Cell0: Cell
+    Cell1: Cell
+    Cell2: Cell
+    Cell3: Cell
+    Cell4: Cell
+    Cell5: Cell
+    Cell6: Cell
+    Cell7: Cell
+    Cell8: Cell
+    Cell9: Cell
+    Cell10: Cell
+    Cell11: Cell
+    Cell12: Cell
+    Cell13: Cell
+    Cell14: Cell
+    Cell15: Cell
+    Cell16: Cell
+    Cell17: Cell
+    Cell18: Cell
+    Cell19: Cell
+    Cell20: Cell
+    Cell21: Cell
+    Cell22: Cell
+    Cell23: Cell
+    Cell24: Cell
+    Stimulator: Stimulator
+
+
+  mappings:
+    cell_v: Cell24.v
+
+    Cell0.g: Stimulator.v + 0.9 * (Cell1.v - Cell0.v) + 0.9 * (Cell5.v - Cell0.v) + 0.6 * (Cell6.v - Cell0.v)
+    Cell1.g: 0.9 * (Cell0.v - Cell1.v) + 0.9 * (Cell2.v - Cell1.v) + 0.6 * (Cell5.v - Cell1.v) + 0.9 * (Cell6.v - Cell1.v) + 0.6 * (Cell7.v - Cell1.v)
+    Cell2.g: 0.9 * (Cell1.v - Cell2.v) + 0.9 * (Cell3.v - Cell2.v) + 0.6 * (Cell6.v - Cell2.v) + 0.9 * (Cell7.v - Cell2.v) + 0.6 * (Cell8.v - Cell2.v)
+    Cell3.g: 0.9 * (Cell2.v - Cell3.v) + 0.9 * (Cell4.v - Cell3.v) + 0.6 * (Cell7.v - Cell3.v) + 0.9 * (Cell8.v - Cell3.v) + 0.6 * (Cell9.v - Cell3.v)
+    Cell4.g: 0.9 * (Cell3.v - Cell4.v) + 0.6 * (Cell8.v - Cell4.v) + 0.9 * (Cell9.v - Cell4.v)
+    Cell5.g: 0.9 * (Cell0.v - Cell5.v) + 0.6 * (Cell1.v - Cell5.v) + 0.9 * (Cell6.v - Cell5.v) + 0.9 * (Cell10.v - Cell5.v) + 0.6 * (Cell11.v - Cell5.v)
+    Cell6.g: 0.6 * (Cell0.v - Cell6.v) + 0.9 * (Cell1.v - Cell6.v) + 0.6 * (Cell2.v - Cell6.v) + 0.9 * (Cell5.v - Cell6.v) + 0.9 * (Cell7.v - Cell6.v) + 0.6 * (Cell10.v - Cell6.v) + 0.9 * (Cell11.v - Cell6.v) + 0.6 * (Cell12.v - Cell6.v)
+    Cell7.g: 0.6 * (Cell1.v - Cell7.v) + 0.9 * (Cell2.v - Cell7.v) + 0.6 * (Cell3.v - Cell7.v) + 0.9 * (Cell6.v - Cell7.v) + 0.9 * (Cell8.v - Cell7.v) + 0.6 * (Cell11.v - Cell7.v) + 0.9 * (Cell12.v - Cell7.v) + 0.6 * (Cell13.v - Cell7.v)
+    Cell8.g: 0.6 * (Cell2.v - Cell8.v) + 0.9 * (Cell3.v - Cell8.v) + 0.6 * (Cell4.v - Cell8.v) + 0.9 * (Cell7.v - Cell8.v) + 0.9 * (Cell9.v - Cell8.v) + 0.6 * (Cell12.v - Cell8.v) + 0.9 * (Cell13.v - Cell8.v) + 0.6 * (Cell14.v - Cell8.v)
+    Cell9.g: 0.6 * (Cell3.v - Cell9.v) + 0.9 * (Cell4.v - Cell9.v) + 0.9 * (Cell8.v - Cell9.v) + 0.6 * (Cell13.v - Cell9.v) + 0.9 * (Cell14.v - Cell9.v)
+    Cell10.g: 0.9 * (Cell5.v - Cell10.v) + 0.6 * (Cell6.v - Cell10.v) + 0.9 * (Cell11.v - Cell10.v) + 0.9 * (Cell15.v - Cell10.v) + 0.6 * (Cell16.v - Cell10.v)
+    Cell11.g: 0.6 * (Cell5.v - Cell11.v) + 0.9 * (Cell6.v - Cell11.v) + 0.6 * (Cell7.v - Cell11.v) + 0.9 * (Cell10.v - Cell11.v) + 0.9 * (Cell12.v - Cell11.v) + 0.6 * (Cell15.v - Cell11.v) + 0.9 * (Cell16.v - Cell11.v) + 0.6 * (Cell17.v - Cell11.v)
+    Cell12.g: 0.6 * (Cell6.v - Cell12.v) + 0.9 * (Cell7.v - Cell12.v) + 0.6 * (Cell8.v - Cell12.v) + 0.9 * (Cell11.v - Cell12.v) + 0.9 * (Cell13.v - Cell12.v) + 0.6 * (Cell16.v - Cell12.v) + 0.9 * (Cell17.v - Cell12.v) + 0.6 * (Cell18.v - Cell12.v)
+    Cell13.g: 0.6 * (Cell7.v - Cell13.v) + 0.9 * (Cell8.v - Cell13.v) + 0.6 * (Cell9.v - Cell13.v) + 0.9 * (Cell12.v - Cell13.v) + 0.9 * (Cell14.v - Cell13.v) + 0.6 * (Cell17.v - Cell13.v) + 0.9 * (Cell18.v - Cell13.v) + 0.6 * (Cell19.v - Cell13.v)
+    Cell14.g: 0.6 * (Cell8.v - Cell14.v) + 0.9 * (Cell9.v - Cell14.v) + 0.9 * (Cell13.v - Cell14.v) + 0.6 * (Cell18.v - Cell14.v) + 0.9 * (Cell19.v - Cell14.v)
+    Cell15.g: 0.9 * (Cell10.v - Cell15.v) + 0.6 * (Cell11.v - Cell15.v) + 0.9 * (Cell16.v - Cell15.v) + 0.9 * (Cell20.v - Cell15.v) + 0.6 * (Cell21.v - Cell15.v)
+    Cell16.g: 0.6 * (Cell10.v - Cell16.v) + 0.9 * (Cell11.v - Cell16.v) + 0.6 * (Cell12.v - Cell16.v) + 0.9 * (Cell15.v - Cell16.v) + 0.9 * (Cell17.v - Cell16.v) + 0.6 * (Cell20.v - Cell16.v) + 0.9 * (Cell21.v - Cell16.v) + 0.6 * (Cell22.v - Cell16.v)
+    Cell17.g: 0.6 * (Cell11.v - Cell17.v) + 0.9 * (Cell12.v - Cell17.v) + 0.6 * (Cell13.v - Cell17.v) + 0.9 * (Cell16.v - Cell17.v) + 0.9 * (Cell18.v - Cell17.v) + 0.6 * (Cell21.v - Cell17.v) + 0.9 * (Cell22.v - Cell17.v) + 0.6 * (Cell23.v - Cell17.v)
+    Cell18.g: 0.6 * (Cell12.v - Cell18.v) + 0.9 * (Cell13.v - Cell18.v) + 0.6 * (Cell14.v - Cell18.v) + 0.9 * (Cell17.v - Cell18.v) + 0.9 * (Cell19.v - Cell18.v) + 0.6 * (Cell22.v - Cell18.v) + 0.9 * (Cell23.v - Cell18.v) + 0.6 * (Cell24.v - Cell18.v)
+    Cell19.g: 0.6 * (Cell13.v - Cell19.v) + 0.9 * (Cell14.v - Cell19.v) + 0.9 * (Cell18.v - Cell19.v) + 0.6 * (Cell23.v - Cell19.v) + 0.9 * (Cell24.v - Cell19.v)
+    Cell20.g: 0.9 * (Cell15.v - Cell20.v) + 0.6 * (Cell16.v - Cell20.v) + 0.9 * (Cell21.v - Cell20.v)
+    Cell21.g: 0.6 * (Cell15.v - Cell21.v) + 0.9 * (Cell16.v - Cell21.v) + 0.6 * (Cell17.v - Cell21.v) + 0.9 * (Cell20.v - Cell21.v) + 0.9 * (Cell22.v - Cell21.v)
+    Cell22.g: 0.6 * (Cell16.v - Cell22.v) + 0.9 * (Cell17.v - Cell22.v) + 0.6 * (Cell18.v - Cell22.v) + 0.9 * (Cell21.v - Cell22.v) + 0.9 * (Cell23.v - Cell22.v)
+    Cell23.g: 0.6 * (Cell17.v - Cell23.v) + 0.9 * (Cell18.v - Cell23.v) + 0.6 * (Cell19.v - Cell23.v) + 0.9 * (Cell22.v - Cell23.v) + 0.9 * (Cell24.v - Cell23.v)
+    Cell24.g: 0.6 * (Cell18.v - Cell24.v) + 0.9 * (Cell19.v - Cell24.v) + 0.9 * (Cell23.v - Cell24.v)
+
+codegenConfig:
+  execution:
+    stepSize: 0.0001
+    simulationTime: 100
+  logging:
+    enable: false
+  parametrisationMethod: COMPILE_TIME
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: false
