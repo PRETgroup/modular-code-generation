@@ -32,6 +32,7 @@ end;
 
 -- Architecture
 architecture behavior of {{ item.name }} is
+{%- if item.locations|length > 1 %}
     -- States
     type {{ item.enumName }} is (
 {%- for location in item.locations %}
@@ -42,6 +43,7 @@ architecture behavior of {{ item.name }} is
 
     -- Declare State
     signal state : {{ item.enumName }} := {{ item.initialLocation }};
+{%- endif %}
 
 {%- for variable in item.variables %}
 {%- if variable.locality != 'Inputs' %}
@@ -86,8 +88,10 @@ begin
 {%- endfor %}
 
     process(clk)
+{%- if item.locations|length > 1 %}
         -- Initialise State
         variable state_update : {{ item.enumName }} := {{ item.initialLocation }};
+{%- endif %}
 
 {%- for variable in item.variables %}
     {%- if variable.locality != 'Parameters' and variable.locality != 'Inputs' %}
@@ -100,8 +104,9 @@ begin
 
     begin
         if clk'event and clk = '1' then
+{%- if item.locations|length > 1 %}
             -- Run the state machine for transition logic
-{%- for location in item.locations %}
+    {%- for location in item.locations %}
             {% if not loop.first -%} els {%- endif -%}
             if state = {{ location.macroName }} then -- Logic for state {{ location.name }}
 
@@ -140,13 +145,66 @@ begin
                 end if;
             {%- endif %}
 
-{%- endfor %}
-{%- if item.locations|length > 0 %}
+    {%- endfor %}
             end if;
-{%- endif %}
 
             -- Map State to Signal
             state <= state_update;
+{%- elif item.locations|length > 0 %}
+    {%- if item.locations[0].transitions|length > 1 %}
+        {%- for transition in item.locations[0].transitions %}
+            {% if not loop.first -%} els {%- endif -%}
+            if {{ transition.guard }} then
+
+                {%- if transition.flow|length > 0 %}
+                -- Perform Flow Operations
+                {%- endif %}
+
+                {%- for update in transition.flow %}
+                {{ update.variable }} := {{ update.equation }};
+                {%- endfor %}
+
+                {%- if transition.flow|length > 0 %}
+                {% endif %}
+
+                {%- if transition.update|length > 0 %}
+                -- Perform Update Operations
+                {%- endif %}
+
+                {%- for update in transition.update %}
+                {{ update.variable }} := {{ update.equation }};
+                {%- endfor %}
+
+                {%- if transition.update|length > 0 %}
+                {% endif %}
+        {% endfor %}
+        {%- if location.transitions|length > 0 %}
+            end if;
+        {%- endif %}
+    {%- elif item.locations[0].transitions|length > 0 %}
+            {%- if item.locations[0].transitions[0].flow|length > 0 %}
+            -- Perform Flow Operations
+            {%- endif %}
+
+            {%- for update in item.locations[0].transitions[0].flow %}
+            {{ update.variable }} := {{ update.equation }};
+            {%- endfor %}
+
+            {%- if item.locations[0].transitions[0].flow|length > 0 %}
+            {% endif %}
+
+            {%- if item.locations[0].transitions[0].update|length > 0 %}
+            -- Perform Update Operations
+            {%- endif %}
+
+            {%- for update in item.locations[0].transitions[0].update %}
+            {{ update.variable }} := {{ update.equation }};
+            {%- endfor %}
+
+            {%- if item.locations[0].transitions[0].update|length > 0 %}
+            {% endif %}
+    {%- endif %}
+{%- endif %}
 
 {%- for variable in item.variables %}
     {%- if variable.locality != 'Parameters' and variable.locality != 'Inputs' %}
