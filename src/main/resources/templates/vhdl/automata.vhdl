@@ -133,10 +133,8 @@ begin
 
                     {%- if location.name != transition.nextStateName %}
                     -- Next state is {{ transition.nextStateName }}
-                    {%- else %}
-                    -- Remain in this state
-                    {%- endif %}
                     state_update := {{ transition.nextState }};
+                    {%- endif %}
             {% endfor %}
             {%- if location.transitions|length > 0 %}
                 end if;
