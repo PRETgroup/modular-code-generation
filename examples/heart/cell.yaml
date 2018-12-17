@@ -92,8 +92,8 @@ locations:
           v_x: 0.3 * v
           v_y: 0.0 * v
           v_z: 0.7 * v
-          theta: v / 44.5
-          f_theta: f(v / 44.5)
+          theta: v / V_T
+          f_theta: f(v / V_T)
   q1:
     invariant: v < V_T && g > 0 && (pacing_rate <= 0 || t_auto < pacing_rate)
     flow:
