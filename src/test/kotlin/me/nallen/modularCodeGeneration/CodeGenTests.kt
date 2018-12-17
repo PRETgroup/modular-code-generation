@@ -19,7 +19,7 @@ class CodeGenTests : StringSpec() {
 
                 if(main.exists() && main.isFile) {
 
-                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " Code For  $it") {
+                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " C Code For  $it") {
                         val imported = Importer.import(main.absolutePath)
 
                         val network = imported.first
@@ -54,6 +54,27 @@ class CodeGenTests : StringSpec() {
                         "Can Compile Code For $it" {
 
                         }.config(enabled = false)
+                    }
+                }
+            }
+        }
+
+        File("examples").list().forEach {
+            val folder = File("examples", it)
+            if(folder.isDirectory) {
+                val main = File(folder, "main.yaml")
+
+                if(main.exists() && main.isFile) {
+                    if(it != "heart") {
+                        ("Can Generate VHDL Code For  $it") {
+                            val imported = Importer.import(main.absolutePath)
+
+                            val network = imported.first
+                            var config = imported.second
+
+                            config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
+                            CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                        }
                     }
                 }
             }
