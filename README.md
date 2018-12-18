@@ -48,14 +48,14 @@ This executable JAR file can then be run with the following arguments:
 | Flag | Description |
 |---|---|
 | pos. 0 | **Required.** Path to the HAML Document for which you want to generate code for. |
-| `-l`<br/>`--language` | The language to generate code for. Valid options are: `C`.<br /><br/>**Default:** `C` |
+| `-l`<br/>`--language` | The language to generate code for. Valid options are: `C`, `VHDL`.<br /><br/>**Default:** `C` |
 | `-o`<br/>`--output` | The directory to store the generated code in.<br/><br/>**Default:** `output` |
 
 #### Example Commands
 
-Generate **C code** for the file **MY_SPEC.yaml**:
+Generate **VHDL code** for the file **MY_SPEC.yaml**:
 
-`java -jar piha.jar MY_SPEC.yaml --language C`
+`java -jar piha.jar MY_SPEC.yaml --language VHDL`
 
 Generate **C code** for the file **MY_SPEC.yaml** and put it in the folder **my_folder**:
 
