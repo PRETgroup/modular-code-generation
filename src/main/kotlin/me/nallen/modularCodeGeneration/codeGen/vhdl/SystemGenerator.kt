@@ -2,10 +2,10 @@ package me.nallen.modularCodeGeneration.codeGen.vhdl
 
 import com.hubspot.jinjava.Jinjava
 import me.nallen.modularCodeGeneration.codeGen.Configuration
+import me.nallen.modularCodeGeneration.codeGen.vhdl.Utils.VariableObject
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.Locality
-import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
-import me.nallen.modularCodeGeneration.parseTree.evaluate
+import me.nallen.modularCodeGeneration.hybridAutomata.Variable
 
 /**
  * The class that contains methods to do with the generation of the main runnable file for the system
@@ -38,38 +38,7 @@ object SystemGenerator {
                 throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
             }
 
-            val default: ParseTreeItem? = if(variable.locality == Locality.PARAMETER) {
-                variable.defaultValue
-            } else {
-                null
-            }
-
-            var defaultValue: Any = Utils.generateDefaultInitForType(variable.type)
-            var defaultValueString = "Unassigned default value"
-            if(default != null) {
-                defaultValue = try {
-                    default.evaluate()
-                } catch(e: IllegalArgumentException) {
-                    Utils.generateCodeForParseTreeItem(default)
-                }
-                defaultValueString = default.getString()
-
-                if(defaultValue is Boolean)
-                    defaultValue = if(defaultValue) { "true" } else { "false" }
-                else if(defaultValue is Double)
-                    defaultValue = "to_signed(${Utils.convertToFixedPoint(defaultValue)}, 32)"
-            }
-
-            val variableObject = VariableObject(
-                    variable.locality.getTextualName(),
-                    variable.locality.getShortName().toLowerCase(),
-                    Utils.generateVHDLType(variable.type),
-                    Utils.createVariableName(variable.name, variable.locality.getShortName()),
-                    Utils.createVariableName(variable.name),
-                    Utils.createVariableName(variable.name, "update"),
-                    defaultValue.toString(),
-                    defaultValueString
-            )
+            val variableObject = VariableObject.create(variable)
 
             variables.add(variableObject)
 
@@ -79,16 +48,7 @@ object SystemGenerator {
                 component.variables.add(variableObject)
 
             if(variable.locality == Locality.EXTERNAL_OUTPUT || variable.locality == Locality.EXTERNAL_INPUT) {
-                val localSignal = VariableObject(
-                        Locality.INTERNAL.getTextualName(),
-                        Locality.INTERNAL.getShortName().toLowerCase(),
-                        Utils.generateVHDLType(variable.type),
-                        Utils.createVariableName(instanceObject.name, variable.name, variable.locality.getShortName()),
-                        Utils.createVariableName(instanceObject.name, variable.name),
-                        Utils.createVariableName(instanceObject.name, variable.name, "update"),
-                        defaultValue.toString(),
-                        defaultValueString
-                )
+                val localSignal = VariableObject.create(Variable(Utils.createVariableName(instanceObject.name, variable.name), variable.type, Locality.INTERNAL, variable.defaultValue, variable.delayableBy))
 
                 variables.add(localSignal)
                 instanceObject.mappings.add(MappingObject(
@@ -143,17 +103,6 @@ object SystemGenerator {
             var instance: InstanceObject,
             var variables: MutableList<VariableObject> = ArrayList(),
             var mappings: MutableList<MappingObject> = ArrayList()
-    )
-
-    data class VariableObject(
-            var locality: String,
-            var direction: String,
-            var type: String,
-            var io: String,
-            var signal: String,
-            var variable: String,
-            var initialValue: String,
-            var initialValueString: String
     )
 
     data class ComponentObject(

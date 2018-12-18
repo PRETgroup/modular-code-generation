@@ -374,4 +374,50 @@ object Utils {
             // A set of variables whose names should be something other than the style convention
             val customVariableNames: Map<String, String> = DEFAULT_CUSTOM_VARIABLES
     )
+
+
+
+    data class VariableObject(
+            var locality: String,
+            var direction: String,
+            var type: String,
+            var io: String,
+            var signal: String,
+            var variable: String,
+            var initialValue: String,
+            var initialValueString: String
+    ) {
+        companion object {
+            fun create(variable: Variable, valuations: Map<String, ParseTreeItem> = HashMap()): VariableObject {
+                val default: ParseTreeItem? = valuations[variable.name] ?: variable.defaultValue
+
+                var defaultValue: Any = Utils.generateDefaultInitForType(variable.type)
+                var defaultValueString = "Unassigned default value"
+                if (default != null) {
+                    defaultValue = try {
+                        default.evaluate()
+                    } catch (e: IllegalArgumentException) {
+                        Utils.generateCodeForParseTreeItem(default)
+                    }
+                    defaultValueString = default.getString()
+
+                    if (defaultValue is Boolean)
+                        defaultValue = if(defaultValue) { "true" } else { "false" }
+                    else if (defaultValue is Double)
+                        defaultValue = "to_signed(${Utils.convertToFixedPoint(defaultValue)}, 32)"
+                }
+
+                return VariableObject(
+                        variable.locality.getTextualName(),
+                        variable.locality.getShortName().toLowerCase(),
+                        Utils.generateVHDLType(variable.type),
+                        Utils.createVariableName(variable.name, variable.locality.getShortName()),
+                        Utils.createVariableName(variable.name),
+                        Utils.createVariableName(variable.name, "update"),
+                        defaultValue.toString(),
+                        defaultValueString
+                )
+            }
+        }
+    }
 }

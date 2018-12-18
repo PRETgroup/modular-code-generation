@@ -6,10 +6,9 @@ import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.hybridAutomata.Locality
 import me.nallen.modularCodeGeneration.parseTree.*
 import me.nallen.modularCodeGeneration.parseTree.Variable
-import java.util.*
+import me.nallen.modularCodeGeneration.codeGen.vhdl.Utils.VariableObject
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
-import kotlin.math.sign
 
 /**
  * The class that contains methods to do with the generation of Header Files for the Hybrid Item
@@ -33,38 +32,7 @@ object AutomataGenerator {
                 throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
             }
 
-            val default: ParseTreeItem? = if(variable.locality == Locality.PARAMETER) {
-                variable.defaultValue
-            } else {
-                item.init.valuations[variable.name]
-            }
-
-            var defaultValue: Any = Utils.generateDefaultInitForType(variable.type)
-            var defaultValueString = "Unassigned default value"
-            if(default != null) {
-                defaultValue = try {
-                    default.evaluate()
-                } catch(e: IllegalArgumentException) {
-                    Utils.generateCodeForParseTreeItem(default)
-                }
-                defaultValueString = default.getString()
-
-                if(defaultValue is Boolean)
-                    defaultValue = if(defaultValue) { "true" } else { "false" }
-                else if(defaultValue is Double)
-                    defaultValue = "to_signed(${Utils.convertToFixedPoint(defaultValue)}, 32)"
-            }
-
-            val variableObject = VariableObject(
-                    variable.locality.getTextualName(),
-                    variable.locality.getShortName().toLowerCase(),
-                    Utils.generateVHDLType(variable.type),
-                    Utils.createVariableName(variable.name, variable.locality.getShortName()),
-                    Utils.createVariableName(variable.name),
-                    Utils.createVariableName(variable.name, "update"),
-                    defaultValue.toString(),
-                    defaultValueString
-            )
+            val variableObject = VariableObject.create(variable, item.init.valuations)
 
             if(variable.locality == Locality.EXTERNAL_INPUT)
                 signalNameMap[variable.name] = variableObject.io
@@ -143,66 +111,12 @@ object AutomataGenerator {
             )
 
             for(input in func.inputs) {
-                var defaultValue: Any = Utils.generateDefaultInitForType(input.type)
-                var defaultValueString = "Unassigned default value"
-                if(input.defaultValue != null) {
-                    defaultValue = try {
-                        input.defaultValue!!.evaluate()
-                    } catch(e: IllegalArgumentException) {
-                        Utils.generateCodeForParseTreeItem(input.defaultValue!!)
-                    }
-                    defaultValueString = input.defaultValue!!.getString()
-
-                    if(defaultValue is Boolean)
-                        defaultValue = if(defaultValue) { "true" } else { "false" }
-                    else if(defaultValue is Double)
-                        defaultValue = "to_signed(${Utils.convertToFixedPoint(defaultValue)}, 32)"
-                }
-
-                val variableObject = VariableObject(
-                        Locality.EXTERNAL_INPUT.getTextualName(),
-                        Locality.EXTERNAL_INPUT.getShortName().toLowerCase(),
-                        Utils.generateVHDLType(input.type),
-                        Utils.createVariableName(input.name, Locality.EXTERNAL_INPUT.getShortName()),
-                        Utils.createVariableName(input.name),
-                        Utils.createVariableName(input.name, "update"),
-                        defaultValue.toString(),
-                        defaultValueString
-                )
-
-                functionObject.inputs.add(variableObject)
+                functionObject.inputs.add(VariableObject.create(me.nallen.modularCodeGeneration.hybridAutomata.Variable(input.name, input.type, Locality.EXTERNAL_INPUT, input.defaultValue)))
             }
 
             for(internal in func.logic.variables.filter({it.locality == ParseTreeLocality.INTERNAL})
                     .filterNot({item.variables.any { search -> search.locality == Locality.PARAMETER && search.name == it.name }})) {
-                var defaultValue: Any = Utils.generateDefaultInitForType(internal.type)
-                var defaultValueString = "Unassigned default value"
-                if(internal.defaultValue != null) {
-                    defaultValue = try {
-                        internal.defaultValue!!.evaluate()
-                    } catch(e: IllegalArgumentException) {
-                        Utils.generateCodeForParseTreeItem(internal.defaultValue!!)
-                    }
-                    defaultValueString = internal.defaultValue!!.getString()
-
-                    if(defaultValue is Boolean)
-                        defaultValue = if(defaultValue) { "true" } else { "false" }
-                    else if(defaultValue is Double)
-                        defaultValue = "to_signed(${Utils.convertToFixedPoint(defaultValue)}, 32)"
-                }
-
-                val variableObject = VariableObject(
-                        Locality.INTERNAL.getTextualName(),
-                        Locality.INTERNAL.getShortName().toLowerCase(),
-                        Utils.generateVHDLType(internal.type),
-                        Utils.createVariableName(internal.name, Locality.EXTERNAL_INPUT.getShortName()),
-                        Utils.createVariableName(internal.name),
-                        Utils.createVariableName(internal.name, "update"),
-                        defaultValue.toString(),
-                        defaultValueString
-                )
-
-                functionObject.variables.add(variableObject)
+                functionObject.variables.add(VariableObject.create(me.nallen.modularCodeGeneration.hybridAutomata.Variable(internal.name, internal.type, Locality.INTERNAL, internal.defaultValue)))
             }
 
             functionObject.logic.addAll(Utils.generateCodeForProgram(func.logic).split("\n"))
@@ -242,17 +156,6 @@ object AutomataGenerator {
             var enumName: String = "",
             var locations: MutableList<LocationObject> = ArrayList(),
             var initialLocation: String = ""
-    )
-
-    data class VariableObject(
-            var locality: String,
-            var direction: String,
-            var type: String,
-            var io: String,
-            var signal: String,
-            var variable: String,
-            var initialValue: String,
-            var initialValueString: String
     )
 
     data class CustomFunctionObject(
