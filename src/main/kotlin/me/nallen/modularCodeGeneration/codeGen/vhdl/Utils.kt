@@ -354,7 +354,7 @@ object Utils {
 
             // If we're in a conditional block we need to check if we need to add an end
             if(line is IfStatement || line is ElseIfStatement || line is ElseStatement) {
-                if(index+1 >= program.lines.size || !(program.lines[index+1] is IfStatement || program.lines[index+1] is ElseIfStatement || program.lines[index+1] is ElseStatement)) {
+                if(index+1 >= program.lines.size || !(program.lines[index+1] is ElseIfStatement || program.lines[index+1] is ElseStatement)) {
                     builder.appendln("end if;\n".prependIndent(indent))
                 }
             }
