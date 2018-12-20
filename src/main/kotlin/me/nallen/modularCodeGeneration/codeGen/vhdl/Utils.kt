@@ -319,7 +319,14 @@ object Utils {
             }
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
             is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)
-            is Negative -> "-" + padOperand(item, item.operandA, prefixData)
+            is Negative -> {
+                if(item.operandA is Literal && (item.operandA as Literal).value.toDoubleOrNull() != null) {
+                    padOperand(item, Literal((-1 * (item.operandA as Literal).value.toDouble()).toString()), prefixData)
+                }
+                else {
+                    "-" + padOperand(item, item.operandA, prefixData)
+                }
+            }
             is Multiply -> "FP_MULT(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
             is Divide -> "FP_DIV(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
             is SquareRoot -> throw NotImplementedError("Square Root is currently not supported in VHDL Generation")
