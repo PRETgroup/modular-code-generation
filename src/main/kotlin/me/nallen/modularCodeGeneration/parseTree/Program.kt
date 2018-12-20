@@ -52,7 +52,7 @@ data class Program(
      * In addition, it is recommended to provide the return type of any functions so that variable types can be
      * accurately captured
      */
-    fun collectVariables(existing: List<VariableDeclaration> = ArrayList(), knownFunctionTypes: Map<String, VariableType?> = LinkedHashMap()): Program {
+    fun collectVariables(existing: List<VariableDeclaration> = ArrayList(), knownFunctionTypes: Map<String, VariableType?> = LinkedHashMap()): Map<String, VariableType> {
         val knownVariables = LinkedHashMap<String, VariableType>()
 
         // First, we need to record that we know all the external variables
@@ -88,23 +88,18 @@ data class Program(
                 is Return -> checkParseTreeForNewVariable(line.logic, knownVariables, knownFunctionTypes)
                 is IfStatement -> {
                     checkParseTreeForNewVariable(line.condition, knownVariables, knownFunctionTypes)
-                    bodiesToParse.add(line.body)
+                    knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes))
                 }
                 is ElseIfStatement -> {
                     checkParseTreeForNewVariable(line.condition, knownVariables, knownFunctionTypes)
-                    bodiesToParse.add(line.body)
+                    knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes))
                 }
-                is ElseStatement -> bodiesToParse.add(line.body)
+                is ElseStatement -> knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes))
             }
         }
 
-        // Now we can go through all of the sub-programs and collect variables from them
-        for(body in bodiesToParse) {
-            body.collectVariables(variables, knownFunctionTypes)
-        }
-
-        // Return the program for chaining
-        return this
+        // Return the list of variables found
+        return knownVariables
     }
 
     /**

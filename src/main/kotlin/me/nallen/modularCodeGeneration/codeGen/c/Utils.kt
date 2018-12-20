@@ -263,15 +263,17 @@ object Utils {
      *
      * This will recursively go through the Program to generate the string, including adding brackets where necessary
      */
-    fun generateCodeForProgram(program: Program, config: Configuration, depth: Int = 0, prefixData: PrefixData = PrefixData("")): String {
+    fun generateCodeForProgram(program: Program, config: Configuration, depth: Int = 0, prefixData: PrefixData = PrefixData(""), innerProgram: Boolean = false): String {
         val builder = StringBuilder()
 
-        // First, we want to declare and initialise any internal variables that exist in this program
-        program.variables.filter({it.locality == ParseTreeLocality.INTERNAL})
-                .filterNot { prefixData.customVariableNames.containsKey(it.name) }
-                .forEach { builder.appendln("${config.getIndent(depth)}${Utils.generateCType(it.type)} ${Utils.createVariableName(it.name)};") }
-        if(builder.isNotEmpty())
-            builder.appendln()
+        // First, we want to declare and initialise any internal variables that exist in this program, if it's not an inner program
+        if(!innerProgram) {
+            program.variables.filter({it.locality == ParseTreeLocality.INTERNAL})
+                    .filterNot { prefixData.customVariableNames.containsKey(it.name) }
+                    .forEach { builder.appendln("${config.getIndent(depth)}${Utils.generateCType(it.type)} ${Utils.createVariableName(it.name)};") }
+            if(builder.isNotEmpty())
+                builder.appendln()
+        }
 
         // Now, we need to go through each line
         program.lines
@@ -283,9 +285,9 @@ object Utils {
                         is Statement -> "${Utils.generateCodeForParseTreeItem(it.logic, prefixData)};"
                         is Assignment -> "${Utils.generateCodeForParseTreeItem(it.variableName, prefixData)} = ${Utils.generateCodeForParseTreeItem(it.variableValue, prefixData)};"
                         is Return -> "return ${Utils.generateCodeForParseTreeItem(it.logic, prefixData)};"
-                        is IfStatement -> "if(${Utils.generateCodeForParseTreeItem(it.condition, prefixData)}) {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData)}\n}"
-                        is ElseIfStatement -> "else if(${Utils.generateCodeForParseTreeItem(it.condition, prefixData)}) {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData)}\n}"
-                        is ElseStatement -> "else {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData)}\n}"
+                        is IfStatement -> "if(${Utils.generateCodeForParseTreeItem(it.condition, prefixData)}) {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData, true)}\n}"
+                        is ElseIfStatement -> "else if(${Utils.generateCodeForParseTreeItem(it.condition, prefixData)}) {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData, true)}\n}"
+                        is ElseStatement -> "else {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData, true)}\n}"
                     }
                 }
                 .forEach { builder.appendln(it.prependIndent(config.getIndent(depth))) }
