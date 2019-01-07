@@ -117,10 +117,6 @@ object Utils {
             "xnor",
             "xor")
 
-    fun convertToFixedPoint(number: Number, fractionalBits: Int = 16): Int {
-        return (number.toDouble() * Math.pow(2.0, fractionalBits.toDouble())).roundToInt()
-    }
-
     /**
      * Convert our VariableType to a VHDL type
      */
@@ -290,7 +286,7 @@ object Utils {
             }
             is Literal -> {
                 if(item.value.toDoubleOrNull() != null) {
-                    "to_signed(${convertToFixedPoint(item.value.toDouble())}, 32)"
+                    "CREATE_FP(${item.value.toDouble()})"
                 }
                 else {
                     item.value
@@ -411,7 +407,7 @@ object Utils {
                     if (defaultValue is Boolean)
                         defaultValue = if(defaultValue) { "true" } else { "false" }
                     else if (defaultValue is Double)
-                        defaultValue = "to_signed(${Utils.convertToFixedPoint(defaultValue)}, 32)"
+                        defaultValue = "CREATE_FP($defaultValue)"
                 }
 
                 return VariableObject(

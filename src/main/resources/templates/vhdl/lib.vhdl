@@ -4,6 +4,14 @@ use ieee.numeric_std.all;
 
 package lib is
 
+    -- Generate a 16.16 Fixed Point number from a base 10 integer
+    function CREATE_FP(x: integer)
+            return signed;
+
+    -- Generate a 16.16 Fixed Point number from a base 10 real number
+    function CREATE_FP(x: real)
+            return signed;
+
     -- A function to perform Fixed Point Multiplication between two numbers
     function FP_MULT(x: signed; y: signed)
             return signed;
@@ -15,6 +23,21 @@ package lib is
 end package lib;
 
 package body lib is
+
+    function CREATE_FP(x: integer)
+            return signed is
+    begin
+        return to_signed(x * (2 ** 16), 32);
+    end CREATE_FP;
+
+    function CREATE_FP(x: real)
+            return signed is
+        variable presult : real;
+    begin
+        presult := x * (2.0**16);
+
+        return to_signed(integer(presult), 32);
+    end CREATE_FP;
 
     function FP_MULT(x: signed; y: signed)
             return signed is

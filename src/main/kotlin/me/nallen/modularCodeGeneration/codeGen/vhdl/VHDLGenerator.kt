@@ -87,15 +87,18 @@ class VHDLGenerator {
             content.appendln("use ieee.std_logic_1164.all;")
             content.appendln("use ieee.numeric_std.all;")
             content.appendln("")
+            content.appendln("use work.lib.all;")
+            content.appendln("")
             content.appendln("package config is")
             content.appendln("")
-            content.appendln("    constant step_size : signed(31 downto 0) := to_signed(${Utils.convertToFixedPoint(config.execution.stepSize, 16)}, 32); -- ${config.execution.stepSize}")
+            content.appendln("    constant step_size : signed(31 downto 0) := CREATE_FP(${config.execution.stepSize});")
             content.appendln("")
             content.appendln("end package config;")
 
             // And write the content
             File(outputDir, CONFIG_FILE).writeText(content.toString())
 
+            // Generate the Fixed Point library
             File(outputDir, LIBRARY_FILE).writeText(this::class.java.classLoader.getResource("templates/vhdl/lib.vhdl").readText())
         }
 
