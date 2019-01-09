@@ -17,6 +17,13 @@ entity {{ item.name }} is
 {% endif %}
     port (
         clk : in std_logic
+{%- if config.runTimeParametrisation %};
+        start : in boolean;
+        finish : out boolean;
+
+        -- Declare State
+        state : in {{ item.enumName }}
+{%- endif %}
 
 {%- for variable in item.variables %}
     {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
@@ -41,8 +48,11 @@ architecture behavior of {{ item.name }} is
 {%- endfor %}
     );
 
+{%- if config.compileTimeParametrisation %}
+
     -- Declare State
     signal state : {{ item.enumName }} := {{ item.initialLocation }};
+{%- endif %}
 {%- endif %}
 
 {%- for variable in item.variables %}

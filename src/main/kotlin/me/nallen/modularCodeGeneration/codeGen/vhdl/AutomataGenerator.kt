@@ -32,14 +32,14 @@ object AutomataGenerator {
                 throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
             }
 
-            val variableObject = VariableObject.create(variable, item.init.valuations)
+            val variableObject = VariableObject.create(variable, runtimeParametrisation = config.runTimeParametrisation)
 
-            if(variable.locality == Locality.EXTERNAL_INPUT)
+            if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.EXTERNAL_OUTPUT || (variable.locality == Locality.PARAMETER && config.runTimeParametrisation))
                 signalNameMap[variable.name] = variableObject.io
             else
                 signalNameMap[variable.name] = variableObject.signal
 
-            if(variable.locality == Locality.PARAMETER)
+            if(variable.locality == Locality.PARAMETER && !config.runTimeParametrisation)
                 rootItem.parameters.add(variableObject)
             else
                 rootItem.variables.add(variableObject)

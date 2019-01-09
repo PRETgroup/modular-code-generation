@@ -16,6 +16,10 @@ entity {{ item.name }} is
 {% endif %}
     port (
         clk : in std_logic
+{%- if config.runTimeParametrisation %};
+        start : in boolean;
+        finish : out boolean
+{%- endif %}
 
 {%- for variable in item.variables %}
     {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
@@ -57,6 +61,10 @@ architecture behavior of {{ item.name }} is
     {%- endif %}
         port(
             clk : in std_logic
+    {%- if config.runTimeParametrisation %};
+            start : in boolean;
+            finish : out boolean
+    {%- endif %}
     {%- for variable in component.variables %}
         {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
             {{ variable.io }} : {{variable.direction }} {{ variable.type }}
@@ -88,7 +96,40 @@ begin
         );
 {% endfor %}
 
-{%- if item.mappings|length > 0 %}
+{%- if config.runTimeParametrisation %}
+    -- Perform Runtime function
+    process(clk)
+        variable count : integer range 0 to {{ item.runtimeMappings|length }} := {{ item.runtimeMappings|length }};
+    begin
+        if clk'event and clk = '1' then
+        {%- for runtimeMapping in item.runtimeMappings %}
+            {% if not loop.first -%} els {%- endif -%}
+            if count = {{ loop.index0 }} then
+                {%- for mapping in runtimeMapping.mappings %}
+                {{ mapping.left }} <= {{ mapping.right }};
+                {%- endfor %}
+
+                if {{ runtimeMapping.finishSignal }} then
+                    count := count + 1
+                end if;
+        {%- endfor %}
+            {% if item.runtimeMappings|length > 0 -%} els {%- endif -%}
+            if count = {{ item.runtimeMappings|length }} then
+            {%- for mapping in item.mappings %}
+                {{ mapping.left }} <= {{ mapping.right }};
+            {%- endfor %}
+
+                finish <= true;
+
+                if start then
+                    count := 0;
+                    finish <= false;
+                end if;
+            end if;
+        end if;
+    end process;
+{% else %}
+    {%- if item.mappings|length > 0 %}
     -- Perform Mapping
     process(clk)
     begin
@@ -98,5 +139,6 @@ begin
         {%- endfor %}
         end if;
     end process;
+    {%- endif %}
 {%- endif %}
 end architecture;

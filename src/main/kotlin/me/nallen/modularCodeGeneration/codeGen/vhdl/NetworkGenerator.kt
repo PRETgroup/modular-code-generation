@@ -7,6 +7,7 @@ import me.nallen.modularCodeGeneration.codeGen.vhdl.Utils.VariableObject
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.hybridAutomata.Locality
 import me.nallen.modularCodeGeneration.hybridAutomata.Variable
+import me.nallen.modularCodeGeneration.parseTree.VariableType
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -33,28 +34,28 @@ object NetworkGenerator {
                 throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
             }
 
-            val variableObject = VariableObject.create(variable)
+            val variableObject = VariableObject.create(variable, runtimeParametrisation = config.runTimeParametrisation)
 
-            if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.EXTERNAL_OUTPUT)
+            if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.EXTERNAL_OUTPUT || (variable.locality == Locality.PARAMETER && config.runTimeParametrisation))
                 signalNameMap[variable.name] = variableObject.io
             else
                 signalNameMap[variable.name] = variableObject.signal
 
-            if(variable.locality == Locality.PARAMETER)
+            if(variable.locality == Locality.PARAMETER && !config.runTimeParametrisation)
                 rootItem.parameters.add(variableObject)
             else
                 rootItem.variables.add(variableObject)
         }
 
         // Depending on the parametrisation method, we'll do things slightly differently
-        if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
+        if(config.compileTimeParametrisation) {
             // We only want to generate each definition once (because generics), so keep track of them
             val generated = ArrayList<UUID>()
 
-            for((_, instance) in item.instances) {
+            for((name, instance) in item.instances) {
                 // Get the instance of the item we want to generate
                 val instantiate = item.getInstantiateForInstantiateId(instance.instantiate)
-                if(instantiate != null) {
+                if (instantiate != null) {
                     val definition = item.getDefinitionForDefinitionId(instantiate.definition) ?: throw IllegalArgumentException("Unable to find base machine ${instantiate.name} to instantiate!")
 
                     val component = ComponentObject(
@@ -67,27 +68,27 @@ object NetworkGenerator {
                             Utils.createTypeName(definition.name)
                     )
 
-                    for((param, value) in instance.parameters) {
+                    for ((param, value) in instance.parameters) {
                         instanceObject.parameters.add(MappingObject(
                                 Utils.createVariableName(param),
                                 Utils.generateCodeForParseTreeItem(value)
                         ))
                     }
 
-                    for(variable in definition.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
-                        if(variable.canBeDelayed()) {
+                    for (variable in definition.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
+                        if (variable.canBeDelayed()) {
                             throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
                         }
 
                         val variableObject = VariableObject.create(variable)
 
-                        if(variable.locality == Locality.PARAMETER)
+                        if (variable.locality == Locality.PARAMETER)
                             component.parameters.add(variableObject)
                         else
                             component.variables.add(variableObject)
 
-                        if(variable.locality == Locality.EXTERNAL_OUTPUT || variable.locality == Locality.EXTERNAL_INPUT) {
-                            val localSignal = VariableObject.create(Variable(Utils.createVariableName(instanceObject.name, variable.name), variable.type, Locality.INTERNAL, variable.defaultValue, variable.delayableBy))
+                        if (variable.locality == Locality.EXTERNAL_OUTPUT || variable.locality == Locality.EXTERNAL_INPUT) {
+                            val localSignal = VariableObject.create(Variable(Utils.createVariableName(name, variable.name), variable.type, Locality.INTERNAL, variable.defaultValue, variable.delayableBy))
 
                             rootItem.variables.add(localSignal)
                             instanceObject.mappings.add(MappingObject(
@@ -95,7 +96,7 @@ object NetworkGenerator {
                                     Utils.createVariableName(instanceObject.name, variable.name)
                             ))
 
-                            signalNameMap["${instanceObject.name}.${variable.name}"] = localSignal.signal
+                            signalNameMap["${name}.${variable.name}"] = localSignal.signal
                         }
                     }
 
@@ -109,8 +110,95 @@ object NetworkGenerator {
                 }
             }
         }
-        else  {
-            throw NotImplementedError("Run Time Parametrisation is not yet implemented for VHDL")
+        else {
+            // We only want to generate each definition once (because run-time parametrisation), so keep track of them
+            val generated = ArrayList<UUID>()
+
+            for((name, instance) in item.instances) {
+                // Get the instance of the item we want to generate
+                val instantiate = item.getInstantiateForInstantiateId(instance.instantiate)
+                if (instantiate != null) {
+                    val definition = item.getDefinitionForDefinitionId(instantiate.definition) ?: throw IllegalArgumentException("Unable to find base machine ${instantiate.name} to instantiate!")
+
+                    val component = ComponentObject(
+                            Utils.createTypeName(definition.name)
+                    )
+
+                    val instanceObject = InstanceObject(
+                            Utils.createVariableName(instantiate.name),
+                            Utils.createVariableName(instantiate.name, "inst"),
+                            Utils.createTypeName(definition.name)
+                    )
+
+                    instanceObject.mappings.add(MappingObject(
+                            "start",
+                            Utils.createVariableName(instanceObject.name, "start")
+                    ))
+
+                    instanceObject.mappings.add(MappingObject(
+                            "finish",
+                            Utils.createVariableName(instanceObject.name, "finish")
+                    ))
+
+                    val runtimeMappingObject = RuntimeMappingObject(Utils.createVariableName(instanceObject.name, "finish"))
+
+                    runtimeMappingObject.mappings.add(MappingObject(
+                            Utils.createVariableName(instanceObject.name, "start"),
+                            "true"
+                    ))
+
+                    for (variable in definition.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
+                        if (variable.canBeDelayed()) {
+                            throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
+                        }
+
+                        val defaultValue = if (instance.parameters.containsKey(variable.name)) {
+                            instance.parameters[variable.name]
+                        } else {
+                            variable.defaultValue
+                        }
+
+                        val variableObject = VariableObject.create(variable.copy(defaultValue = defaultValue), runtimeParametrisation = true)
+
+                        component.variables.add(variableObject)
+
+                        if (variable.locality == Locality.EXTERNAL_OUTPUT || variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.PARAMETER) {
+                            val localSignal = VariableObject.create(Variable(Utils.createVariableName(name, variable.name), variable.type, Locality.INTERNAL, defaultValue, variable.delayableBy))
+
+                            rootItem.variables.add(localSignal)
+                            instanceObject.mappings.add(MappingObject(
+                                    Utils.createVariableName(variable.name, variable.locality.getShortName()),
+                                    Utils.createVariableName(instanceObject.name, variable.name)
+                            ))
+
+                            if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.PARAMETER) {
+                                runtimeMappingObject.mappings.add(MappingObject(
+                                        Utils.createVariableName(instanceObject.name, variable.name),
+                                        localSignal.signal
+                                ))
+                            }
+                            else {
+                                runtimeMappingObject.mappings.add(MappingObject(
+                                        localSignal.signal,
+                                        Utils.createVariableName(instanceObject.name, variable.name)
+                                ))
+                            }
+
+                            signalNameMap["${name}.${variable.name}"] = localSignal.signal
+                        }
+                    }
+
+                    rootItem.runtimeMappings.add(runtimeMappingObject)
+
+                    if (!generated.contains(instantiate.definition)) {
+                        generated.add(instantiate.definition)
+
+                        rootItem.components.add(component)
+
+                        rootItem.instances.add(instanceObject)
+                    }
+                }
+            }
         }
 
         for((destination, value) in item.ioMapping) {
@@ -158,7 +246,8 @@ object NetworkGenerator {
             var variables: MutableList<VariableObject> = ArrayList(),
             var components: MutableList<ComponentObject> = ArrayList(),
             var instances: MutableList<InstanceObject> = ArrayList(),
-            var mappings: MutableList<MappingObject> = ArrayList()
+            var mappings: MutableList<MappingObject> = ArrayList(),
+            var runtimeMappings: MutableList<RuntimeMappingObject> = ArrayList()
     )
 
     data class ComponentObject(
@@ -178,5 +267,10 @@ object NetworkGenerator {
     data class MappingObject(
             var left: String,
             var right: String
+    )
+
+    data class RuntimeMappingObject(
+            var finishSignal: String,
+            var mappings: MutableList<MappingObject> = ArrayList()
     )
 }

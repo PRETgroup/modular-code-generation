@@ -391,7 +391,7 @@ object Utils {
             var initialValueString: String
     ) {
         companion object {
-            fun create(variable: Variable, valuations: Map<String, ParseTreeItem> = HashMap()): VariableObject {
+            fun create(variable: Variable, valuations: Map<String, ParseTreeItem> = HashMap(), runtimeParametrisation: Boolean = false): VariableObject {
                 val default: ParseTreeItem? = valuations[variable.name] ?: variable.defaultValue
 
                 var defaultValue: Any = Utils.generateDefaultInitForType(variable.type)
@@ -410,9 +410,14 @@ object Utils {
                         defaultValue = "CREATE_FP($defaultValue)"
                 }
 
+                val locality = if(runtimeParametrisation && variable.locality == Locality.PARAMETER)
+                    Locality.EXTERNAL_INPUT
+                else
+                    variable.locality
+
                 return VariableObject(
-                        variable.locality.getTextualName(),
-                        variable.locality.getShortName().toLowerCase(),
+                        locality.getTextualName(),
+                        locality.getShortName().toLowerCase(),
                         Utils.generateVHDLType(variable.type),
                         Utils.createVariableName(variable.name, variable.locality.getShortName()),
                         Utils.createVariableName(variable.name),
