@@ -97,38 +97,63 @@ begin
 {% endfor %}
 
 {%- if config.runTimeParametrisation %}
-    -- Perform Runtime function
-    process(clk)
-        variable count : integer range 0 to {{ item.runtimeMappings|length }} := {{ item.runtimeMappings|length }};
+    -- Perform Runtime functions for each instance
+    {%- for runtimeMappingProcess in item.runtimeMappingProcesses %}
+    {{ runtimeMappingProcess.name }}: process(clk)
+        variable count : integer range 0 to {{ runtimeMappingProcess.runtimeMappings|length }} := {{ runtimeMappingProcess.runtimeMappings|length }};
     begin
         if clk'event and clk = '1' then
-        {%- for runtimeMapping in item.runtimeMappings %}
-            {% if not loop.first -%} els {%- endif -%}
-            if count = {{ loop.index0 }} then
-                {%- for mapping in runtimeMapping.mappings %}
-                {{ mapping.left }} <= {{ mapping.right }};
-                {%- endfor %}
-
-                if {{ runtimeMapping.finishSignal }} then
+            -- First let's do some transitions
+            if count < {{ runtimeMappingProcess.runtimeMappings|length }} then
+                if {{ runtimeMappingProcess.finishSignal }} then
                     count := count + 1
                 end if;
-        {%- endfor %}
-            {% if item.runtimeMappings|length > 0 -%} els {%- endif -%}
-            if count = {{ item.runtimeMappings|length }} then
-            {%- for mapping in item.mappings %}
-                {{ mapping.left }} <= {{ mapping.right }};
-            {%- endfor %}
-
-                finish <= true;
-
+            elsif count = {{ runtimeMappingProcess.runtimeMappings|length }} then
                 if start then
                     count := 0;
                     finish <= false;
                 end if;
             end if;
+
+            -- Then, state logic
+        {%- for runtimeMapping in runtimeMappingProcess.runtimeMappings %}
+            {% if not loop.first -%} els {%- endif -%}
+            if count = {{ loop.index0 }} then
+                {%- for mapping in runtimeMapping.mappings %}
+                {{ mapping.left }} <= {{ mapping.right }};
+                {%- endfor %}
+        {%- endfor %}
+            elsif count = {{ runtimeMappingProcess.runtimeMappings|length }} then
+                {{ runtimeMappingProcess.processDoneSignal }} <= true;
+            end if;
         end if;
     end process;
-{% else %}
+    {%- endfor %}
+
+    -- Perform Runtime mapping function
+    process(clk)
+        variable count : integer range 0 to 2 := 2
+    begin
+        if clk'event and clk = '1' then
+            if count = 0 then
+                if {{ item.runtimeProcessDoneSignal }} then
+                    count = 1;
+                end if;
+            elsif count = 1 then
+    {%- for mapping in item.mappings %}
+                {{ mapping.left }} <= {{ mapping.right }};
+    {%- endfor %}
+
+                count = 2;
+            elsif count = 2 then
+                if start then
+                    count = 0;
+                end if;
+            end if;
+
+        end if;
+    end process;
+{%- else %}
     {%- if item.mappings|length > 0 %}
     -- Perform Mapping
     process(clk)

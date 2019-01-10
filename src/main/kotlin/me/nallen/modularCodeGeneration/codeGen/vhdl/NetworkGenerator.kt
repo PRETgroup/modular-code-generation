@@ -7,6 +7,8 @@ import me.nallen.modularCodeGeneration.codeGen.vhdl.Utils.VariableObject
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.hybridAutomata.Locality
 import me.nallen.modularCodeGeneration.hybridAutomata.Variable
+import me.nallen.modularCodeGeneration.parseTree.And
+import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.parseTree.VariableType
 import java.util.*
 import kotlin.collections.ArrayList
@@ -114,6 +116,8 @@ object NetworkGenerator {
             // We only want to generate each definition once (because run-time parametrisation), so keep track of them
             val generated = ArrayList<UUID>()
 
+            var processDoneEquation: ParseTreeItem? = null
+
             for((name, instance) in item.instances) {
                 // Get the instance of the item we want to generate
                 val instantiate = item.getInstantiateForInstantiateId(instance.instantiate)
@@ -140,12 +144,7 @@ object NetworkGenerator {
                             Utils.createVariableName(instanceObject.name, "finish")
                     ))
 
-                    val runtimeMappingObject = RuntimeMappingObject(Utils.createVariableName(instanceObject.name, "finish"))
-
-                    runtimeMappingObject.mappings.add(MappingObject(
-                            Utils.createVariableName(instanceObject.name, "start"),
-                            "true"
-                    ))
+                    val runtimeMappingObject = RuntimeMappingObject()
 
                     for (variable in definition.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
                         if (variable.canBeDelayed()) {
@@ -188,17 +187,31 @@ object NetworkGenerator {
                         }
                     }
 
-                    rootItem.runtimeMappings.add(runtimeMappingObject)
-
                     if (!generated.contains(instantiate.definition)) {
                         generated.add(instantiate.definition)
 
                         rootItem.components.add(component)
 
                         rootItem.instances.add(instanceObject)
+
+                        rootItem.runtimeMappingProcesses.add(RuntimeMappingProcessObject(
+                                Utils.createVariableName(instanceObject.name, "proc"),
+                                Utils.createVariableName(instanceObject.name, "finish"),
+                                Utils.createVariableName(instanceObject.name, "proc", "done")
+                        ))
+
+                        if(processDoneEquation == null)
+                            processDoneEquation = ParseTreeItem.generate(Utils.createVariableName(instanceObject.name, "proc", "done"))
+                        else
+                            processDoneEquation = And(processDoneEquation, ParseTreeItem.generate(Utils.createVariableName(instanceObject.name, "proc", "done")))
                     }
+
+                    rootItem.runtimeMappingProcesses.first { it.name.equals(Utils.createVariableName(instanceObject.name, "proc")) }.runtimeMappings.add(runtimeMappingObject)
                 }
             }
+
+            if(processDoneEquation != null)
+                rootItem.runtimeProcessDoneSignal = processDoneEquation.getString()
         }
 
         for((destination, value) in item.ioMapping) {
@@ -247,7 +260,8 @@ object NetworkGenerator {
             var components: MutableList<ComponentObject> = ArrayList(),
             var instances: MutableList<InstanceObject> = ArrayList(),
             var mappings: MutableList<MappingObject> = ArrayList(),
-            var runtimeMappings: MutableList<RuntimeMappingObject> = ArrayList()
+            var runtimeMappingProcesses: MutableList<RuntimeMappingProcessObject> = ArrayList(),
+            var runtimeProcessDoneSignal: String = "true"
     )
 
     data class ComponentObject(
@@ -269,8 +283,14 @@ object NetworkGenerator {
             var right: String
     )
 
-    data class RuntimeMappingObject(
+    data class RuntimeMappingProcessObject(
+            var name: String,
             var finishSignal: String,
+            var processDoneSignal: String,
+            var runtimeMappings: MutableList<RuntimeMappingObject> = ArrayList()
+    )
+
+    data class RuntimeMappingObject(
             var mappings: MutableList<MappingObject> = ArrayList()
     )
 }
