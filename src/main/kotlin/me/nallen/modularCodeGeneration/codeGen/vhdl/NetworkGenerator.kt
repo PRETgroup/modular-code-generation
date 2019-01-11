@@ -157,34 +157,62 @@ object NetworkGenerator {
                             variable.defaultValue
                         }
 
-                        val variableObject = VariableObject.create(variable.copy(defaultValue = defaultValue), runtimeParametrisation = true)
+                        if(variable.locality == Locality.INTERNAL) {
+                            val variableObjectIn = VariableObject.create(variable.copy(defaultValue = defaultValue, locality = Locality.EXTERNAL_INPUT), runtimeParametrisation = true)
+                            component.variables.add(variableObjectIn)
 
-                        component.variables.add(variableObject)
-
-                        if (variable.locality == Locality.EXTERNAL_OUTPUT || variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.PARAMETER) {
-                            val localSignal = VariableObject.create(Variable(Utils.createVariableName(name, variable.name), variable.type, Locality.INTERNAL, defaultValue, variable.delayableBy))
-
-                            rootItem.variables.add(localSignal)
                             instanceObject.mappings.add(MappingObject(
-                                    Utils.createVariableName(variable.name, variable.locality.getShortName()),
-                                    Utils.createVariableName(instanceObject.name, variable.name)
+                                    Utils.createVariableName(variableObjectIn.io),
+                                    Utils.createVariableName(instanceObject.name, variable.name, "in")
                             ))
 
-                            if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.PARAMETER) {
-                                runtimeMappingObject.mappingsIn.add(MappingObject(
-                                        Utils.createVariableName(instanceObject.name, variable.name),
-                                        localSignal.signal
-                                ))
-                            }
-                            else {
-                                runtimeMappingObject.mappingsOut.add(MappingObject(
-                                        localSignal.signal,
-                                        Utils.createVariableName(instanceObject.name, variable.name)
-                                ))
-                            }
+                            val variableObjectOut = VariableObject.create(variable.copy(defaultValue = defaultValue, locality = Locality.EXTERNAL_OUTPUT), runtimeParametrisation = true)
+                            component.variables.add(variableObjectOut)
 
-                            signalNameMap["${name}.${variable.name}"] = localSignal.signal
+                            instanceObject.mappings.add(MappingObject(
+                                    Utils.createVariableName(variableObjectOut.io),
+                                    Utils.createVariableName(instanceObject.name, variable.name, "out")
+                            ))
                         }
+                        else {
+                            val variableObject = VariableObject.create(variable.copy(defaultValue = defaultValue), runtimeParametrisation = true)
+                            component.variables.add(variableObject)
+
+                            instanceObject.mappings.add(MappingObject(
+                                    Utils.createVariableName(variableObject.io),
+                                    Utils.createVariableName(instanceObject.name, variable.name)
+                            ))
+                        }
+
+                        val localSignal = VariableObject.create(Variable(Utils.createVariableName(name, variable.name), variable.type, Locality.INTERNAL, defaultValue, variable.delayableBy))
+
+                        rootItem.variables.add(localSignal)
+
+                        if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.PARAMETER) {
+                            runtimeMappingObject.mappingsIn.add(MappingObject(
+                                    Utils.createVariableName(instanceObject.name, variable.name),
+                                    localSignal.signal
+                            ))
+                        }
+                        else if(variable.locality == Locality.INTERNAL) {
+                            runtimeMappingObject.mappingsIn.add(MappingObject(
+                                    Utils.createVariableName(instanceObject.name, variable.name, "in"),
+                                    localSignal.signal
+                            ))
+
+                            runtimeMappingObject.mappingsOut.add(MappingObject(
+                                    localSignal.signal,
+                                    Utils.createVariableName(instanceObject.name, variable.name, "out")
+                            ))
+                        }
+                        else {
+                            runtimeMappingObject.mappingsOut.add(MappingObject(
+                                    localSignal.signal,
+                                    Utils.createVariableName(instanceObject.name, variable.name)
+                            ))
+                        }
+
+                        signalNameMap["${name}.${variable.name}"] = localSignal.signal
                     }
 
                     if (!generated.contains(instantiate.definition)) {

@@ -123,9 +123,8 @@ begin
                 -- Map Outputs from previous iteration
                 {%- for mapping in runtimeMappingProcess.runtimeMappings[loop.index0-1].mappingsOut %}
                 {{ mapping.left }} <= {{ mapping.right }};
-                {% endfor %}
-
-                {%- endif %}
+                {%- endfor %}
+                {% endif %}
                 -- Map Inputs for this iteration
                 {%- for mapping in runtimeMapping.mappingsIn %}
                 {{ mapping.left }} <= {{ mapping.right }};
@@ -137,6 +136,7 @@ begin
                 {%- for mapping in runtimeMappingProcess.runtimeMappings[runtimeMappingProcess.runtimeMappings|length-1].mappingsOut %}
                 {{ mapping.left }} <= {{ mapping.right }};
                 {%- endfor %}
+                {%- endif %}
 
                 -- We're done!
                 {{ runtimeMappingProcess.processDoneSignal }} <= true;
