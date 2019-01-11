@@ -111,7 +111,7 @@ begin
             elsif count = {{ runtimeMappingProcess.runtimeMappings|length }} then
                 if start then
                     count := 0;
-                    finish <= false;
+                    {{ runtimeMappingProcess.processDoneSignal }} <= false;
                 end if;
             end if;
 
@@ -119,34 +119,55 @@ begin
         {%- for runtimeMapping in runtimeMappingProcess.runtimeMappings %}
             {% if not loop.first -%} els {%- endif -%}
             if count = {{ loop.index0 }} then
-                {%- for mapping in runtimeMapping.mappings %}
+                {%- if loop.index0 > 0 %}
+                -- Map Outputs from previous iteration
+                {%- for mapping in runtimeMappingProcess.runtimeMappings[loop.index0-1].mappingsOut %}
+                {{ mapping.left }} <= {{ mapping.right }};
+                {% endfor %}
+
+                {%- endif %}
+                -- Map Inputs for this iteration
+                {%- for mapping in runtimeMapping.mappingsIn %}
                 {{ mapping.left }} <= {{ mapping.right }};
                 {%- endfor %}
         {%- endfor %}
             elsif count = {{ runtimeMappingProcess.runtimeMappings|length }} then
+                {%- if runtimeMappingProcess.runtimeMappings|length > 0 %}
+                -- Map Outputs from previous iteration
+                {%- for mapping in runtimeMappingProcess.runtimeMappings[runtimeMappingProcess.runtimeMappings|length-1].mappingsOut %}
+                {{ mapping.left }} <= {{ mapping.right }};
+                {%- endfor %}
+
+                -- We're done!
                 {{ runtimeMappingProcess.processDoneSignal }} <= true;
             end if;
         end if;
     end process;
-    {%- endfor %}
-
+    {% endfor %}
     -- Perform Runtime mapping function
     process(clk)
         variable count : integer range 0 to 2 := 2
     begin
         if clk'event and clk = '1' then
             if count = 0 then
+                -- Wait until all sub-processes are done
                 if {{ item.runtimeProcessDoneSignal }} then
                     count = 1;
                 end if;
             elsif count = 1 then
+                -- All the sub-processes have finished, let's do the mapping
     {%- for mapping in item.mappings %}
                 {{ mapping.left }} <= {{ mapping.right }};
     {%- endfor %}
 
+                finish <= true;
+
                 count = 2;
             elsif count = 2 then
+                -- Wait until we have to start again
                 if start then
+                    finish <= false;
+
                     count = 0;
                 end if;
             end if;

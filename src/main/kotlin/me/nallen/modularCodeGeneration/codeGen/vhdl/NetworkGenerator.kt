@@ -171,13 +171,13 @@ object NetworkGenerator {
                             ))
 
                             if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.PARAMETER) {
-                                runtimeMappingObject.mappings.add(MappingObject(
+                                runtimeMappingObject.mappingsIn.add(MappingObject(
                                         Utils.createVariableName(instanceObject.name, variable.name),
                                         localSignal.signal
                                 ))
                             }
                             else {
-                                runtimeMappingObject.mappings.add(MappingObject(
+                                runtimeMappingObject.mappingsOut.add(MappingObject(
                                         localSignal.signal,
                                         Utils.createVariableName(instanceObject.name, variable.name)
                                 ))
@@ -291,6 +291,7 @@ object NetworkGenerator {
     )
 
     data class RuntimeMappingObject(
-            var mappings: MutableList<MappingObject> = ArrayList()
+            var mappingsIn: MutableList<MappingObject> = ArrayList(),
+            var mappingsOut: MutableList<MappingObject> = ArrayList()
     )
 }
