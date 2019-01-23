@@ -35,23 +35,3 @@ fun main(args: Array<String>) {
     }
     println("Code Generation time: $time ms")
 }
-
-/* Changes to make
-
-[x] change state reads to `STATE_TYPE'val(state_in)`
-[x] change outputs to output properly
-[x] remove internal signals
-[x] change reads to input signals
-[x] parameters in functions
-[x] outputs need to have associated inputs too
-[x] instance signals
-[-] setting start / finish in automata
-[x] setting start in network
-[x] initial values for storage
-[x] assign variables at start of tick
-
-[x] done signals
-
-[x] top level system
-
- */
