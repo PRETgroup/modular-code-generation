@@ -71,7 +71,7 @@ begin
         port map(
             clk => clk
     {%- if config.runTimeParametrisation %},
-            start => true,
+            start => true
     {%- endif %}
     {%- for mapping in item.instance.mappings %},
             {{ mapping.left }} => {{ mapping.right }}
