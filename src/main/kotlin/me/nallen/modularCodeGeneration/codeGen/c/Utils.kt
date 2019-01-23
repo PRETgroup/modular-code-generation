@@ -27,6 +27,7 @@ object Utils {
             null -> "void"
             VariableType.BOOLEAN -> "bool"
             VariableType.REAL -> "double"
+            VariableType.INTEGER -> "int"
         }
     }
 
@@ -38,6 +39,7 @@ object Utils {
         return when(type) {
             VariableType.BOOLEAN -> "%d"
             VariableType.REAL -> "%f"
+            VariableType.INTEGER -> "%d"
         }
     }
 

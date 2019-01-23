@@ -28,7 +28,7 @@ architecture behavior of {{ item.name }} is
 {%- endif %}
 {%- for variable in item.variables %}
     {%- if variable.locality == 'Internal Variables' %}
-    signal {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; -- {{ variable.initialValueString }}
+    signal {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; {%- if variable.initialValueString %} -- {{ variable.initialValueString }} {%- endif %}
     {%- endif %}
 {%- endfor %}
 {%- if item.variables|length > 0 %}
@@ -40,12 +40,16 @@ architecture behavior of {{ item.name }} is
         generic(
         {%- for parameter in item.component.parameters %}
             {{ parameter.signal }} : {{ parameter.type }} := {{ parameter.initialValue }}
-            {%- if not loop.last -%} ; {%- endif %} -- {{ parameter.initialValueString }}
+            {%- if not loop.last -%} ; {%- endif %} {%- if parameter.initialValueString %} -- {{ parameter.initialValueString }} {%- endif %}
         {%- endfor %}
         );
     {%- endif %}
         port(
             clk : in std_logic
+    {%- if config.runTimeParametrisation %};
+            start : in boolean;
+            finish : out boolean
+    {%- endif %}
     {%- for variable in item.component.variables %}
         {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
             {{ variable.io }} : {{variable.direction }} {{ variable.type }}
@@ -66,6 +70,9 @@ begin
     {%- endif %}
         port map(
             clk => clk
+    {%- if config.runTimeParametrisation %},
+            start => true,
+    {%- endif %}
     {%- for mapping in item.instance.mappings %},
             {{ mapping.left }} => {{ mapping.right }}
     {%- endfor %}

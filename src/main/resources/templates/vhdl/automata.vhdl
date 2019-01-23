@@ -11,7 +11,7 @@ entity {{ item.name }} is
     generic(
     {%- for parameter in item.parameters %}
         {{ parameter.signal }} : {{ parameter.type }} := {{ parameter.initialValue }}
-        {%- if not loop.last -%} ; {%- endif %} -- {{ parameter.initialValueString }}
+        {%- if not loop.last -%} ; {%- endif %} {%- if parameter.initialValueString %} -- {{ parameter.initialValueString }} {%- endif %}
     {%- endfor %}
     );
 {% endif %}
@@ -22,15 +22,16 @@ entity {{ item.name }} is
         finish : out boolean;
 
         -- Declare State
-        state : in {{ item.enumName }}
+        state_in : in integer range 0 to {{ item.locations|length - 1 }};
+        state_out : out integer range 0 to {{ item.locations|length - 1 }}
 {%- endif %}
 
 {%- for variable in item.variables %}
-    {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
+    {%- if config.runTimeParametrisation or variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
         {% ifchanged variable.locality %}
         -- Declare {{ variable.locality }}
         {% endifchanged -%}
-        {{ variable.io }} : {{variable.direction }} {{ variable.type }}
+        {{ variable.io }} : {{ variable.direction }} {{ variable.type }}
     {%- endif %}
 {%- endfor %}
 
@@ -47,22 +48,7 @@ architecture behavior of {{ item.name }} is
     {%- if not loop.last -%} , {%- endif %}
 {%- endfor %}
     );
-
-{%- if config.compileTimeParametrisation %}
-
-    -- Declare State
-    signal state : {{ item.enumName }} := {{ item.initialLocation }};
 {%- endif %}
-{%- endif %}
-
-{%- for variable in item.variables %}
-{%- if variable.locality != 'Inputs' %}
-    {% ifchanged variable.locality %}
-    -- Declare {{ variable.locality }}
-    {% endifchanged -%}
-    signal {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; -- {{ variable.initialValueString }}
-{%- endif %}
-{%- endfor %}
 
 {%- if item.customFunctions|length > 0 %}
 
@@ -70,13 +56,13 @@ architecture behavior of {{ item.name }} is
     {%- for function in item.customFunctions %}
     function {{ function.name }}(
         {%- for input in function.inputs -%}
-            {%- if not loop.first %}, {% endif -%}
+            {%- if not loop.first %}; {% endif -%}
             {{ input.signal }}: {{ input.type }}
         {%- endfor -%}
     )
             return {{ function.returnType }} is
         {%- for variable in function.variables %}
-        variable {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; -- {{ variable.initialValueString }}
+        variable {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; {%- if variable.initialValueString %} -- {{ variable.initialValueString }} {%- endif %}
         {%- endfor %}
     begin
         {%- for line in function.logic %}
@@ -87,38 +73,43 @@ architecture behavior of {{ item.name }} is
 {%- endif %}
 
 begin
-
-{%- for variable in item.variables %}
-{%- if variable.locality == 'Outputs' %}
-    {% ifchanged variable.locality %}
-    -- Map {{ variable.locality }}
-    {% endifchanged -%}
-    {{ variable.io }} <= {{ variable.signal }};
-{%- endif %}
-{%- endfor %}
-
     process(clk)
 {%- if item.locations|length > 1 %}
-        -- Initialise State
+        -- State Variable
         variable state_update : {{ item.enumName }} := {{ item.initialLocation }};
 {%- endif %}
 
 {%- for variable in item.variables %}
     {%- if variable.locality != 'Parameters' and variable.locality != 'Inputs' %}
+        {%- ifchanged variable.variable %}
         {% ifchanged variable.locality %}
-        -- Initialise {{ variable.locality }}
+        -- {{ variable.locality }}
         {% endifchanged -%}
-        variable {{ variable.variable }} : {{ variable.type }} := {{ variable.initialValue }}; -- {{ variable.initialValueString }}
+        variable {{ variable.variable }} : {{ variable.type }} := {{ variable.initialValue }}; {%- if variable.initialValueString %} -- {{ variable.initialValueString }} {%- endif %}
+        {%- endif %}
     {%- endif %}
 {%- endfor %}
 
     begin
         if clk'event and clk = '1' then
+{%- if config.runTimeParametrisation %}
+    {%- if item.locations|length > 1 %}
+            state_update := {{ item.enumName }}'VAL(state_in);
+    {%- endif %}
+    {%- for variable in item.variables %}
+        {%- if variable.locality != 'Parameters' and variable.locality != 'Inputs' %}
+            {%- if variable.direction == 'in' %}
+            {{ variable.variable }} := {{ variable.io }};
+            {%- endif %}
+        {%- endif %}
+    {%- endfor %}
+{%- endif %}
+
 {%- if item.locations|length > 1 %}
             -- Run the state machine for transition logic
     {%- for location in item.locations %}
             {% if not loop.first -%} els {%- endif -%}
-            if state = {{ location.macroName }} then -- Logic for state {{ location.name }}
+            if {% if config.runTimeParametrisation -%} {{ item.enumName }}'VAL(state_in) {%- else -%} state {%- endif %} = {{ location.macroName }} then -- Logic for state {{ location.name }}
 
             {%- for transition in location.transitions %}
                 {% if not loop.first -%} els {%- endif -%}
@@ -158,8 +149,11 @@ begin
     {%- endfor %}
             end if;
 
-            -- Map State to Signal
-            state <= state_update;
+    {%- if config.runTimeParametrisation %}
+
+            -- Map State
+            state_out <= {{ item.enumName }}'POS(state_update);
+    {%- endif %}
 {%- elif item.locations|length > 0 %}
     {%- if item.locations[0].transitions|length > 1 %}
         {%- for transition in item.locations[0].transitions %}
@@ -217,13 +211,18 @@ begin
 {%- endif %}
 
 {%- for variable in item.variables %}
-    {%- if variable.locality != 'Parameters' and variable.locality != 'Inputs' %}
+    {%- if variable.direction == 'out' %}
             {% ifchanged variable.locality %}
-            -- Map {{ variable.locality }} to Signals
+            -- Map {{ variable.locality }}
             {% endifchanged -%}
-            {{ variable.signal }} <= {{ variable.variable }};
+            {{ variable.io }} <= {{ variable.variable }};
     {%- endif %}
 {%- endfor %}
+
+{%- if config.runTimeParametrisation %}
+
+            finish <= true;
+{%- endif %}
 
         end if;
     end process;

@@ -136,15 +136,71 @@ object NetworkGenerator {
 
                     instanceObject.mappings.add(MappingObject(
                             "start",
-                            Utils.createVariableName(instanceObject.name, "start")
+                            Utils.createVariableName(instanceObject.id, "start")
                     ))
 
                     instanceObject.mappings.add(MappingObject(
                             "finish",
-                            Utils.createVariableName(instanceObject.name, "finish")
+                            Utils.createVariableName(instanceObject.id, "finish")
                     ))
 
                     val runtimeMappingObject = RuntimeMappingObject()
+
+                    val runtimeMappingProcess = RuntimeMappingProcessObject(
+                            Utils.createVariableName(instanceObject.name, "proc"),
+                            Utils.createVariableName(instanceObject.id, "start"),
+                            Utils.createVariableName(instanceObject.id, "finish"),
+                            Utils.createVariableName(instanceObject.name, "proc", "done"),
+                            Utils.createVariableName(instanceObject.name, "proc", "start")
+                    )
+
+                    runtimeMappingProcess.variables.add(VariableObject.create(Variable(Utils.createVariableName(instanceObject.id, "start"), VariableType.BOOLEAN, Locality.INTERNAL)))
+                    runtimeMappingProcess.variables.add(VariableObject.create(Variable(Utils.createVariableName(instanceObject.id, "finish"), VariableType.BOOLEAN, Locality.INTERNAL)))
+
+                    if(definition is HybridAutomata) {
+                        val variableObjectIn = VariableObject.create(Variable("state", VariableType.INTEGER, Locality.EXTERNAL_INPUT), runtimeParametrisation = true)
+                        variableObjectIn.type = "integer range 0 to ${definition.locations.size-1}"
+                        component.variables.add(variableObjectIn)
+
+                        instanceObject.mappings.add(MappingObject(
+                                Utils.createVariableName(variableObjectIn.io),
+                                Utils.createVariableName(instanceObject.id, "state", "in")
+                        ))
+
+                        runtimeMappingProcess.variables.add(VariableObject.create(Variable(Utils.createVariableName(instanceObject.id, "state", "in"), VariableType.INTEGER, Locality.INTERNAL)))
+                        runtimeMappingProcess.variables.last().type = variableObjectIn.type
+
+                        val variableObjectOut = VariableObject.create(Variable("state", VariableType.INTEGER, Locality.EXTERNAL_OUTPUT), runtimeParametrisation = true)
+                        variableObjectOut.type = variableObjectIn.type
+                        component.variables.add(variableObjectOut)
+
+                        instanceObject.mappings.add(MappingObject(
+                                Utils.createVariableName(variableObjectOut.io),
+                                Utils.createVariableName(instanceObject.id, "state", "out")
+                        ))
+
+                        runtimeMappingProcess.variables.add(VariableObject.create(Variable(Utils.createVariableName(instanceObject.id, "state", "out"), VariableType.INTEGER, Locality.INTERNAL)))
+                        runtimeMappingProcess.variables.last().type = variableObjectIn.type
+
+                        val localSignal = VariableObject.create(Variable(Utils.createVariableName(name, "state"), VariableType.INTEGER, Locality.INTERNAL))
+                        localSignal.initialValue = definition.locations.indexOfFirst { it.name == definition.init.state }.toString()
+                        localSignal.initialValueString = definition.init.state
+                        localSignal.type = variableObjectIn.type
+
+                        rootItem.variables.add(localSignal)
+
+                        runtimeMappingObject.mappingsIn.add(MappingObject(
+                                Utils.createVariableName(instanceObject.id, "state", "in"),
+                                localSignal.signal
+                        ))
+
+                        runtimeMappingObject.mappingsOut.add(MappingObject(
+                                localSignal.signal,
+                                Utils.createVariableName(instanceObject.id, "state", "out")
+                        ))
+
+                        signalNameMap["${name}.state"] = localSignal.signal
+                    }
 
                     for (variable in definition.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
                         if (variable.canBeDelayed()) {
@@ -153,26 +209,32 @@ object NetworkGenerator {
 
                         val defaultValue = if (instance.parameters.containsKey(variable.name)) {
                             instance.parameters[variable.name]
+                        } else if (definition is HybridAutomata && definition.init.valuations.containsKey(variable.name)) {
+                            definition.init.valuations[variable.name]
                         } else {
                             variable.defaultValue
                         }
 
-                        if(variable.locality == Locality.INTERNAL) {
+                        if(variable.locality == Locality.EXTERNAL_OUTPUT || variable.locality == Locality.INTERNAL) {
                             val variableObjectIn = VariableObject.create(variable.copy(defaultValue = defaultValue, locality = Locality.EXTERNAL_INPUT), runtimeParametrisation = true)
                             component.variables.add(variableObjectIn)
 
                             instanceObject.mappings.add(MappingObject(
                                     Utils.createVariableName(variableObjectIn.io),
-                                    Utils.createVariableName(instanceObject.name, variable.name, "in")
+                                    Utils.createVariableName(instanceObject.id, variable.name, "in")
                             ))
+
+                            runtimeMappingProcess.variables.add(VariableObject.create(Variable(Utils.createVariableName(instanceObject.id, variable.name, "in"), variable.type, Locality.INTERNAL)))
 
                             val variableObjectOut = VariableObject.create(variable.copy(defaultValue = defaultValue, locality = Locality.EXTERNAL_OUTPUT), runtimeParametrisation = true)
                             component.variables.add(variableObjectOut)
 
                             instanceObject.mappings.add(MappingObject(
                                     Utils.createVariableName(variableObjectOut.io),
-                                    Utils.createVariableName(instanceObject.name, variable.name, "out")
+                                    Utils.createVariableName(instanceObject.id, variable.name, "out")
                             ))
+
+                            runtimeMappingProcess.variables.add(VariableObject.create(Variable(Utils.createVariableName(instanceObject.id, variable.name, "out"), variable.type, Locality.INTERNAL)))
                         }
                         else {
                             val variableObject = VariableObject.create(variable.copy(defaultValue = defaultValue), runtimeParametrisation = true)
@@ -180,35 +242,33 @@ object NetworkGenerator {
 
                             instanceObject.mappings.add(MappingObject(
                                     Utils.createVariableName(variableObject.io),
-                                    Utils.createVariableName(instanceObject.name, variable.name)
+                                    Utils.createVariableName(instanceObject.id, variable.name)
                             ))
+
+                            runtimeMappingProcess.variables.add(VariableObject.create(Variable(Utils.createVariableName(instanceObject.id, variable.name), variable.type, Locality.INTERNAL)))
                         }
 
                         val localSignal = VariableObject.create(Variable(Utils.createVariableName(name, variable.name), variable.type, Locality.INTERNAL, defaultValue, variable.delayableBy))
+                        if(variable.locality == Locality.PARAMETER)
+                            localSignal.locality = Locality.PARAMETER.getTextualName()
 
                         rootItem.variables.add(localSignal)
 
                         if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.PARAMETER) {
                             runtimeMappingObject.mappingsIn.add(MappingObject(
-                                    Utils.createVariableName(instanceObject.name, variable.name),
+                                    Utils.createVariableName(instanceObject.id, variable.name),
                                     localSignal.signal
                             ))
                         }
-                        else if(variable.locality == Locality.INTERNAL) {
+                        else if(variable.locality == Locality.EXTERNAL_OUTPUT || variable.locality == Locality.INTERNAL) {
                             runtimeMappingObject.mappingsIn.add(MappingObject(
-                                    Utils.createVariableName(instanceObject.name, variable.name, "in"),
+                                    Utils.createVariableName(instanceObject.id, variable.name, "in"),
                                     localSignal.signal
                             ))
 
                             runtimeMappingObject.mappingsOut.add(MappingObject(
                                     localSignal.signal,
-                                    Utils.createVariableName(instanceObject.name, variable.name, "out")
-                            ))
-                        }
-                        else {
-                            runtimeMappingObject.mappingsOut.add(MappingObject(
-                                    localSignal.signal,
-                                    Utils.createVariableName(instanceObject.name, variable.name)
+                                    Utils.createVariableName(instanceObject.id, variable.name, "out")
                             ))
                         }
 
@@ -222,16 +282,12 @@ object NetworkGenerator {
 
                         rootItem.instances.add(instanceObject)
 
-                        rootItem.runtimeMappingProcesses.add(RuntimeMappingProcessObject(
-                                Utils.createVariableName(instanceObject.name, "proc"),
-                                Utils.createVariableName(instanceObject.name, "finish"),
-                                Utils.createVariableName(instanceObject.name, "proc", "done")
-                        ))
+                        rootItem.runtimeMappingProcesses.add(runtimeMappingProcess)
 
-                        if(processDoneEquation == null)
-                            processDoneEquation = ParseTreeItem.generate(Utils.createVariableName(instanceObject.name, "proc", "done"))
+                        processDoneEquation = if(processDoneEquation == null)
+                            ParseTreeItem.generate(Utils.createVariableName(instanceObject.name, "proc", "done"))
                         else
-                            processDoneEquation = And(processDoneEquation, ParseTreeItem.generate(Utils.createVariableName(instanceObject.name, "proc", "done")))
+                            And(processDoneEquation, ParseTreeItem.generate(Utils.createVariableName(instanceObject.name, "proc", "done")))
                     }
 
                     rootItem.runtimeMappingProcesses.first { it.name.equals(Utils.createVariableName(instanceObject.name, "proc")) }.runtimeMappings.add(runtimeMappingObject)
@@ -239,7 +295,7 @@ object NetworkGenerator {
             }
 
             if(processDoneEquation != null)
-                rootItem.runtimeProcessDoneSignal = processDoneEquation.getString()
+                rootItem.runtimeProcessDoneSignal = Utils.generateCodeForParseTreeItem(processDoneEquation)
         }
 
         for((destination, value) in item.ioMapping) {
@@ -313,8 +369,11 @@ object NetworkGenerator {
 
     data class RuntimeMappingProcessObject(
             var name: String,
+            var startSignal: String,
             var finishSignal: String,
             var processDoneSignal: String,
+            var processStartSignal: String,
+            var variables: MutableList<VariableObject> = ArrayList(),
             var runtimeMappings: MutableList<RuntimeMappingObject> = ArrayList()
     )
 

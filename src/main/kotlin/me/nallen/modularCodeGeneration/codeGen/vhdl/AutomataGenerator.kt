@@ -32,17 +32,79 @@ object AutomataGenerator {
                 throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
             }
 
-            val variableObject = VariableObject.create(variable, runtimeParametrisation = config.runTimeParametrisation)
+            if(config.compileTimeParametrisation) {
+                val variableObject = VariableObject.create(variable)
 
-            if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.EXTERNAL_OUTPUT || (variable.locality == Locality.PARAMETER && config.runTimeParametrisation))
-                signalNameMap[variable.name] = variableObject.io
-            else
-                signalNameMap[variable.name] = variableObject.signal
+                if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.EXTERNAL_OUTPUT)
+                    signalNameMap[variable.name] = variableObject.io
+                else
+                    signalNameMap[variable.name] = variableObject.signal
 
-            if(variable.locality == Locality.PARAMETER && !config.runTimeParametrisation)
-                rootItem.parameters.add(variableObject)
-            else
-                rootItem.variables.add(variableObject)
+                if(variable.locality == Locality.PARAMETER)
+                    rootItem.parameters.add(variableObject)
+                else
+                    rootItem.variables.add(variableObject)
+            }
+            else {
+                if(variable.locality == Locality.INTERNAL || variable.locality == Locality.EXTERNAL_OUTPUT) {
+                    val variableObjectIn = VariableObject.create(variable.copy(locality = Locality.EXTERNAL_INPUT), runtimeParametrisation = true)
+                    if(variable.locality == Locality.EXTERNAL_OUTPUT)
+                        variableObjectIn.locality = "Outputs"
+                    else if(variable.locality == Locality.INTERNAL)
+                        variableObjectIn.locality = "Internal Variables"
+
+                    signalNameMap[variable.name] = variableObjectIn.io
+                    rootItem.variables.add(variableObjectIn)
+
+                    val variableObjectOut = VariableObject.create(variable.copy(locality = Locality.EXTERNAL_OUTPUT), runtimeParametrisation = true)
+                    if(variable.locality == Locality.INTERNAL)
+                        variableObjectOut.locality = "Internal Variables"
+
+                    rootItem.variables.add(variableObjectOut)
+                }
+                else {
+                    val variableObject = VariableObject.create(variable, runtimeParametrisation = true)
+
+                    signalNameMap[variable.name] = variableObject.io
+                    rootItem.variables.add(variableObject)
+                }
+            }
+        }
+
+        val functionParams = HashMap<String, ArrayList<ParseTreeItem>>()
+
+        for(func in item.functions) {
+            val functionObject = CustomFunctionObject(
+                    Utils.createFunctionName(func.name),
+                    Utils.generateBasicVHDLType(func.returnType),
+                    ArrayList(),
+                    ArrayList(),
+                    ArrayList()
+            )
+
+            functionParams[func.name] = ArrayList()
+
+            for(input in func.inputs) {
+                functionObject.inputs.add(VariableObject.create(me.nallen.modularCodeGeneration.hybridAutomata.Variable(input.name, input.type, Locality.EXTERNAL_INPUT, input.defaultValue)))
+            }
+
+            for(internal in func.logic.variables.filter({it.locality == ParseTreeLocality.INTERNAL})
+                    .filterNot({item.variables.any { search -> search.locality == Locality.PARAMETER && search.name == it.name }})) {
+                functionObject.variables.add(VariableObject.create(me.nallen.modularCodeGeneration.hybridAutomata.Variable(internal.name, internal.type, Locality.INTERNAL, internal.defaultValue)))
+            }
+
+            if(config.runTimeParametrisation) {
+                for(internal in func.logic.variables.filter({it.locality == ParseTreeLocality.INTERNAL})
+                        .filter({item.variables.any { search -> search.locality == Locality.PARAMETER && search.name == it.name }})) {
+                    functionObject.inputs.add(VariableObject.create(me.nallen.modularCodeGeneration.hybridAutomata.Variable(internal.name, internal.type, Locality.EXTERNAL_INPUT, internal.defaultValue)))
+
+                    functionParams[func.name]!!.add(Variable(internal.name))
+                }
+            }
+
+            functionObject.logic.addAll(Utils.generateCodeForProgram(func.logic).split("\n"))
+
+            rootItem.customFunctions.add(functionObject)
         }
 
         rootItem.enumName = Utils.createMacroName(item.name, "State")
@@ -50,7 +112,7 @@ object AutomataGenerator {
             // Work out all transitions
             val transitionList = arrayListOf(
                     TransitionObject(
-                            Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("", signalNameMap)),
+                            Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("", signalNameMap, functionParams)),
                             ArrayList(),
                             ArrayList(),
                             location.name,
@@ -62,20 +124,20 @@ object AutomataGenerator {
 
             for((variable, ode) in location.flow) {
                 val eulerSolution = Plus(Variable(variable), Multiply(ode, Variable("step_size")))
-                transitionList.first().flow.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("", signalNameMap))))
+                transitionList.first().flow.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("", signalNameMap, functionParams))))
 
                 updatedFlowMap[variable] = Utils.createVariableName(variable, "update")
             }
 
             for((variable, equation) in location.update) {
-                transitionList.first().update.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("", updatedFlowMap))))
+                transitionList.first().update.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("", updatedFlowMap, functionParams))))
             }
 
             //TODO: Saturation
 
             for((_, toLocation, guard, update) in item.edges.filter{it.fromLocation == location.name }) {
                 val transitionObject = TransitionObject(
-                        Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("", signalNameMap)),
+                        Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("", signalNameMap, functionParams)),
                         ArrayList(),
                         ArrayList(),
                         toLocation,
@@ -83,7 +145,7 @@ object AutomataGenerator {
                 )
 
                 for((variable, equation) in update) {
-                    transitionObject.update.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("", signalNameMap))))
+                    transitionObject.update.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("", signalNameMap, functionParams))))
                 }
 
                 transitionList.add(transitionObject)
@@ -100,29 +162,6 @@ object AutomataGenerator {
             rootItem.locations.add(locationObject)
         }
         rootItem.initialLocation = Utils.createMacroName(item.name, item.init.state)
-
-        for(func in item.functions) {
-            val functionObject = CustomFunctionObject(
-                    Utils.createFunctionName(func.name),
-                    Utils.generateBasicVHDLType(func.returnType),
-                    ArrayList(),
-                    ArrayList(),
-                    ArrayList()
-            )
-
-            for(input in func.inputs) {
-                functionObject.inputs.add(VariableObject.create(me.nallen.modularCodeGeneration.hybridAutomata.Variable(input.name, input.type, Locality.EXTERNAL_INPUT, input.defaultValue)))
-            }
-
-            for(internal in func.logic.variables.filter({it.locality == ParseTreeLocality.INTERNAL})
-                    .filterNot({item.variables.any { search -> search.locality == Locality.PARAMETER && search.name == it.name }})) {
-                functionObject.variables.add(VariableObject.create(me.nallen.modularCodeGeneration.hybridAutomata.Variable(internal.name, internal.type, Locality.INTERNAL, internal.defaultValue)))
-            }
-
-            functionObject.logic.addAll(Utils.generateCodeForProgram(func.logic).split("\n"))
-
-            rootItem.customFunctions.add(functionObject)
-        }
 
         // Create the context
         val context = AutomataFileContext(
