@@ -126,6 +126,7 @@ object Utils {
             null -> "void"
             VariableType.BOOLEAN -> "boolean"
             VariableType.REAL -> "signed(31 downto 0)"
+            VariableType.INTEGER -> "integer"
         }
     }
 
@@ -135,6 +136,7 @@ object Utils {
             null -> "void"
             VariableType.BOOLEAN -> "boolean"
             VariableType.REAL -> "signed"
+            VariableType.INTEGER -> "integer"
         }
     }
 
@@ -144,6 +146,7 @@ object Utils {
             null -> "void"
             VariableType.BOOLEAN -> "false"
             VariableType.REAL -> "(others => '0')"
+            VariableType.INTEGER -> "0"
         }
     }
 
@@ -281,6 +284,14 @@ object Utils {
                     builder.append(generateCodeForParseTreeItem(argument, prefixData))
                 }
 
+                if(prefixData.extraFunctionParams.containsKey(item.functionName)) {
+                    for(argument in prefixData.extraFunctionParams[item.functionName]!!) {
+                        // If needed, deliminate by a comma
+                        if(builder.isNotEmpty()) builder.append(", ")
+                        builder.append(generateCodeForParseTreeItem(argument, prefixData))
+                    }
+                }
+
                 // And then return the final function name
                 return "${Utils.createFunctionName(item.functionName)}($builder)"
             }
@@ -375,7 +386,10 @@ object Utils {
             val prefix: String,
 
             // A set of variables whose names should be something other than the style convention
-            val customVariableNames: Map<String, String> = DEFAULT_CUSTOM_VARIABLES
+            val customVariableNames: Map<String, String> = DEFAULT_CUSTOM_VARIABLES,
+
+            // A set of extra parameters that need to be added to functions when we call them
+            val extraFunctionParams: Map<String, List<ParseTreeItem>> = HashMap()
     )
 
 
@@ -391,18 +405,18 @@ object Utils {
             var initialValueString: String
     ) {
         companion object {
-            fun create(variable: Variable, valuations: Map<String, ParseTreeItem> = HashMap()): VariableObject {
+            fun create(variable: Variable, valuations: Map<String, ParseTreeItem> = HashMap(), runtimeParametrisation: Boolean = false): VariableObject {
                 val default: ParseTreeItem? = valuations[variable.name] ?: variable.defaultValue
 
                 var defaultValue: Any = Utils.generateDefaultInitForType(variable.type)
-                var defaultValueString = "Unassigned default value"
+                var defaultValueString = ""
                 if (default != null) {
                     defaultValue = try {
                         default.evaluate()
                     } catch (e: IllegalArgumentException) {
                         Utils.generateCodeForParseTreeItem(default)
                     }
-                    defaultValueString = default.getString()
+                    //defaultValueString = default.getString()
 
                     if (defaultValue is Boolean)
                         defaultValue = if(defaultValue) { "true" } else { "false" }
@@ -410,9 +424,14 @@ object Utils {
                         defaultValue = "CREATE_FP($defaultValue)"
                 }
 
+                val locality = if(runtimeParametrisation && variable.locality == Locality.PARAMETER)
+                    Locality.EXTERNAL_INPUT
+                else
+                    variable.locality
+
                 return VariableObject(
                         variable.locality.getTextualName(),
-                        variable.locality.getShortName().toLowerCase(),
+                        locality.getShortName().toLowerCase(),
                         Utils.generateVHDLType(variable.type),
                         Utils.createVariableName(variable.name, variable.locality.getShortName()),
                         Utils.createVariableName(variable.name),

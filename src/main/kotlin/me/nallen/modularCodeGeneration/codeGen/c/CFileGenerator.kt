@@ -283,6 +283,7 @@ object CFileGenerator {
         return when(type) {
             VariableType.BOOLEAN -> Utils.generateCodeForParseTreeItem(Literal("false"))
             VariableType.REAL -> Utils.generateCodeForParseTreeItem(Literal("0"))
+            VariableType.INTEGER -> Utils.generateCodeForParseTreeItem(Literal("0"))
         }
     }
 

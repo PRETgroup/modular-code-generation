@@ -10,19 +10,23 @@ entity {{ item.name }} is
     generic(
     {%- for parameter in item.parameters %}
         {{ parameter.signal }} : {{ parameter.type }} := {{ parameter.initialValue }}
-        {%- if not loop.last -%} ; {%- endif %} -- {{ parameter.initialValueString }}
+        {%- if not loop.last -%} ; {%- endif %} {%- if parameter.initialValueString %} -- {{ parameter.initialValueString }} {%- endif %}
     {%- endfor %}
     );
 {% endif %}
     port (
         clk : in std_logic
+{%- if config.runTimeParametrisation %};
+        start : in boolean;
+        finish : out boolean
+{%- endif %}
 
 {%- for variable in item.variables %}
     {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
         {% ifchanged variable.locality %}
         -- Declare {{ variable.locality }}
         {% endifchanged -%}
-        {{ variable.io }} : {{variable.direction }} {{ variable.type }}
+        {{ variable.io }} : {{ variable.direction }} {{ variable.type }}
     {%- endif %}
 {%- endfor %}
 
@@ -36,11 +40,24 @@ architecture behavior of {{ item.name }} is
 {%- endif %}
 {%- for variable in item.variables %}
     {%- if variable.locality == 'Internal Variables' %}
-    signal {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; -- {{ variable.initialValueString }}
+    signal {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; {%- if variable.initialValueString %} -- {{ variable.initialValueString }} {%- endif %}
+    {%- elif variable.direction == 'int' %}
+    constant {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; {%- if variable.initialValueString %} -- {{ variable.initialValueString }} {%- endif %}
     {%- endif %}
 {%- endfor %}
 {%- if item.variables|length > 0 %}
 {% endif %}
+
+{%- if config.runTimeParametrisation %}
+    {%- for runtimeMappingProcess in item.runtimeMappingProcesses %}
+    -- Signals for {{ runtimeMappingProcess.name }}
+        {%- for variable in runtimeMappingProcess.variables %}
+    signal {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; {%- if variable.initialValueString %} -- {{ variable.initialValueString }} {%- endif %}
+        {%- endfor %}
+    signal {{ runtimeMappingProcess.processStartSignal }} : boolean := false;
+    signal {{ runtimeMappingProcess.processDoneSignal }} : boolean := false;
+    {% endfor %}
+{%- endif %}
 
 {%- if item.components|length > 0 %}
     -- Declare child components
@@ -51,14 +68,18 @@ architecture behavior of {{ item.name }} is
         generic(
         {%- for parameter in component.parameters %}
             {{ parameter.signal }} : {{ parameter.type }} := {{ parameter.initialValue }}
-            {%- if not loop.last -%} ; {%- endif %} -- {{ parameter.initialValueString }}
+            {%- if not loop.last -%} ; {%- endif %} {%- if parameter.initialValueString %} -- {{ parameter.initialValueString }} {%- endif %}
         {%- endfor %}
         );
     {%- endif %}
         port(
             clk : in std_logic
+    {%- if config.runTimeParametrisation %};
+            start : in boolean;
+            finish : out boolean
+    {%- endif %}
     {%- for variable in component.variables %}
-        {%- if variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
+        {%- if config.runTimeParametrisation or variable.locality == 'Inputs' or variable.locality == 'Outputs' %};
             {{ variable.io }} : {{variable.direction }} {{ variable.type }}
         {%- endif %}
     {%- endfor %}
@@ -88,7 +109,100 @@ begin
         );
 {% endfor %}
 
-{%- if item.mappings|length > 0 %}
+{%- if config.runTimeParametrisation %}
+    -- Perform Runtime functions for each instance
+    {%- for runtimeMappingProcess in item.runtimeMappingProcesses %}
+    {{ runtimeMappingProcess.name }}: process(clk)
+        variable count : integer range 0 to {{ runtimeMappingProcess.runtimeMappings|length }} := {{ runtimeMappingProcess.runtimeMappings|length }};
+    begin
+        if clk'event and clk = '1' then
+            -- First let's do some transitions
+            if count < {{ runtimeMappingProcess.runtimeMappings|length }} then
+                if {{ runtimeMappingProcess.finishSignal }} then
+                    count := count + 1;
+                end if;
+            elsif count = {{ runtimeMappingProcess.runtimeMappings|length }} then
+                if {{ runtimeMappingProcess.processStartSignal }} then
+                    count := 0;
+                    {{ runtimeMappingProcess.processDoneSignal }} <= false;
+                end if;
+            end if;
+
+            if count < 1 then
+                {{ runtimeMappingProcess.startSignal }} <= true;
+            else
+                {{ runtimeMappingProcess.startSignal }} <= false;
+            end if;
+
+            -- Then, state logic
+        {%- for runtimeMapping in runtimeMappingProcess.runtimeMappings %}
+            {% if not loop.first -%} els {%- endif -%}
+            if count = {{ loop.index0 }} then
+                {%- if loop.index0 > 0 %}
+                -- Map Outputs from previous iteration
+                {%- for mapping in runtimeMappingProcess.runtimeMappings[loop.index0-1].mappingsOut %}
+                {{ mapping.left }} <= {{ mapping.right }};
+                {%- endfor %}
+                {% endif %}
+                -- Map Inputs for this iteration
+                {%- for mapping in runtimeMapping.mappingsIn %}
+                {{ mapping.left }} <= {{ mapping.right }};
+                {%- endfor %}
+        {%- endfor %}
+            elsif count = {{ runtimeMappingProcess.runtimeMappings|length }} then
+                {%- if runtimeMappingProcess.runtimeMappings|length > 0 %}
+                -- Map Outputs from previous iteration
+                {%- for mapping in runtimeMappingProcess.runtimeMappings[runtimeMappingProcess.runtimeMappings|length-1].mappingsOut %}
+                {{ mapping.left }} <= {{ mapping.right }};
+                {%- endfor %}
+                {%- endif %}
+
+                -- We're done!
+                {{ runtimeMappingProcess.processDoneSignal }} <= true;
+            end if;
+        end if;
+    end process;
+    {% endfor %}
+    -- Perform Runtime mapping function
+    process(clk)
+        variable count : integer range 0 to 2 := 2;
+    begin
+        if clk'event and clk = '1' then
+            if count = 0 then
+    {%- for runtimeMappingProcess in item.runtimeMappingProcesses %}
+                {{ runtimeMappingProcess.processStartSignal }} <= false;
+    {%- endfor %}
+
+                -- Wait until all sub-processes are done
+                if {{ item.runtimeProcessDoneSignal }} then
+                    count := 1;
+                end if;
+            elsif count = 1 then
+                -- All the sub-processes have finished, let's do the mapping
+    {%- for mapping in item.mappings %}
+                {{ mapping.left }} <= {{ mapping.right }};
+    {%- endfor %}
+
+                finish <= true;
+
+                count := 2;
+            elsif count = 2 then
+                -- Wait until we have to start again
+                if start then
+                    finish <= false;
+
+    {%- for runtimeMappingProcess in item.runtimeMappingProcesses %}
+                    {{ runtimeMappingProcess.processStartSignal }} <= true;
+    {%- endfor %}
+
+                    count := 0;
+                end if;
+            end if;
+
+        end if;
+    end process;
+{%- else %}
+    {%- if item.mappings|length > 0 %}
     -- Perform Mapping
     process(clk)
     begin
@@ -98,5 +212,6 @@ begin
         {%- endfor %}
         end if;
     end process;
+    {%- endif %}
 {%- endif %}
 end architecture;

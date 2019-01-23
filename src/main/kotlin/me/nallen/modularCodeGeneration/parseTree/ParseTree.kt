@@ -71,7 +71,7 @@ data class Literal(var value: String): ParseTreeItem("literal")
  * The supported types of variables, either Boolean (true / false), or Real (generally represented by double)
  */
 enum class VariableType {
-    BOOLEAN, REAL
+    BOOLEAN, REAL, INTEGER
 }
 
 /**
@@ -481,6 +481,7 @@ fun ParseTreeItem.evaluate(var_map: Map<String, Literal> = HashMap()): Any {
     return when(this.getOperationResultType()) {
         VariableType.BOOLEAN -> this.evaluateBoolean(var_map)
         VariableType.REAL -> this.evaluateReal(var_map)
+        VariableType.INTEGER -> this.evaluateReal(var_map)
     }
 }
 

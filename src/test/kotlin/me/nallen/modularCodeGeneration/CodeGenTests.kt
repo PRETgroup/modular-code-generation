@@ -74,6 +74,9 @@ class CodeGenTests : StringSpec() {
 
                             config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
                             CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+
+                            config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
+                            CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
                         }
                     }
                 }
