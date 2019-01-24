@@ -20,11 +20,13 @@ fun main(args: Array<String>) {
 
     // Import from the description
     time = measureTimeMillis {
-        val imported = Importer.import("examples/heart/main.yaml")
+        val imported = Importer.import("examples/water_heater/main.yaml")
         item = imported.first
         config = imported.second
     }
     println("Import time: $time ms")
+
+    item = item.flatten()
 
     // Generate C code
     time = measureTimeMillis {

@@ -50,6 +50,10 @@ abstract class HybridItem(
         }
     }
 
+    open fun flatten(): HybridItem {
+        return this
+    }
+
     /* Private Methods */
 
     protected fun checkParseTreeForNewContinuousVariable(item: ParseTreeItem, locality: Locality = Locality.INTERNAL) {

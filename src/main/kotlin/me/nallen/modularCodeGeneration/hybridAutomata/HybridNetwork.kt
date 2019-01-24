@@ -152,6 +152,51 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
 
         return null
     }
+
+    override fun flatten(): HybridItem {
+        val flattenedNetwork = HybridNetwork()
+
+        flattenedNetwork.name = this.name
+        flattenedNetwork.variables.addAll(this.variables)
+
+        for((key, value) in this.ioMapping) {
+            flattenedNetwork.ioMapping[key] = value
+        }
+
+        for((key, instance) in this.instances) {
+            // Get the instance of the item we want to generate
+            val instantiate = this.getInstantiateForInstantiateId(instance.instantiate)
+            val definition = this.getDefinitionForInstantiateId(instance.instantiate)
+            if(instantiate != null && definition != null) {
+                val flattenedDefinition = definition.flatten()
+
+                if(flattenedDefinition is HybridNetwork) {
+                    for(item in flattenedDefinition.definitions) {
+                        flattenedNetwork.definitions[item.key] = item.value
+                    }
+                    for(item in flattenedDefinition.instances) {
+                        flattenedNetwork.instances[item.key] = item.value
+                    }
+                    for(item in flattenedDefinition.instantiates) {
+                        flattenedNetwork.instantiates[item.key] = item.value
+                    }
+
+                    for(item in flattenedDefinition.ioMapping) {
+                        flattenedNetwork.ioMapping[item.key] = item.value
+                    }
+                }
+                else {
+                    flattenedNetwork.definitions[instantiate.definition] = definition
+                    flattenedNetwork.instances[key] = instance
+                    flattenedNetwork.instantiates[instance.instantiate] = instantiate
+                }
+            }
+        }
+
+        // IO
+
+        return flattenedNetwork
+    }
 }
 
 data class AutomataInstance(
