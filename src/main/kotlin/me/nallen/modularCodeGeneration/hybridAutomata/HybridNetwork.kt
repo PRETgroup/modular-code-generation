@@ -3,6 +3,7 @@ package me.nallen.modularCodeGeneration.hybridAutomata
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonValue
+import me.nallen.modularCodeGeneration.codeGen.c.Utils
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import java.util.*
 
@@ -159,6 +160,7 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
         flattenedNetwork.name = this.name
         flattenedNetwork.variables.addAll(this.variables)
 
+        // IO Needs to be modified slightly so that things still map correctly
         for((key, value) in this.ioMapping) {
             flattenedNetwork.ioMapping[key] = value
         }
@@ -175,15 +177,20 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
                         flattenedNetwork.definitions[item.key] = item.value
                     }
                     for(item in flattenedDefinition.instances) {
-                        flattenedNetwork.instances[item.key] = item.value
+                        val newKey = Utils.createVariableName(instantiate.name, item.key)
+                        flattenedNetwork.instances[newKey] = item.value
                     }
                     for(item in flattenedDefinition.instantiates) {
                         flattenedNetwork.instantiates[item.key] = item.value
                     }
-
-                    for(item in flattenedDefinition.ioMapping) {
-                        flattenedNetwork.ioMapping[item.key] = item.value
+                    for(item in flattenedDefinition.variables) {
+                        flattenedNetwork.variables.add(item.copy(name = Utils.createVariableName(instantiate.name, item.name), locality = Locality.INTERNAL))
                     }
+
+                    //TODO: IO Mapping
+                    /*for(item in flattenedDefinition.ioMapping) {
+                        flattenedNetwork.ioMapping[item.key] = item.value
+                    }*/
                 }
                 else {
                     flattenedNetwork.definitions[instantiate.definition] = definition
@@ -192,8 +199,6 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
                 }
             }
         }
-
-        // IO
 
         return flattenedNetwork
     }
