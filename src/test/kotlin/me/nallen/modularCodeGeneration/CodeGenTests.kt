@@ -50,8 +50,31 @@ class CodeGenTests : StringSpec() {
                         }
                     }
 
+                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " Code For  $it when flattened") {
+                        val imported = Importer.import(main.absolutePath)
+
+                        val network = imported.first.flatten()
+                        var config = imported.second
+
+                        config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
+                        CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                        if(canMake) {
+                            "make".runCommand(File("build/tmp/codegen")) shouldBe 0
+                        }
+
+                        config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
+                        CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                        if(canMake) {
+                            "make".runCommand(File("build/tmp/codegen")) shouldBe 0
+                        }
+                    }
+
                     if(!canMake) {
                         "Can Compile Code For $it" {
+
+                        }.config(enabled = false)
+
+                        "Can Compile Code For $it when flattened" {
 
                         }.config(enabled = false)
                     }
