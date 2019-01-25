@@ -26,8 +26,6 @@ fun main(args: Array<String>) {
     }
     println("Import time: $time ms")
 
-    item = item.flatten()
-
     // Generate C code
     time = measureTimeMillis {
         CodeGenManager.generate(item, CodeGenLanguage.C, "Generated", config)
