@@ -139,23 +139,32 @@ class VHDLGenerator {
         fun generate(item: HybridItem, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
 
+            var generateItem = item
+
+            if(config.runTimeParametrisation && generateItem is HybridNetwork) {
+                println("[INFO] VHDL Run-time generation requires a \"flat\" network. Network has automatically been" +
+                        "flattened where required.")
+
+                generateItem = generateItem.flatten()
+            }
+
             // If the directory doesn't already exist, we want to create it
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
             // If we're generating code for a Hybrid Network, we need to create a sub-directory for the files
-            val itemDir = if(item is HybridNetwork) {
-                File(outputDir, Utils.createFolderName(item.name, "Network"))
+            val itemDir = if(generateItem is HybridNetwork) {
+                File(outputDir, Utils.createFolderName(generateItem.name, "Network"))
             }
             else {
                 outputDir
             }
 
             // Generate the current item
-            generateItem(item, itemDir.absolutePath, config)
+            generateItem(generateItem, itemDir.absolutePath, config)
 
             // Generate runnable
-            generateSystem(item, outputDir.absolutePath, config)
+            generateSystem(generateItem, outputDir.absolutePath, config)
 
             // Generate Config file
             generateConfigFile(outputDir.absolutePath, config)
