@@ -107,12 +107,12 @@ fun Array<out String>.convertWordDelimiterConvention(newConvention: NamingConven
 
     // Return the string in its correct new naming convention
     return when(newConvention) {
-        NamingConvention.SNAKE_CASE -> words.joinToString("_").toLowerCase()
-        NamingConvention.UPPER_SNAKE_CASE -> words.joinToString("_").toUpperCase()
-        NamingConvention.KEBAB_CASE -> words.joinToString("-").toLowerCase()
-        NamingConvention.UPPER_KEBAB_CASE -> words.joinToString("-").toUpperCase()
-        NamingConvention.CAMEL_CASE -> words.convertToCamelCase()
-        NamingConvention.UPPER_CAMEL_CASE -> words.convertToCamelCase().capitalize()
+        NamingConvention.SNAKE_CASE -> words.filter {it.isNotEmpty() }.joinToString("_").toLowerCase()
+        NamingConvention.UPPER_SNAKE_CASE -> words.filter {it.isNotEmpty() }.joinToString("_").toUpperCase()
+        NamingConvention.KEBAB_CASE -> words.filter {it.isNotEmpty() }.joinToString("-").toLowerCase()
+        NamingConvention.UPPER_KEBAB_CASE -> words.filter {it.isNotEmpty() }.joinToString("-").toUpperCase()
+        NamingConvention.CAMEL_CASE -> words.filter {it.isNotEmpty() }.convertToCamelCase()
+        NamingConvention.UPPER_CAMEL_CASE -> words.filter {it.isNotEmpty() }.convertToCamelCase().capitalize()
     }
 }
 

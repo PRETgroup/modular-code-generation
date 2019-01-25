@@ -2,6 +2,7 @@ package me.nallen.modularCodeGeneration.parseTree
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
+import me.nallen.modularCodeGeneration.codeGen.c.Utils
 
 /**
  * A class that represents a single node of a Parse Tree.
@@ -505,5 +506,47 @@ fun ParseTreeItem.setParameterValue(key: String, value: ParseTreeItem): ParseTre
     }
 
     // Return itself to support chaining
+    return this
+}
+
+/**
+ * Prepends something in front of all variables
+ */
+fun ParseTreeItem.prependVariables(prependString: String, asVariable: Boolean = true): ParseTreeItem {
+    // We only care about variables, otherwise we just leave it to be
+    // We recursively call this function until we reach the end of the tree
+    if(this is Variable) {
+        // Let's prepend it
+        if(asVariable)
+            this.name = Utils.createVariableName(prependString, this.name)
+        else
+            this.name = prependString + this.name
+    }
+
+    for(child in this.getChildren()) {
+        child.prependVariables(prependString, asVariable)
+    }
+
+    return this
+}
+
+/**
+ * Replaces variable names with something else
+ */
+fun ParseTreeItem.replaceVariables(map: Map<String, String>): ParseTreeItem {
+    // We only care about variables, otherwise we just leave it to be
+    // We recursively call this function until we reach the end of the tree
+    if(this is Variable) {
+        // Let's check if it exists
+        if(map.containsKey(this.name)) {
+            // Let's replace it
+            this.name = map[this.name]!!
+        }
+    }
+
+    for(child in this.getChildren()) {
+        child.replaceVariables(map)
+    }
+
     return this
 }
