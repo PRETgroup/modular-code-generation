@@ -50,7 +50,7 @@ class CodeGenTests : StringSpec() {
                         }
                     }
 
-                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " Code For  $it when flattened") {
+                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " C Code For  $it when flattened") {
                         val imported = Importer.import(main.absolutePath)
 
                         val network = imported.first.flatten()
@@ -70,11 +70,11 @@ class CodeGenTests : StringSpec() {
                     }
 
                     if(!canMake) {
-                        "Can Compile Code For $it" {
+                        "Can Compile C Code For $it" {
 
                         }.config(enabled = false)
 
-                        "Can Compile Code For $it when flattened" {
+                        "Can Compile C Code For $it when flattened" {
 
                         }.config(enabled = false)
                     }
@@ -100,6 +100,19 @@ class CodeGenTests : StringSpec() {
 
                             config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
                             CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                        }
+
+                        ("Can Generate VHDL Code For  $it when flattened") {
+                            val imported = Importer.import(main.absolutePath)
+
+                            val network = imported.first.flatten()
+                            var config = imported.second
+
+                            config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
+                            CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+
+                            config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
+                            CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
                         }
                     }
                 }
