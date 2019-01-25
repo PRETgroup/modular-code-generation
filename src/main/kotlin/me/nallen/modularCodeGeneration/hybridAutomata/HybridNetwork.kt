@@ -3,7 +3,10 @@ package me.nallen.modularCodeGeneration.hybridAutomata
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonValue
+import me.nallen.modularCodeGeneration.codeGen.c.Utils
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
+import me.nallen.modularCodeGeneration.parseTree.prependVariables
+import me.nallen.modularCodeGeneration.parseTree.replaceVariables
 import java.util.*
 
 /**
@@ -151,6 +154,85 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
         }
 
         return null
+    }
+
+    override fun flatten(): HybridItem {
+        val flattenedNetwork = HybridNetwork()
+
+        flattenedNetwork.name = this.name
+        flattenedNetwork.variables.addAll(this.variables)
+
+        val variableMappings = LinkedHashMap<String, String>()
+
+        for((key, instance) in this.instances) {
+            // Get the instance of the item we want to generate
+            val instantiate = this.getInstantiateForInstantiateId(instance.instantiate)
+            val definition = this.getDefinitionForInstantiateId(instance.instantiate)
+            if(instantiate != null && definition != null) {
+                val flattenedDefinition = definition.flatten()
+
+                if(flattenedDefinition is HybridNetwork) {
+                    for(item in flattenedDefinition.definitions) {
+                        flattenedNetwork.definitions[item.key] = item.value
+                    }
+                    for(item in flattenedDefinition.instances) {
+                        val newKey = Utils.createVariableName(instantiate.name, item.key)
+                        flattenedNetwork.instances[newKey] = item.value
+                    }
+                    for(item in flattenedDefinition.instantiates) {
+                        flattenedNetwork.instantiates[item.key] = item.value
+                    }
+                    for(item in flattenedDefinition.variables) {
+                        flattenedNetwork.variables.add(item.copy(name = Utils.createVariableName(instantiate.name, item.name), locality = Locality.INTERNAL))
+                        variableMappings[instantiate.name + "." + item.name] = Utils.createVariableName(instantiate.name, item.name)
+                    }
+
+                    for(item in flattenedDefinition.ioMapping) {
+                        var newKey = AutomataVariablePair(Utils.createVariableName(instantiate.name, item.key.automata), item.key.variable)
+                        if(item.key.automata.isNotEmpty()) {
+                            val innerInstance = this.instances[item.key.automata]
+                            if(innerInstance != null) {
+                                val innerDefinition = this.getDefinitionForInstantiateId(instance.instantiate)
+                                if(innerDefinition != null) {
+                                    if(innerDefinition is HybridNetwork) {
+                                        newKey = AutomataVariablePair("", Utils.createVariableName(item.key.automata, item.key.variable))
+                                    }
+                                }
+                            }
+                        }
+                        else {
+                            newKey = AutomataVariablePair("", Utils.createVariableName(instantiate.name, item.key.variable))
+                        }
+
+                        flattenedNetwork.ioMapping[newKey] = item.value.prependVariables(instantiate.name)
+                    }
+                }
+                else {
+                    flattenedNetwork.definitions[instantiate.definition] = definition
+                    flattenedNetwork.instances[key] = instance
+                    flattenedNetwork.instantiates[instance.instantiate] = instantiate
+                }
+            }
+        }
+
+        for((key, value) in this.ioMapping) {
+            var newKey = key
+            if(key.automata.isNotEmpty()) {
+                val instance = this.instances[key.automata]
+                if(instance != null) {
+                    val definition = this.getDefinitionForInstantiateId(instance.instantiate)
+                    if(definition != null) {
+                        if(definition is HybridNetwork) {
+                            newKey = AutomataVariablePair("", Utils.createVariableName(key.automata, key.variable))
+                        }
+                    }
+                }
+            }
+
+            flattenedNetwork.ioMapping[newKey] = value.replaceVariables(variableMappings)
+        }
+
+        return flattenedNetwork
     }
 }
 
