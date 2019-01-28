@@ -18,4 +18,8 @@ class CliArgs(parser: ArgParser) {
     // The output directory where the generated code will go
     val outputDir by parser.storing("-o", "--output",
             help = "the directory to write the generated code to").default("output")
+
+    // Whether or not to "flatten" the network
+    val flatten by parser.flagging("-f", "--flatten",
+            help = "whether or not to flatten the network for generated code").default(false)
 }

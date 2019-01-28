@@ -50,6 +50,7 @@ This executable JAR file can then be run with the following arguments:
 | pos. 0 | **Required.** Path to the HAML Document for which you want to generate code for. |
 | `-l`<br/>`--language` | The language to generate code for. Valid options are: `C`, `VHDL`.<br /><br/>**Default:** `C` |
 | `-o`<br/>`--output` | The directory to store the generated code in.<br/><br/>**Default:** `output` |
+| `-f`<br/>`--flatten` | A flag to indicate whether the network should be "flattened" when generating code.<br/><br/>**Default:** `false` |
 
 #### Example Commands
 
@@ -60,6 +61,10 @@ Generate **VHDL code** for the file **MY_SPEC.yaml**:
 Generate **C code** for the file **MY_SPEC.yaml** and put it in the folder **my_folder**:
 
 `java -jar piha.jar MY_SPEC.yaml --language C -o my_folder`
+
+Generate **C code** for a **flattened** version of the file **MY_SPEC.yaml**:
+
+`java -jar piha.jar MY_SPEC.yaml --language C -f`
 
 
 ## Examples

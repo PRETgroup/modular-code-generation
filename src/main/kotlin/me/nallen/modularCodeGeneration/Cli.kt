@@ -12,7 +12,10 @@ fun main(args: Array<String>) = mainBody("piha") {
     CliArgs(ArgParser(args)).run {
         // Read the description and import it
         println("Reading source file '$source'...")
-        val (network, config) = Importer.import(source)
+        var (network, config) = Importer.import(source)
+
+        if(flatten)
+            network = network.flatten()
 
         // Generate the code
         println("Generating $language code into directory '$outputDir'")
