@@ -141,10 +141,14 @@ class VHDLGenerator {
 
             var generateItem = item
 
+            // Check if we're meant to be doing run-time parametrisation but we don't have a flat network
             if(config.runTimeParametrisation && generateItem is HybridNetwork) {
+                // We need to flatten the network so we can generate efficient code
+                // Let's warn the user first
                 println("[INFO] VHDL Run-time generation requires a \"flat\" network. Network has automatically been " +
                         "flattened where required.")
 
+                // And then flatten the network
                 generateItem = generateItem.flatten()
             }
 

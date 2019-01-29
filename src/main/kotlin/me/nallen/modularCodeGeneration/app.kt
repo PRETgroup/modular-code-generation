@@ -21,7 +21,7 @@ fun main(args: Array<String>) {
 
     // Import from the description
     time = measureTimeMillis {
-        val imported = Importer.import("examples/dac/cardiac_grid/2.yaml")
+        val imported = Importer.import("examples/water_heater/main.yaml")
         item = imported.first
         config = imported.second
     }

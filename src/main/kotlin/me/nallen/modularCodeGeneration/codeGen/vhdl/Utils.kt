@@ -19,6 +19,7 @@ object Utils {
     // defined in another file
     val DEFAULT_CUSTOM_VARIABLES = mapOf("STEP_SIZE" to "STEP_SIZE")
 
+    // A list of keywords that we want to avoid when generating variables, types, signals, etc.
     private val KEYWORDS = arrayOf("abs",
             "access",
             "after",
@@ -130,6 +131,9 @@ object Utils {
         }
     }
 
+    /**
+     * Converts a VariableType to a basic VHDL type (one which doesn't contain ranges)
+     */
     fun generateBasicVHDLType(type: VariableType?): String {
         // Switch on the type, and return the appropriate VHDL type
         return when(type) {
@@ -140,6 +144,9 @@ object Utils {
         }
     }
 
+    /**
+     * Get the default initiailisation value for a given VHDL Type
+     */
     fun generateDefaultInitForType(type: VariableType?): String {
         // Switch on the type, and return the appropriate default initial value
         return when(type) {
@@ -296,10 +303,12 @@ object Utils {
                 return "${Utils.createFunctionName(item.functionName)}($builder)"
             }
             is Literal -> {
+                // If the literal can be a double, then we'll use our custom function to create a fixed-point number
                 if(item.value.toDoubleOrNull() != null) {
                     "CREATE_FP(${item.value.toDouble()})"
                 }
                 else {
+                    // Otherwise it's probably a boolean, so just use it as such
                     item.value
                 }
             }
@@ -327,6 +336,8 @@ object Utils {
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
             is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)
             is Negative -> {
+                // If we have a negative number then we should just put the negative sign inside the FP conversion,
+                // otherwise we can just chuck in a negative sign as usual
                 if(item.operandA is Literal && (item.operandA as Literal).value.toDoubleOrNull() != null) {
                     padOperand(item, Literal((-1 * (item.operandA as Literal).value.toDouble()).toString()), prefixData)
                 }
@@ -393,42 +404,71 @@ object Utils {
     )
 
 
-
+    /**
+     * A class which is capable of storing all the information that we'd need about any variable / signal / IO that
+     * would be defined in the generated VHDL code
+     */
     data class VariableObject(
+            // The locality of this (Inputs, Outputs, Internal, etc.)
             var locality: String,
+
+            // For IO signals, the direction of the variable ("in", "out")
             var direction: String,
+
+            // The type of the variable to be defined
             var type: String,
+
+            // The name for this variable if it is an input signal
             var io: String,
+
+            // The name for this variable if it is an internal signal
             var signal: String,
+
+            // The name for this variable if it is a process variable
             var variable: String,
+
+            // The initial (default) value to be used for this variable
             var initialValue: String,
+
+            // Any string that should be used as a comment for the instantiation of the variable (or blank)
             var initialValueString: String
     ) {
         companion object {
+            /**
+             * Method to create the VariableObject for a given Variable
+             */
             fun create(variable: Variable, valuations: Map<String, ParseTreeItem> = HashMap(), runtimeParametrisation: Boolean = false): VariableObject {
+                // The default value could be either contained within the Variable itself, or in a map of default values
+                // e.g. initialisation function, etc.
                 val default: ParseTreeItem? = valuations[variable.name] ?: variable.defaultValue
 
+                // Let's start with the default value
                 var defaultValue: Any = Utils.generateDefaultInitForType(variable.type)
-                var defaultValueString = ""
                 if (default != null) {
+                    // If we have something specific to set it to, then let's replace it with that
                     defaultValue = try {
                         default.evaluate()
                     } catch (e: IllegalArgumentException) {
                         Utils.generateCodeForParseTreeItem(default)
                     }
-                    //defaultValueString = default.getString()
 
+                    // We want a string version of the default value, so let's convert it
                     if (defaultValue is Boolean)
+                        // As a Boolean
                         defaultValue = if(defaultValue) { "true" } else { "false" }
                     else if (defaultValue is Double)
+                        // Or as a Number
                         defaultValue = "CREATE_FP($defaultValue)"
                 }
 
+                // If we have run-time parametrisation then we need parameters to also be external inputs
                 val locality = if(runtimeParametrisation && variable.locality == Locality.PARAMETER)
                     Locality.EXTERNAL_INPUT
                 else
+                    // Otherwise we just use the same locality
                     variable.locality
 
+                // Now let's make the object!
                 return VariableObject(
                         variable.locality.getTextualName(),
                         locality.getShortName().toLowerCase(),
@@ -437,7 +477,7 @@ object Utils {
                         Utils.createVariableName(variable.name),
                         Utils.createVariableName(variable.name, "update"),
                         defaultValue.toString(),
-                        defaultValueString
+                        ""
                 )
             }
         }

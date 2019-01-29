@@ -15,11 +15,11 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 /**
- * The class that contains methods to do with the generation of Header Files for the Hybrid Item
+ * The class that contains methods to do with the generation of a Hybrid Network
  */
 object NetworkGenerator {
     /**
-     * Generates a string that represents the Header File for the given Hybrid Item
+     * Generates a string that represents the given Hybrid Network
      */
     fun generate(item: HybridNetwork, config: Configuration = Configuration()): String {
         val jinjava = Jinjava()
