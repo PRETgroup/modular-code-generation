@@ -3,7 +3,6 @@ package me.nallen.modularCodeGeneration
 import me.nallen.modularCodeGeneration.codeGen.CodeGenLanguage
 import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.description.Importer
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
@@ -27,11 +26,9 @@ fun main(args: Array<String>) {
     }
     println("Import time: $time ms")
 
-    config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
-
     // Generate C code
     time = measureTimeMillis {
-        CodeGenManager.generate(item, CodeGenLanguage.VHDL, "Generated", config)
+        CodeGenManager.generate(item, CodeGenLanguage.C, "Generated", config)
     }
     println("Code Generation time: $time ms")
 }
