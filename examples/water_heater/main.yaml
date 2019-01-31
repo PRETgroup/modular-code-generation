@@ -103,8 +103,14 @@ system:
       outputs:
         temperature: REAL
       instances:
-        Tank1: Watertank
-        Tank2: Watertank
+        Tank1:
+          type: Watertank
+          parameters:
+            k: 0.075
+        Tank2:
+          type: Watertank
+          parameters:
+            k: 0.15
       mappings:
         Tank1.burnerOn: burnerOn
         Tank1.burnerOff: burnerOff

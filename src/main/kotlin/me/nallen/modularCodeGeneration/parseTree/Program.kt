@@ -39,7 +39,7 @@ data class Program(
 
             // If a default value was provided, we want to check it for new variables too
             if(default != null)
-                checkParseTreeForNewVariable(default)
+                checkParseTreeForNewVariable(default, HashMap(), HashMap())
         }
 
         // Return the program for chaining
@@ -52,7 +52,7 @@ data class Program(
      * In addition, it is recommended to provide the return type of any functions so that variable types can be
      * accurately captured
      */
-    fun collectVariables(existing: List<VariableDeclaration> = ArrayList(), knownFunctionTypes: Map<String, VariableType?> = LinkedHashMap()): Program {
+    fun collectVariables(existing: List<VariableDeclaration> = ArrayList(), knownFunctionTypes: Map<String, VariableType?> = LinkedHashMap()): Map<String, VariableType> {
         val knownVariables = LinkedHashMap<String, VariableType>()
 
         // First, we need to record that we know all the external variables
@@ -74,7 +74,7 @@ data class Program(
         for(line in lines) {
             // For each line, we need to search any logic it may contain for any new variables
             when(line) {
-                is Statement -> checkParseTreeForNewVariable(line.logic)
+                is Statement -> checkParseTreeForNewVariable(line.logic, knownVariables, knownFunctionTypes)
                 is Assignment -> {
                     // When we come across a variable assignment, we need to see if we know it, and if not then add it.
                     // The type needs to be guessed from the logic that is assigned to it
@@ -82,29 +82,24 @@ data class Program(
                         knownVariables[line.variableName.name] = line.variableValue.getOperationResultType(knownVariables, knownFunctionTypes)
 
                     // The following line will actually add the variable to the Program
-                    checkParseTreeForNewVariable(line.variableName)
-                    checkParseTreeForNewVariable(line.variableValue)
+                    checkParseTreeForNewVariable(line.variableName, knownVariables, knownFunctionTypes)
+                    checkParseTreeForNewVariable(line.variableValue, knownVariables, knownFunctionTypes)
                 }
-                is Return -> checkParseTreeForNewVariable(line.logic)
+                is Return -> checkParseTreeForNewVariable(line.logic, knownVariables, knownFunctionTypes)
                 is IfStatement -> {
-                    checkParseTreeForNewVariable(line.condition)
-                    bodiesToParse.add(line.body)
+                    checkParseTreeForNewVariable(line.condition, knownVariables, knownFunctionTypes)
+                    knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes))
                 }
                 is ElseIfStatement -> {
-                    checkParseTreeForNewVariable(line.condition)
-                    bodiesToParse.add(line.body)
+                    checkParseTreeForNewVariable(line.condition, knownVariables, knownFunctionTypes)
+                    knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes))
                 }
-                is ElseStatement -> bodiesToParse.add(line.body)
+                is ElseStatement -> knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes))
             }
         }
 
-        // Now we can go through all of the sub-programs and collect variables from them
-        for(body in bodiesToParse) {
-            body.collectVariables(variables, knownFunctionTypes)
-        }
-
-        // Return the program for chaining
-        return this
+        // Return the list of variables found
+        return knownVariables
     }
 
     /**
@@ -175,15 +170,15 @@ data class Program(
     /**
      * Checks a Parse Tree for any new variables inside the program
      */
-    private fun checkParseTreeForNewVariable(item: ParseTreeItem) {
+    private fun checkParseTreeForNewVariable(item: ParseTreeItem, variables: Map<String, VariableType>, functions: Map<String, VariableType?>) {
         // If we're currently at a Variable, we want to try add it!
         if(item is Variable) {
-            addVariable(item.name, item.getOperationResultType())
+            addVariable(item.name, item.getOperationResultType(variables, functions))
         }
 
         // Recursively call for all children
         for(child in item.getChildren()) {
-            checkParseTreeForNewVariable(child)
+            checkParseTreeForNewVariable(child, variables, functions)
         }
     }
 }

@@ -92,7 +92,8 @@ system:
           inputs:
             theta: REAL
           logic: |
-            return C4 - C5 * theta
+            relative = C5 * theta
+            return C4 - relative
       initialisation:
         state: RP
         valuations:

@@ -2,6 +2,7 @@ package me.nallen.modularCodeGeneration.codeGen
 
 import com.fasterxml.jackson.module.kotlin.*
 import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenerator
+import me.nallen.modularCodeGeneration.codeGen.vhdl.VHDLGenerator
 import me.nallen.modularCodeGeneration.hybridAutomata.*
 import me.nallen.modularCodeGeneration.hybridAutomata.Locality
 import me.nallen.modularCodeGeneration.parseTree.*
@@ -40,9 +41,9 @@ object CodeGenManager {
             createInstantiates(item, config)
 
         // Depending on the language, we want to call a different generator.
-        // Currently only C code is supported, so this looks a bit boring
         when(language) {
             CodeGenLanguage.C -> CCodeGenerator.generate(item, dir, config)
+            CodeGenLanguage.VHDL -> VHDLGenerator.generate(item, dir, config)
         }
     }
 
@@ -405,5 +406,6 @@ data class LoggingField(
  * An enum that represents the language for which code generation should be performed
  */
 enum class CodeGenLanguage {
-    C
+    C,
+    VHDL
 }

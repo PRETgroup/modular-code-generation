@@ -19,7 +19,7 @@ class CodeGenTests : StringSpec() {
 
                 if(main.exists() && main.isFile) {
 
-                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " Code For  $it") {
+                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " C Code For  $it") {
                         val imported = Importer.import(main.absolutePath)
 
                         val network = imported.first
@@ -50,7 +50,7 @@ class CodeGenTests : StringSpec() {
                         }
                     }
 
-                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " Code For  $it when flattened") {
+                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " C Code For  $it when flattened") {
                         val imported = Importer.import(main.absolutePath)
 
                         val network = imported.first.flatten()
@@ -70,13 +70,50 @@ class CodeGenTests : StringSpec() {
                     }
 
                     if(!canMake) {
-                        "Can Compile Code For $it" {
+                        "Can Compile C Code For $it" {
 
                         }.config(enabled = false)
 
-                        "Can Compile Code For $it when flattened" {
+                        "Can Compile C Code For $it when flattened" {
 
                         }.config(enabled = false)
+                    }
+                }
+            }
+        }
+
+        File("examples").list().forEach {
+            val folder = File("examples", it)
+            if(folder.isDirectory) {
+                val main = File(folder, "main.yaml")
+
+                if(main.exists() && main.isFile) {
+                    if(it != "heart") {
+                        ("Can Generate VHDL Code For  $it") {
+                            val imported = Importer.import(main.absolutePath)
+
+                            val network = imported.first
+                            var config = imported.second
+
+                            config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
+                            CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+
+                            config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
+                            CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                        }
+
+                        ("Can Generate VHDL Code For  $it when flattened") {
+                            val imported = Importer.import(main.absolutePath)
+
+                            val network = imported.first.flatten()
+                            var config = imported.second
+
+                            config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
+                            CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+
+                            config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
+                            CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                        }
                     }
                 }
             }
