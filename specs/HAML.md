@@ -1,6 +1,6 @@
 # Hybrid Automata Modelling Language (HAML)
 
-#### Version: 0.1.1
+#### Version: 0.1.2
 
 ## Introduction
 
@@ -275,6 +275,7 @@ An **enum** that represents the type of a variable.
 |---|---|
 | `BOOLEAN` | A boolean variable. |
 | `REAL` | A real-numbered variable. |
+| `INTEGER` | An integer variable. |
 
 
 ### Location
@@ -431,11 +432,11 @@ return 0.29*exp(62.89*theta) + 0.70*exp(-10.99*theta)
 
 ### Formula
 
-A boolean or algebraic formula that can be used to either represent a boolean or real result.
+A boolean or algebraic formula that can be used to either represent a boolean, real, or integer result.
 
 A Formula is implemented as a String, and allows for a subset of math operations to be used within.
 Custom functions can also be called, with any arbitrary number of parameters.
-Any real number, the values `true` and `false`, and any variables, can be used as operands for any operation.
+Any real number, integer number, the values `true` and `false`, and any variables, can be used as operands for any operation.
 Parentheses (`(` and `)`) can be used to force operation order, as standard precedence rules are used.
 
 The operations allowed in a Formula are as follows:
@@ -666,5 +667,6 @@ codegenConfig:
 
 | Version | Date | Notes |
 |---|---|---|
+| 0.1.2 | 2019-01-31 | Added support for `Integer` types of variables |
 | 0.1.1 | 2018-02-08 | Updated to support hierarchy of Networks |
 | 0.1.0 | 2017-01-20 | Initial release |
