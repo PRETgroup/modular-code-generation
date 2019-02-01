@@ -156,6 +156,26 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
         return null
     }
 
+    /**
+     * Check if the Hybrid Network is a "flat" network (i.e. only contains Automata) or not
+     */
+    @JsonIgnore
+    fun isFlat(): Boolean {
+        // Iterate over every sub-instance
+        for((_, instance) in this.instances) {
+            // Fetch the definition
+            val definition = this.getDefinitionForInstantiateId(instance.instantiate)
+
+            // And if the definition is another network then we know it's not flat
+            if(definition != null && definition is HybridNetwork) {
+                return false
+            }
+        }
+
+        // Otherwise if we get here then it is flat!
+        return true
+    }
+
     override fun flatten(): HybridItem {
         val flattenedNetwork = HybridNetwork()
 

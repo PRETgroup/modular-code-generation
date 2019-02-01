@@ -45,7 +45,7 @@ class CCodeGenerator {
                 generateNetworkItems(item, outputDir.absolutePath, config)
             }
 
-            Logger.info("Generating ${outputDir.getRelativePath()}/${Utils.createFileName(item.name)}...")
+            Logger.info("Generating ${outputDir.getRelativePath()}/${Utils.createFileName(item.name)}")
 
             // Generate the Header File
             File(outputDir, "${Utils.createFileName(item.name)}.h").writeText(HFileGenerator.generate(item, config))
@@ -65,7 +65,7 @@ class CCodeGenerator {
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
-            Logger.info("Generating ${outputDir.getRelativePath()}/$RUNNABLE...")
+            Logger.info("Generating ${outputDir.getRelativePath()}/$RUNNABLE")
 
             // Generate the Runnable File
             File(outputDir, RUNNABLE).writeText(RunnableGenerator.generate(item, config))
@@ -82,7 +82,7 @@ class CCodeGenerator {
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
-            Logger.info("Generating ${outputDir.getRelativePath()}/$MAKEFILE...")
+            Logger.info("Generating ${outputDir.getRelativePath()}/$MAKEFILE")
 
             // Generate the Makefile
             File(outputDir, MAKEFILE).writeText(MakefileGenerator.generate(item, config, isRoot))
@@ -99,7 +99,7 @@ class CCodeGenerator {
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
-            Logger.info("Generating ${outputDir.getRelativePath()}/$CONFIG_FILE...")
+            Logger.info("Generating ${outputDir.getRelativePath()}/$CONFIG_FILE")
 
             // Generate the content
             val content = StringBuilder()
@@ -130,7 +130,7 @@ class CCodeGenerator {
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
-            Logger.info("Generating ${outputDir.getRelativePath()}/$DELAYABLE_HEADER...")
+            Logger.info("Generating ${outputDir.getRelativePath()}/$DELAYABLE_HEADER")
 
             // Generate the content
             val content = StringBuilder()
@@ -351,6 +351,8 @@ class CCodeGenerator {
             // If the directory doesn't already exist, we want to create it
             if(!outputDir.exists())
                 outputDir.mkdirs()
+
+            Logger.info("Generating C Code to \"${outputDir.getRelativePath()}\"")
 
             // If we're generating code for a Hybrid Network, we need to create a sub-directory for the files
             val itemDir = if(item is HybridNetwork) {

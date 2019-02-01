@@ -45,7 +45,7 @@ class VHDLGenerator {
                 generateNetworkItems(item, outputDir.absolutePath, config)
             }
 
-            Logger.info("Generating ${outputDir.getRelativePath()}/${Utils.createFileName(item.name)}.vhdl...")
+            Logger.info("Generating ${outputDir.getRelativePath()}/${Utils.createFileName(item.name)}.vhdl")
 
             if(item is HybridAutomata) {
                 // Generate the Source File for the Automata
@@ -68,7 +68,7 @@ class VHDLGenerator {
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
-            Logger.info("Generating ${outputDir.getRelativePath()}/$SYSTEM...")
+            Logger.info("Generating ${outputDir.getRelativePath()}/$SYSTEM")
 
             // Generate the Runnable File
             File(outputDir, SYSTEM).writeText(SystemGenerator.generate(item, config))
@@ -85,7 +85,7 @@ class VHDLGenerator {
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
-            Logger.info("Generating ${outputDir.getRelativePath()}/$CONFIG_FILE...")
+            Logger.info("Generating ${outputDir.getRelativePath()}/$CONFIG_FILE")
 
             // Generate the content
             val content = StringBuilder()
@@ -107,7 +107,7 @@ class VHDLGenerator {
             // And write the content
             File(outputDir, CONFIG_FILE).writeText(content.toString())
 
-            Logger.info("Generating ${outputDir.getRelativePath()}/$LIBRARY_FILE...")
+            Logger.info("Generating ${outputDir.getRelativePath()}/$LIBRARY_FILE")
 
             // Generate the Fixed Point library
             File(outputDir, LIBRARY_FILE).writeText(this::class.java.classLoader.getResource("templates/vhdl/lib.vhdl").readText())
@@ -153,11 +153,11 @@ class VHDLGenerator {
             var generateItem = item
 
             // Check if we're meant to be doing run-time parametrisation but we don't have a flat network
-            if(config.runTimeParametrisation && generateItem is HybridNetwork) {
+            if(config.runTimeParametrisation && generateItem is HybridNetwork && !generateItem.isFlat()) {
                 // We need to flatten the network so we can generate efficient code
                 // Let's warn the user first
                 println("[INFO] VHDL Run-time generation requires a \"flat\" network. Network has automatically been " +
-                        "flattened where required.")
+                        "flattened.")
 
                 // And then flatten the network
                 generateItem = generateItem.flatten()
@@ -166,6 +166,8 @@ class VHDLGenerator {
             // If the directory doesn't already exist, we want to create it
             if(!outputDir.exists())
                 outputDir.mkdirs()
+
+            Logger.info("Generating VHDL Code to \"${outputDir.getRelativePath()}\"")
 
             // If we're generating code for a Hybrid Network, we need to create a sub-directory for the files
             val itemDir = if(generateItem is HybridNetwork) {
