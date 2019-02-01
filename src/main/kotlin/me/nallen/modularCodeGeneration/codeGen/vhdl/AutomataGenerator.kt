@@ -7,8 +7,10 @@ import me.nallen.modularCodeGeneration.hybridAutomata.Locality
 import me.nallen.modularCodeGeneration.parseTree.*
 import me.nallen.modularCodeGeneration.parseTree.Variable
 import me.nallen.modularCodeGeneration.codeGen.vhdl.Utils.VariableObject
+import me.nallen.modularCodeGeneration.logging.Logger
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
+import kotlin.system.exitProcess
 
 /**
  * The class that contains methods to do with the generation of a single Automaton
@@ -32,7 +34,8 @@ object AutomataGenerator {
         for(variable in item.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
             // Delayed variables are not currently supported in VHDL, so we currently error out
             if(variable.canBeDelayed()) {
-                throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
+                Logger.error("Delayed variables are currently not supported in VHDL Generation")
+                exitProcess(1)
             }
 
             // Depending on the parametrisation method, we'll do things slightly differently

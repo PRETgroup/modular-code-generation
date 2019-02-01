@@ -3,11 +3,14 @@ package me.nallen.modularCodeGeneration.codeGen.vhdl
 import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
+import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenerator
 import me.nallen.modularCodeGeneration.codeGen.vhdl.Utils.createFileName
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
+import me.nallen.modularCodeGeneration.logging.Logger
 import me.nallen.modularCodeGeneration.parseTree.VariableType
+import me.nallen.modularCodeGeneration.utils.getRelativePath
 import java.io.File
 import java.util.*
 import kotlin.collections.ArrayList
@@ -42,6 +45,8 @@ class VHDLGenerator {
                 generateNetworkItems(item, outputDir.absolutePath, config)
             }
 
+            Logger.info("Generating ${outputDir.getRelativePath()}/${Utils.createFileName(item.name)}.vhdl...")
+
             if(item is HybridAutomata) {
                 // Generate the Source File for the Automata
                 File(outputDir, "${Utils.createFileName(item.name)}.vhdl").writeText(AutomataGenerator.generate(item, config))
@@ -63,6 +68,8 @@ class VHDLGenerator {
             if(!outputDir.exists())
                 outputDir.mkdirs()
 
+            Logger.info("Generating ${outputDir.getRelativePath()}/$SYSTEM...")
+
             // Generate the Runnable File
             File(outputDir, SYSTEM).writeText(SystemGenerator.generate(item, config))
         }
@@ -77,6 +84,8 @@ class VHDLGenerator {
             // If the directory doesn't already exist, we want to create it
             if(!outputDir.exists())
                 outputDir.mkdirs()
+
+            Logger.info("Generating ${outputDir.getRelativePath()}/$CONFIG_FILE...")
 
             // Generate the content
             val content = StringBuilder()
@@ -97,6 +106,8 @@ class VHDLGenerator {
 
             // And write the content
             File(outputDir, CONFIG_FILE).writeText(content.toString())
+
+            Logger.info("Generating ${outputDir.getRelativePath()}/$LIBRARY_FILE...")
 
             // Generate the Fixed Point library
             File(outputDir, LIBRARY_FILE).writeText(this::class.java.classLoader.getResource("templates/vhdl/lib.vhdl").readText())
