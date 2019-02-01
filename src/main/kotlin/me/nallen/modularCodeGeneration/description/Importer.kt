@@ -5,12 +5,14 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.hybridAutomata.*
+import me.nallen.modularCodeGeneration.logging.Logger
 import me.nallen.modularCodeGeneration.parseTree.Literal
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
 import java.io.File
 import java.io.IOException
 import java.util.*
+import kotlin.system.exitProcess
 
 typealias ParseTreeVariableType = me.nallen.modularCodeGeneration.parseTree.VariableType
 typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
@@ -68,8 +70,10 @@ class Importer {
             val file = File(path)
 
             // Try to open the file
-            if(!file.exists() || !file.isFile)
-                throw Exception("Whoops")
+            if(!file.exists() || !file.isFile) {
+                Logger.error("Unable to find the requested file at $path")
+                exitProcess(1)
+            }
 
             val builder = StringBuilder()
             val lines = file.readLines()
