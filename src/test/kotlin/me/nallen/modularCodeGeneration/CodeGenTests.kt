@@ -109,10 +109,10 @@ class CodeGenTests : StringSpec() {
                             var config = imported.second
 
                             config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
-                            CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                            CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
 
                             config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
-                            CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                            CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
                         }
                     }
                 }
