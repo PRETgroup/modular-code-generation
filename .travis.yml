@@ -4,8 +4,7 @@ jdk:
 before_install:
   - chmod +x gradlew
   - sudo apt-get -qq update
-  - sudo apt-get install -y libgnat-4.8
-  - sudo ./tools/Travis-CI/grc.setup.sh
+  - sudo apt-get install -y libgnat-4.6
 before_script:
   - ./travis/ghdl-install.sh
 after_success:
