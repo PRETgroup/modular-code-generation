@@ -3,6 +3,11 @@ jdk:
   - oraclejdk8
 before_install:
   - chmod +x gradlew
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libgnat-4.8
+  - sudo ./tools/Travis-CI/grc.setup.sh
+before_script:
+  - ./travis/ghdl-install.sh
 after_success:
   - ./gradlew jacocoTestReport
   - bash <(curl -s https://codecov.io/bash)
