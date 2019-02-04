@@ -44,8 +44,8 @@ object AutomataGenerator {
                 val variableObject = VariableObject.create(variable)
 
                 // The signal name that we use depends on the type it is
-                if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.EXTERNAL_OUTPUT)
-                    // If it's an external variable then we use that
+                if(variable.locality == Locality.EXTERNAL_INPUT)
+                    // If it's an external input variable then we use that
                     signalNameMap[variable.name] = variableObject.io
                 else
                     // Otherwise we use an internal signal
