@@ -61,10 +61,6 @@ fi
 # remove downloaded files
 rm $GHDL_TARBALL
 
-# gcc debugging
-echo -e "${CYAN}Testing GCC version and configuration...${NOCOLOR}"
-gcc -v
-
 # test ghdl version
 echo -e "${CYAN}Testing GHDL version...${NOCOLOR}"
 ./bin/ghdl -v
@@ -75,30 +71,13 @@ else
 	exit 1
 fi
 
-VERSION=20181129
-REMOTE_TAR=https://github.com/ghdl/ghdl/archive/$VERSION.tar.gz
-
-LOCAL_TAR=ghdl.tgz
-
-wget $REMOTE_TAR -O $LOCAL_TAR
-
-tar -xzf $LOCAL_TAR
-
-rm $LOCAL_TAR
-
-cd ghdl-$VERSION
-mkdir build
-cd build
-../configure
-make && make install
-
 
 # Need to have gnat installed, and zlib1g-dev
-#gnat version will depend on the Ubuntu version - 4.8 for 14, 5 for others?
+# gnat version will depend on the Ubuntu version - 4.8 for 14, 5 for others?
 
 # https://github.com/ghdl/ghdl/releases/download/v0.35/ghdl-0.35-mcode-ubuntu14.tgz
 
-mkdir work
-ghdl -i --workdir=work *.vhdl
-ghdl -i --workdir=work */*.vhdl
-ghdl -m --workdir=work system
+# mkdir work
+# ghdl -i --workdir=work *.vhdl
+# ghdl -i --workdir=work */*.vhdl
+# ghdl -m --workdir=work system

@@ -82,6 +82,8 @@ class CodeGenTests : StringSpec() {
             }
         }
 
+        val canGhdl = "ghdl".runCommand(File("build"), ProcessBuilder.Redirect.PIPE) != 127
+
         File("examples").list().forEach {
             val folder = File("examples", it)
             if(folder.isDirectory) {
@@ -89,7 +91,7 @@ class CodeGenTests : StringSpec() {
 
                 if(main.exists() && main.isFile) {
                     if(it != "heart") {
-                        ("Can Generate VHDL Code For  $it") {
+                        ("Can Generate" + if(canMake) { " and Synthesise" } else { "" } + " VHDL Code For  $it") {
                             val imported = Importer.import(main.absolutePath)
 
                             val network = imported.first
@@ -97,12 +99,17 @@ class CodeGenTests : StringSpec() {
 
                             config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
                             CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                            if(canMake) {
+                                "ghdl -i *.vhdl".runCommand(File("build/tmp/codegen")) shouldBe 0
+                                "ghdl -i */*.vhdl".runCommand(File("build/tmp/codegen")) shouldBe 0
+                                "ghdl -m system".runCommand(File("build/tmp/codegen")) shouldBe 0
+                            }
 
                             config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
                             CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
                         }
 
-                        ("Can Generate VHDL Code For  $it when flattened") {
+                        ("Can Generate" + if(canMake) { " and Synthesise" } else { "" } + " VHDL Code For $it when flattened") {
                             val imported = Importer.import(main.absolutePath)
 
                             val network = imported.first.flatten()
@@ -110,9 +117,24 @@ class CodeGenTests : StringSpec() {
 
                             config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
                             CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                            if(canMake) {
+                                "ghdl -i *.vhdl".runCommand(File("build/tmp/codegen")) shouldBe 0
+                                "ghdl -i */*.vhdl".runCommand(File("build/tmp/codegen")) shouldBe 0
+                                "ghdl -m system".runCommand(File("build/tmp/codegen")) shouldBe 0
+                            }
 
                             config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
                             CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                        }
+
+                        if(!canMake) {
+                            "Can Synthesise VHDL Code For $it" {
+
+                            }.config(enabled = false)
+
+                            "Can Synthesise VHDL Code For $it when flattened" {
+
+                            }.config(enabled = false)
                         }
                     }
                 }
