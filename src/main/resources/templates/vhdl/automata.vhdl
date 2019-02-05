@@ -238,7 +238,7 @@ begin
             {% endifchanged -%}
             {{ variable.io }} <= {{ variable.variable }};
     {%- endif %}
-    {%- if config.compileTimeParametrisation and variable.direction == 'int' or variable.direction == 'out' %}
+    {%- if config.compileTimeParametrisation and (variable.direction == 'int' or variable.direction == 'out') %}
             {% ifchanged variable.locality %}
             -- Map {{ variable.locality }}
             {% endifchanged -%}
