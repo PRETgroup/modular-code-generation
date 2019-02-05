@@ -128,7 +128,7 @@ class CodeGenTests : StringSpec() {
     private fun makeGhdl(workingDir: File, levels: Int = 1, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {
         val builder = StringBuilder("")
         for(i in 1 .. levels) {
-            arrayOf("bash", "-c", "ghdl -i ${builder.toString()}*.vhdl").runCommand(workingDir, redirect)
+            arrayOf("bash", "-c", "ghdl -i $builder*.vhdl").runCommand(workingDir, redirect)
             builder.append("*/")
         }
         return "ghdl -m system".runCommand(workingDir, redirect)
