@@ -437,7 +437,7 @@ object Utils {
             /**
              * Method to create the VariableObject for a given Variable
              */
-            fun create(variable: Variable, valuations: Map<String, ParseTreeItem> = HashMap(), runtimeParametrisation: Boolean = false): VariableObject {
+            fun create(variable: Variable, valuations: Map<String, ParseTreeItem> = HashMap(), runtimeParametrisation: Boolean = false, prefixData: PrefixData = PrefixData("")): VariableObject {
                 // The default value could be either contained within the Variable itself, or in a map of default values
                 // e.g. initialisation function, etc.
                 val default: ParseTreeItem? = valuations[variable.name] ?: variable.defaultValue
@@ -449,7 +449,7 @@ object Utils {
                     defaultValue = try {
                         default.evaluate()
                     } catch (e: IllegalArgumentException) {
-                        Utils.generateCodeForParseTreeItem(default)
+                        Utils.generateCodeForParseTreeItem(default, prefixData)
                     }
 
                     // We want a string version of the default value, so let's convert it
