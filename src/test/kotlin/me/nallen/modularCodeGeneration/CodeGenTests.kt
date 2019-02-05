@@ -105,6 +105,9 @@ class CodeGenTests : StringSpec() {
 
                             config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
                             CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                            if(canGhdl) {
+                                makeGhdl(File("build/tmp/codegen")) shouldBe 0
+                            }
                         }
 
                         ("Can Generate" + if(canGhdl) { " and Synthesise" } else { "" } + " VHDL Code For $it when flattened") {
@@ -121,9 +124,12 @@ class CodeGenTests : StringSpec() {
 
                             config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
                             CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                            if(canGhdl) {
+                                makeGhdl(File("build/tmp/codegen")) shouldBe 0
+                            }
                         }
 
-                        if(!canMake) {
+                        if(!canGhdl) {
                             "Can Synthesise VHDL Code For $it" {
 
                             }.config(enabled = false)
@@ -140,7 +146,6 @@ class CodeGenTests : StringSpec() {
 
     private fun String.runCommand(workingDir: File, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {
         return try {
-            val parts = this.split("\\s".toRegex())
             val proc = ProcessBuilder(this)
                     .directory(workingDir)
                     .redirectOutput(redirect)
@@ -156,6 +161,7 @@ class CodeGenTests : StringSpec() {
     }
 
     private fun makeGhdl(workingDir: File, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {
+        "echo 'Running GHDL Make'".runCommand(workingDir, redirect)
         "/bin/bash -c 'ghdl -i *.vhdl'".runCommand(workingDir, redirect)
         "/bin/bash -c 'ghdl -i */*.vhdl'".runCommand(workingDir, redirect)
         return "ghdl -m system".runCommand(workingDir, redirect)
