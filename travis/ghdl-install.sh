@@ -61,7 +61,7 @@ fi
 # remove downloaded files
 rm $GHDL_TARBALL
 
-cp -R * /usr/
+sudo cp -R * /usr/
 
 # test ghdl version
 echo -e "${CYAN}Testing GHDL version...${NOCOLOR}"
