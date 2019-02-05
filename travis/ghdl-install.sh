@@ -72,14 +72,3 @@ else
 	echo 1>&2 -e "${RED}GHDL test [FAILED]${NOCOLOR}"
 	exit 1
 fi
-
-
-# Need to have gnat installed, and zlib1g-dev
-# gnat version will depend on the Ubuntu version - 4.8 for 14, 5 for others?
-
-# https://github.com/ghdl/ghdl/releases/download/v0.35/ghdl-0.35-mcode-ubuntu14.tgz
-
-# mkdir work
-# ghdl -i --workdir=work *.vhdl
-# ghdl -i --workdir=work */*.vhdl
-# ghdl -m --workdir=work system
