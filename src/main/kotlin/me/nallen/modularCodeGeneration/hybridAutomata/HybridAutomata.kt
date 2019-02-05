@@ -154,7 +154,7 @@ data class Variable(
 }
 
 enum class Locality {
-    INTERNAL, EXTERNAL_INPUT, EXTERNAL_OUTPUT, PARAMETER;
+    PARAMETER, EXTERNAL_INPUT, EXTERNAL_OUTPUT, INTERNAL;
 
     fun getTextualName(): String {
         return when(this) {

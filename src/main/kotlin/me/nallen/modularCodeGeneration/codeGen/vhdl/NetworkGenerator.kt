@@ -165,6 +165,9 @@ object NetworkGenerator {
                             Utils.createTypeName(definition.name)
                     )
 
+                    // We want to keep track of renamed variables within this instance for use with initial values
+                    val instanceSignalNameMap = HashMap<String, String>()
+
                     // For run-time parametrisation we need a start and finish signal to be mapped
                     instanceObject.mappings.add(MappingObject(
                             "start",
@@ -249,6 +252,7 @@ object NetworkGenerator {
 
                         // And keep track of the signal name as always
                         signalNameMap["${name}.state"] = localSignal.signal
+                        instanceSignalNameMap["state"] = localSignal.signal
                     }
 
                     // Now we need to just go through every variable and deal with those
@@ -319,7 +323,7 @@ object NetworkGenerator {
                         }
 
                         // Now we create the local signal for storing the value of the variable for this instance
-                        val localSignal = VariableObject.create(Variable(Utils.createVariableName(name, variable.name), variable.type, Locality.INTERNAL, defaultValue, variable.delayableBy))
+                        val localSignal = VariableObject.create(Variable(Utils.createVariableName(name, variable.name), variable.type, Locality.INTERNAL, defaultValue, variable.delayableBy), prefixData=Utils.PrefixData("", instanceSignalNameMap))
                         // We still want labels for parameters to be correct because we'll make them constants
                         if(variable.locality == Locality.PARAMETER)
                             localSignal.locality = Locality.PARAMETER.getTextualName()
@@ -349,6 +353,7 @@ object NetworkGenerator {
 
                         // And keep track of the local signal that we just made
                         signalNameMap["${name}.${variable.name}"] = localSignal.signal
+                        instanceSignalNameMap[variable.name] = localSignal.signal
                     }
 
                     // We only need to add the component and instance once, so make sure we haven't already generated it
