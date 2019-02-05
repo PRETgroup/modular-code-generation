@@ -4,8 +4,10 @@ import io.kotlintest.matchers.shouldBe
 import io.kotlintest.specs.StringSpec
 import me.nallen.modularCodeGeneration.codeGen.*
 import me.nallen.modularCodeGeneration.description.Importer
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
 import java.io.File
 import java.io.IOException
+import java.lang.StringBuilder
 import java.util.concurrent.TimeUnit
 
 class CodeGenTests : StringSpec() {
@@ -76,11 +78,13 @@ class CodeGenTests : StringSpec() {
                         val network = imported.first
                         var config = imported.second
 
+                        val levels = if(network is HybridAutomata) { 1 } else { 2 }
+
                         ("Can Generate" + if(canGhdl) { " and Synthesise" } else { "" } + " Compile-Time VHDL Code For $it") {
                             config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
                             CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
                             if (canGhdl) {
-                                makeGhdl(File("build/tmp/codegen")) shouldBe 0
+                                makeGhdl(File("build/tmp/codegen"), levels) shouldBe 0
                             }
                         }
 
@@ -88,7 +92,7 @@ class CodeGenTests : StringSpec() {
                             config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
                             CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
                             if(canGhdl) {
-                                makeGhdl(File("build/tmp/codegen")) shouldBe 0
+                                makeGhdl(File("build/tmp/codegen"), levels) shouldBe 0
                             }
                         }
                     }
@@ -121,9 +125,12 @@ class CodeGenTests : StringSpec() {
         }
     }
 
-    private fun makeGhdl(workingDir: File, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {
-        arrayOf("bash", "-c", "ghdl -i *.vhdl").runCommand(workingDir, redirect)
-        arrayOf("bash", "-c", "ghdl -i */*.vhdl").runCommand(workingDir, redirect)
+    private fun makeGhdl(workingDir: File, levels: Int = 1, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {
+        val builder = StringBuilder("")
+        for(i in 1 .. levels) {
+            arrayOf("bash", "-c", "ghdl -i ${builder.toString()}*.vhdl").runCommand(workingDir, redirect)
+            builder.append("*/")
+        }
         return "ghdl -m system".runCommand(workingDir, redirect)
     }
 
