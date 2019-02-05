@@ -84,8 +84,6 @@ class CodeGenTests : StringSpec() {
 
         val canGhdl = "ghdl -v".runCommand(File("build"), ProcessBuilder.Redirect.PIPE) != 127
 
-        ProcessBuilder.Redirect.INHERIT.file().writeText("canGhdl: " + canGhdl)
-
         File("examples").list().forEach {
             val folder = File("examples", it)
             if(folder.isDirectory) {
@@ -146,7 +144,6 @@ class CodeGenTests : StringSpec() {
 
     private fun String.runCommand(workingDir: File, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {
         return try {
-            redirect.file().writeText(this)
             val parts = this.split("\\s".toRegex())
             val proc = ProcessBuilder(*parts.toTypedArray())
                     .directory(workingDir)
