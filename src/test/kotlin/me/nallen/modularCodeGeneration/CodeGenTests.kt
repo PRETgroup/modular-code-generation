@@ -82,7 +82,7 @@ class CodeGenTests : StringSpec() {
             }
         }
 
-        val canGhdl = "ghdl -v".runCommand(File("build"), ProcessBuilder.Redirect.PIPE) != 127
+        val canGhdl = false //"ghdl -v".runCommand(File("build"), ProcessBuilder.Redirect.PIPE) != 127
 
         File("examples").list().forEach {
             val folder = File("examples", it)
