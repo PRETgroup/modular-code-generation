@@ -165,8 +165,8 @@ class CodeGenTests : StringSpec() {
     }
 
     private fun makeGhdl(workingDir: File, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {
-        arrayOf("/bin/bash", "-c", "'ghdl -i *.vhdl'").runCommand(workingDir, redirect)
-        arrayOf("/bin/bash", "-c", "'ghdl -i */*.vhdl'").runCommand(workingDir, redirect)
+        arrayOf("/bin/bash", "-c", "ghdl -i *.vhdl").runCommand(workingDir, redirect)
+        arrayOf("/bin/bash", "-c", "ghdl -i */*.vhdl").runCommand(workingDir, redirect)
         return "ghdl -m system".runCommand(workingDir, redirect)
     }
 
