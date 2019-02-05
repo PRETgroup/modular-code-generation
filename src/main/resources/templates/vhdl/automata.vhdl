@@ -50,6 +50,23 @@ architecture behavior of {{ item.name }} is
     );
 {%- endif %}
 
+{%- if config.compileTimeParametrisation %}
+    {%- if item.locations|length > 1 %}
+
+    -- Declare State
+    signal state : {{ item.enumName }} := {{ item.initialLocation }};
+    {%- endif %}
+
+{%- for variable in item.variables %}
+{%- if variable.locality != 'Inputs' %}
+    {% ifchanged variable.locality %}
+    -- Declare {{ variable.locality }}
+    {% endifchanged -%}
+    signal {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; {%- if variable.initialValueString %} -- {{ variable.initialValueString }} {%- endif %}
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+
 {%- if item.customFunctions|length > 0 %}
 
     -- Declare Custom Functions
@@ -153,6 +170,10 @@ begin
 
             -- Map State
             state_out <= {{ item.enumName }}'POS(state_update);
+    {%- else %}
+
+            -- Map State
+            state <= state_update;
     {%- endif %}
 {%- elif item.locations|length > 0 %}
     {%- if item.locations[0].transitions|length > 1 %}
@@ -216,6 +237,12 @@ begin
             -- Map {{ variable.locality }}
             {% endifchanged -%}
             {{ variable.io }} <= {{ variable.variable }};
+    {%- endif %}
+    {%- if config.compileTimeParametrisation and variable.direction == 'int' or variable.direction == 'out' %}
+            {% ifchanged variable.locality %}
+            -- Map {{ variable.locality }}
+            {% endifchanged -%}
+            {{ variable.signal }} <= {{ variable.variable }};
     {%- endif %}
 {%- endfor %}
 

@@ -3,6 +3,10 @@ jdk:
   - oraclejdk8
 before_install:
   - chmod +x gradlew
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libgnat-4.6
+  - chmod +x travis/ghdl-install.sh
+  - travis/ghdl-install.sh
 after_success:
   - ./gradlew jacocoTestReport
   - bash <(curl -s https://codecov.io/bash)
