@@ -141,7 +141,7 @@ class CodeGenTests : StringSpec() {
     private fun String.runCommand(workingDir: File, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {
         return try {
             val parts = this.split("\\s".toRegex())
-            val proc = ProcessBuilder(*parts.toTypedArray())
+            val proc = ProcessBuilder(this)
                     .directory(workingDir)
                     .redirectOutput(redirect)
                     .redirectError(redirect)
@@ -156,8 +156,8 @@ class CodeGenTests : StringSpec() {
     }
 
     private fun makeGhdl(workingDir: File, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {
-        "/bin/bash -c ghdl -i *.vhdl".runCommand(workingDir, redirect)
-        "/bin/bash -c ghdl -i */*.vhdl".runCommand(workingDir, redirect)
+        "/bin/bash -c 'ghdl -i *.vhdl'".runCommand(workingDir, redirect)
+        "/bin/bash -c 'ghdl -i */*.vhdl'".runCommand(workingDir, redirect)
         return "ghdl -m system".runCommand(workingDir, redirect)
     }
 
