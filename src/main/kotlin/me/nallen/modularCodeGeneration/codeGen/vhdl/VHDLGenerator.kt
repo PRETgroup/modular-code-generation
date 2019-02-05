@@ -151,9 +151,14 @@ class VHDLGenerator {
             val outputDir = File(dir)
 
             var generateItem = item
+            var generateConfig = config
+
+            if(config.runTimeParametrisation && generateItem is HybridAutomata) {
+                generateConfig = generateConfig.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
+            }
 
             // Check if we're meant to be doing run-time parametrisation but we don't have a flat network
-            if(config.runTimeParametrisation && generateItem is HybridNetwork && !generateItem.isFlat()) {
+            if(generateConfig.runTimeParametrisation && generateItem is HybridNetwork && !generateItem.isFlat()) {
                 // We need to flatten the network so we can generate efficient code
                 // Let's warn the user first
                 Logger.warn("VHDL Run-time generation requires a \"flat\" network. Network has automatically been " +
@@ -178,13 +183,13 @@ class VHDLGenerator {
             }
 
             // Generate the current item
-            generateItem(generateItem, itemDir.absolutePath, config)
+            generateItem(generateItem, itemDir.absolutePath, generateConfig)
 
             // Generate runnable
-            generateSystem(generateItem, outputDir.absolutePath, config)
+            generateSystem(generateItem, outputDir.absolutePath, generateConfig)
 
             // Generate Config file
-            generateConfigFile(outputDir.absolutePath, config)
+            generateConfigFile(outputDir.absolutePath, generateConfig)
         }
     }
 }
