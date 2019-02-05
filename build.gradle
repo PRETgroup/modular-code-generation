@@ -44,6 +44,12 @@ jacocoTestReport {
   }
 }
 
+test {
+  testLogging {
+    events = ["standard_out", "passed", "failed", "skipped"]
+  }
+}
+
 jar {
   manifest {
     attributes 'Main-Class': 'me.nallen.modularCodeGeneration.CliKt'

@@ -19,7 +19,7 @@ class CodeGenTests : StringSpec() {
 
                 if(main.exists() && main.isFile) {
 
-                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " C Code For  $it") {
+                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " C Code For $it") {
                         val imported = Importer.import(main.absolutePath)
 
                         val network = imported.first
@@ -50,7 +50,7 @@ class CodeGenTests : StringSpec() {
                         }
                     }
 
-                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " C Code For  $it when flattened") {
+                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " C Code For $it when flattened") {
                         val imported = Importer.import(main.absolutePath)
 
                         val network = imported.first.flatten()
@@ -91,7 +91,7 @@ class CodeGenTests : StringSpec() {
 
                 if(main.exists() && main.isFile) {
                     if(it != "heart") {
-                        ("Can Generate" + if(canGhdl) { " and Synthesise" } else { "" } + " VHDL Code For  $it") {
+                        ("Can Generate" + if(canGhdl) { " and Synthesise" } else { "" } + " VHDL Code For $it") {
                             val imported = Importer.import(main.absolutePath)
 
                             val network = imported.first
@@ -161,7 +161,6 @@ class CodeGenTests : StringSpec() {
     }
 
     private fun makeGhdl(workingDir: File, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {
-        "echo 'Running GHDL Make'".runCommand(workingDir, redirect)
         "/bin/bash -c 'ghdl -i *.vhdl'".runCommand(workingDir, redirect)
         "/bin/bash -c 'ghdl -i */*.vhdl'".runCommand(workingDir, redirect)
         return "ghdl -m system".runCommand(workingDir, redirect)

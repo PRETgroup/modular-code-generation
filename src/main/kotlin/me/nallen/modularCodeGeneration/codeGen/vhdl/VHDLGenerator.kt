@@ -156,7 +156,7 @@ class VHDLGenerator {
             if(config.runTimeParametrisation && generateItem is HybridNetwork && !generateItem.isFlat()) {
                 // We need to flatten the network so we can generate efficient code
                 // Let's warn the user first
-                println("[INFO] VHDL Run-time generation requires a \"flat\" network. Network has automatically been " +
+                Logger.info("VHDL Run-time generation requires a \"flat\" network. Network has automatically been " +
                         "flattened.")
 
                 // And then flatten the network
