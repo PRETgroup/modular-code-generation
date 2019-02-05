@@ -61,9 +61,11 @@ fi
 # remove downloaded files
 rm $GHDL_TARBALL
 
+cp -R * /usr/
+
 # test ghdl version
 echo -e "${CYAN}Testing GHDL version...${NOCOLOR}"
-./bin/ghdl -v
+ghdl -v
 if [ $? -eq 0 ]; then
 	echo -e "${GREEN}GHDL test [SUCCESSFUL]${NOCOLOR}"
 else
