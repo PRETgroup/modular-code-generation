@@ -12,7 +12,7 @@ class DescriptionTests : StringSpec() {
                 val main = File(folder, "main.yaml")
 
                 if(main.exists() && main.isFile) {
-                    ("Can Import " + it) {
+                    ("Can Import $it") {
                         Importer.import(main.absolutePath)
                     }
                 }

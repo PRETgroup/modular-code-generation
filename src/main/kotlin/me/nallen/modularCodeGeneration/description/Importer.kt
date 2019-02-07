@@ -10,7 +10,6 @@ import me.nallen.modularCodeGeneration.parseTree.Literal
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
 import java.io.File
-import java.io.IOException
 import java.util.*
 import kotlin.system.exitProcess
 
@@ -194,7 +193,7 @@ private fun HybridNetwork.importItems(definitions: Map<String, DefinitionItem>) 
             is Network -> this.loadNetwork(name, definition)
         }
 
-        this.instantiates.put(UUID.randomUUID(), AutomataInstantiate(uuid, name))
+        this.instantiates[UUID.randomUUID()] = AutomataInstantiate(uuid, name)
     }
 }
 
@@ -207,7 +206,7 @@ private fun HybridNetwork.loadNetwork(name: String, definition: Network): UUID {
 
     // Add it with its unqiue ID
     val definitionUUID = UUID.randomUUID()
-    this.definitions.put(definitionUUID, network)
+    this.definitions[definitionUUID] = network
 
     // Return the ID for use elsewhere
     return definitionUUID
@@ -222,7 +221,7 @@ private fun HybridNetwork.loadDefinition(name: String, definition: Automata): UU
 
     // Add it with its unqiue ID
     val definitionUUID = UUID.randomUUID()
-    this.definitions.put(definitionUUID, automata)
+    this.definitions[definitionUUID] = automata
 
     // Return the ID for use elsewhere
     return definitionUUID
@@ -361,7 +360,7 @@ private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
  */
 private fun HybridNetwork.getInstantiateIdForType(type: String): UUID? {
     // First try if it's within this network
-    val instantiateId = this.instantiates.filter { it.value.name.equals(type) }.keys.firstOrNull()
+    val instantiateId = this.instantiates.filter { it.value.name == type }.keys.firstOrNull()
 
     // If we managed to find it, then return it
     if(instantiateId != null)

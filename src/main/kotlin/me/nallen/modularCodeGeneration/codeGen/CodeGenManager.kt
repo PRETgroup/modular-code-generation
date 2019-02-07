@@ -47,7 +47,7 @@ object CodeGenManager {
         }
     }
 
-    fun createInstantiates(network: HybridNetwork, config: Configuration) {
+    private fun createInstantiates(network: HybridNetwork, config: Configuration) {
         if(config.parametrisationMethod == ParametrisationMethod.COMPILE_TIME) {
             for((name, instance) in network.instances) {
                 val instantiate = network.getInstantiateForInstantiateId(instance.instantiate)
@@ -113,7 +113,7 @@ object CodeGenManager {
                 for(function in item.functions) {
                     // All variables that are either inputs, or parameters, end up the same - they get set externally.
                     val inputs = ArrayList(function.inputs)
-                    inputs.addAll(item.variables.filter({it.locality == Locality.PARAMETER}).map({ VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) }))
+                    inputs.addAll(item.variables.filter {it.locality == Locality.PARAMETER}.map { VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) })
 
                     // So now we collect all internal variables given we know about the external inputs and parameters
                     function.logic.collectVariables(inputs, functionTypes)
@@ -152,7 +152,7 @@ object CodeGenManager {
         // Check if the user provided any logging fields
         if(config.logging.fields == null) {
             // Fetch all outputs inside the definition
-            val outputs = item.variables.filter({it.locality == Locality.EXTERNAL_OUTPUT})
+            val outputs = item.variables.filter {it.locality == Locality.EXTERNAL_OUTPUT}
             // And add to the logging fields list
             outputs.mapTo(toLog) { LoggingField(it.name, it.type) }
         }
@@ -160,8 +160,8 @@ object CodeGenManager {
             // The user specified some logging fields they want, so let's go through each one
             for(field in config.logging.fields) {
                 // Check that a variable of the same name exists in the definition
-                if(item.variables.any({it.locality == Locality.EXTERNAL_OUTPUT && it.name == field})) {
-                    val output = item.variables.first({it.locality == Locality.EXTERNAL_OUTPUT && it.name == field})
+                if(item.variables.any {it.locality == Locality.EXTERNAL_OUTPUT && it.name == field}) {
+                    val output = item.variables.first {it.locality == Locality.EXTERNAL_OUTPUT && it.name == field}
 
                     // Yay we found everything we needed to, now we can add it to the logging fields list
                     toLog.add(LoggingField(output.name, output.type))
@@ -187,7 +187,7 @@ object CodeGenManager {
         val limits = HashMap<SaturationPoint, List<String>>()
 
         // We need to find every exiting transition from the location
-        for(edge in edges.filter({it.fromLocation == location.name})) {
+        for(edge in edges.filter {it.fromLocation == location.name}) {
             // Now for the current transition, we want to find every comparison (greater than, less than, etc.) that
             // is performed in the transition's guard
             val comparisons = collectComparisonsFromParseTree(edge.guard)
@@ -278,7 +278,7 @@ object CodeGenManager {
             val operations = collectOperationsFromParseTree(location.update[variable]!!)
 
             // Check if any don't satisfy the constraints
-            if(operations.any({it != "plus" && it != "minus" && it != "negative"})) {
+            if(operations.any {it != "plus" && it != "minus" && it != "negative"}) {
                 // Can't saturate
                 throw IllegalArgumentException("Unable to saturate update formula ${location.update[variable]!!.generateString()}")
             }
@@ -286,11 +286,11 @@ object CodeGenManager {
             // Otherwise we can saturate this update!
             // So let's fetch all the variables involved in this update, and add them as dependencies
             val subDependencies = collectVariablesFromParseTree(location.update[variable]!!)
-            dependencies.addAll(subDependencies.filter({!dependencies.contains(it)}))
+            dependencies.addAll(subDependencies.filter {!dependencies.contains(it)})
 
             // And then we need to go through and get all the sub-dependencies for those too
             for(subDependency in subDependencies) {
-                dependencies.addAll(getDependenciesForSaturation(subDependency, location, updateStack).filter({!dependencies.contains(it)}))
+                dependencies.addAll(getDependenciesForSaturation(subDependency, location, updateStack).filter {!dependencies.contains(it)})
             }
         }
 

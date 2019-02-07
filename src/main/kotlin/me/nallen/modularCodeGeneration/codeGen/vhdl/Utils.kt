@@ -1,13 +1,10 @@
 package me.nallen.modularCodeGeneration.codeGen.vhdl
 
-import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.Locality
 import me.nallen.modularCodeGeneration.hybridAutomata.Variable
 import me.nallen.modularCodeGeneration.parseTree.*
 import me.nallen.modularCodeGeneration.utils.NamingConvention
 import me.nallen.modularCodeGeneration.utils.convertWordDelimiterConvention
-import kotlin.math.roundToInt
 
 typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
 
@@ -292,7 +289,7 @@ object Utils {
                 }
 
                 if(prefixData.extraFunctionParams.containsKey(item.functionName)) {
-                    for(argument in prefixData.extraFunctionParams[item.functionName]!!) {
+                    for(argument in prefixData.extraFunctionParams.getValue(item.functionName)) {
                         // If needed, deliminate by a comma
                         if(builder.isNotEmpty()) builder.append(", ")
                         builder.append(generateCodeForParseTreeItem(argument, prefixData))
@@ -325,7 +322,7 @@ object Utils {
                     // If we have a pre-determined value for this variable
                     if(prefixData.customVariableNames.containsKey(item.name))
                         // Then use that
-                        return prefixData.customVariableNames[item.name]!!
+                        return prefixData.customVariableNames.getValue(item.name)
 
                     // It may consist of data inside structs, separated by periods
                     val parts = item.name.split(".")

@@ -234,7 +234,7 @@ object Utils {
                         // If we have a pre-determined value for this variable
                         if(prefixData.customVariableNames.containsKey(part))
                             // Then use that
-                            builder.append(prefixData.customVariableNames[part]!!)
+                            builder.append(prefixData.customVariableNames.getValue(part))
                         else
                             // Otherwise generate the C name for this variable
                             if(first)
@@ -270,7 +270,7 @@ object Utils {
 
         // First, we want to declare and initialise any internal variables that exist in this program, if it's not an inner program
         if(!innerProgram) {
-            program.variables.filter({it.locality == ParseTreeLocality.INTERNAL})
+            program.variables.filter {it.locality == ParseTreeLocality.INTERNAL}
                     .filterNot { prefixData.customVariableNames.containsKey(it.name) }
                     .forEach { builder.appendln("${config.getIndent(depth)}${Utils.generateCType(it.type)} ${Utils.createVariableName(it.name)};") }
             if(builder.isNotEmpty())

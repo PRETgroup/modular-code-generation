@@ -12,7 +12,7 @@ abstract class HybridItem(
         val variables: ArrayList<Variable> = ArrayList()
 ) {
     fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null, delayableBy: ParseTreeItem? = null): HybridItem {
-        if(!variables.any({it.name == item})) {
+        if(!variables.any {it.name == item}) {
             variables.add(Variable(item, VariableType.REAL, locality, default, delayableBy))
 
             if(default != null)
@@ -23,7 +23,7 @@ abstract class HybridItem(
     }
 
     fun addEvent(item: String, locality: Locality = Locality.INTERNAL, delayableBy: ParseTreeItem? = null): HybridItem {
-        if(!variables.any({it.name == item})) {
+        if(!variables.any {it.name == item}) {
             variables.add(Variable(item, VariableType.BOOLEAN, locality, delayableBy = delayableBy))
         }
 
@@ -32,20 +32,20 @@ abstract class HybridItem(
 
     open fun setParameterValue(key: String, value: ParseTreeItem) {
         // Check parameter exists
-        if(!variables.any({it.locality == Locality.PARAMETER && it.name == key}))
+        if(!variables.any {it.locality == Locality.PARAMETER && it.name == key})
             return
 
         // Remove parameter from list
-        variables.removeIf({it.locality == Locality.PARAMETER && it.name == key})
+        variables.removeIf {it.locality == Locality.PARAMETER && it.name == key}
 
         // Parametrise delayables
-        for(variable in variables.filter({it.canBeDelayed()})) {
+        for(variable in variables.filter {it.canBeDelayed()}) {
             variable.delayableBy!!.setParameterValue(key, value)
         }
     }
 
     fun setDefaultParametrisation() {
-        for(variable in variables.filter({it.locality == Locality.PARAMETER && it.defaultValue != null})) {
+        for(variable in variables.filter {it.locality == Locality.PARAMETER && it.defaultValue != null}) {
             this.setParameterValue(variable.name, variable.defaultValue!!)
         }
     }

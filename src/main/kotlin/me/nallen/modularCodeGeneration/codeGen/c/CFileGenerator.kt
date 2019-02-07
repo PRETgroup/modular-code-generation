@@ -50,7 +50,7 @@ object CFileGenerator {
 
         // Create a list of the variables that can be delayed, and the types that they represent
         this.delayedVariableTypes.clear()
-        for(variable in item.variables.filter({it.canBeDelayed()}))
+        for(variable in item.variables.filter {it.canBeDelayed()})
             this.delayedVariableTypes[variable.name] = variable.type
 
         // Now let's build the source file
@@ -115,7 +115,7 @@ object CFileGenerator {
             // We need to set all parameters to use the value stored inside the self reference, as this is where their
             // values will be stored
             val customDefinedVariables = LinkedHashMap<String, String>(Utils.DEFAULT_CUSTOM_VARIABLES)
-            for(parameter in automata.variables.filter({it.locality == Locality.PARAMETER})) {
+            for(parameter in automata.variables.filter {it.locality == Locality.PARAMETER}) {
                 customDefinedVariables[parameter.name] = "me->${Utils.createVariableName(parameter.name)}"
             }
 
@@ -144,7 +144,7 @@ object CFileGenerator {
         result.appendln("void ${Utils.createFunctionName(item.name, "Parametrise")}(${Utils.createTypeName(item.name)}* me) {")
 
         // We only need to add any logic here if there are actually any parameters with default values
-        if(item.variables.any({it.locality == Locality.PARAMETER && it.defaultValue != null}))
+        if(item.variables.any {it.locality == Locality.PARAMETER && it.defaultValue != null})
         // There's at least one, so let's add the code
             result.append(Utils.performVariableFunctionForLocality(item, Locality.PARAMETER, CFileGenerator::generateParameterInitialisation, config, "Initialise Default"))
 
@@ -217,7 +217,7 @@ object CFileGenerator {
         result.append(Utils.performVariableFunctionForLocality(item, Locality.INTERNAL, CFileGenerator::generateVariableInitialisation, config, "Initialise", blankStart = true, blankEnd = false))
 
         // Now we need to look for delayed variables to initialise too
-        if (item.variables.any({ it.canBeDelayed() })) {
+        if (item.variables.any { it.canBeDelayed() }) {
             result.appendln()
             result.append("${config.getIndent(1)}// Initialise Delayed Variables")
 
@@ -267,7 +267,7 @@ object CFileGenerator {
             initValue = Utils.generateCodeForParseTreeItem((automata as HybridAutomata).init.valuations[variable.name] !!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))
         }
         else if(automata is HybridNetwork && (automata as HybridNetwork).ioMapping.containsKey(AutomataVariablePair("", variable.name))) {
-            val customVariableNames = (automata as HybridNetwork).instances.mapValues({ "me->${ Utils.createVariableName(it.key, "data")}" })
+            val customVariableNames = (automata as HybridNetwork).instances.mapValues { "me->${ Utils.createVariableName(it.key, "data")}" }
             initValue = Utils.generateCodeForParseTreeItem((automata as HybridNetwork).ioMapping[AutomataVariablePair("", variable.name)] !!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customVariableNames))
         }
 
@@ -345,8 +345,8 @@ object CFileGenerator {
         result.appendln()
 
         // Let's start by adding an entry to each delayed variable that we have to keep track of
-        if (automata.variables.any({ it.canBeDelayed() })) {
-            for (variable in automata.variables.filter({ it.canBeDelayed() }))
+        if (automata.variables.any { it.canBeDelayed() }) {
+            for (variable in automata.variables.filter { it.canBeDelayed() })
                 result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
             result.appendln()
         }
@@ -644,8 +644,8 @@ object CFileGenerator {
         val result = StringBuilder()
 
         // Let's start by adding an entry to each delayed variable that we have to keep track of
-        if (network.variables.any({ it.canBeDelayed() })) {
-            for (variable in network.variables.filter({ it.canBeDelayed() }))
+        if (network.variables.any { it.canBeDelayed() }) {
+            for (variable in network.variables.filter { it.canBeDelayed() })
                 result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
             result.appendln()
         }
@@ -654,7 +654,7 @@ object CFileGenerator {
         val keys = network.ioMapping.keys.sortedWith(compareBy({ it.automata }, { it.variable }))
 
         // And get a map of all the instantiate names that we need to use here (they're formatted differently to variables)
-        val customVariableNames = network.instances.mapValues({ "me->${ Utils.createVariableName(it.key, "data")}" })
+        val customVariableNames = network.instances.mapValues { "me->${ Utils.createVariableName(it.key, "data")}" }
         //customVariableNames.putAll(network.variables.associate {  })
 
         // Now we go through each input

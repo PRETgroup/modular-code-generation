@@ -33,7 +33,7 @@ data class Program(
      */
     private fun addVariable(item: String, type: VariableType, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null): Program {
         // Check that a variable by the same name doesn't already exist
-        if(!variables.any({it.name == item})) {
+        if(!variables.any {it.name == item}) {
             // Add the variable
             variables.add(VariableDeclaration(item, type, locality, default))
 
@@ -255,7 +255,7 @@ fun generateProgramFromString(input: String): Program {
                 val bodyText = getTextUntilNextMatchingCloseBracket(lines.slice(IntRange(i, lines.size-1)).joinToString("\n"))
 
                 // We now need to know to skip the same number of lines as we just fetched
-                skip = bodyText.count({it == '\n'})+1
+                skip = bodyText.count {it == '\n'} +1
 
                 // And create the Program for the inner body text that we'll now use
                 val body = generateProgramFromString(bodyText)
@@ -281,16 +281,16 @@ fun generateProgramFromString(input: String): Program {
                 val returnMatch = returnRegex.matchEntire(line)
                 programLine = if(returnMatch != null) {
                     // Yes it's a return, create the Return Line
-                    Return(ParseTreeItem.Factory.generate(returnMatch.groupValues[1]))
+                    Return(ParseTreeItem.generate(returnMatch.groupValues[1]))
                 } else {
                     // Not a return statement either, check if it's an assignment
                     val assignmentMatch = assignmentRegex.matchEntire(line)
                     if(assignmentMatch != null) {
                         // Yes it's an assignment, create the Assignment Line
-                        Assignment(Variable(assignmentMatch.groupValues[1]), ParseTreeItem.Factory.generate(assignmentMatch.groupValues[2]))
+                        Assignment(Variable(assignmentMatch.groupValues[1]), ParseTreeItem.generate(assignmentMatch.groupValues[2]))
                     } else {
                         // Not an assignment either, so must just be a Statement Line
-                        Statement(ParseTreeItem.Factory.generate(line))
+                        Statement(ParseTreeItem.generate(line))
                     }
                 }
             }

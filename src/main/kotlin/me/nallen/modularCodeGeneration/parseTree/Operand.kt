@@ -107,7 +107,7 @@ internal fun getOperandForSequence(input: String): Operand? {
  * E.g. my_function<2>
  */
 internal fun isPostfixedFunction(input: String): Boolean {
-    val functionRegex = Regex("^(.+)<(\\d+)>$$")
+    val functionRegex = Regex("^(.+)<(\\d+)>$")
 
     return functionRegex.matches(input)
 }
@@ -159,7 +159,7 @@ internal fun convertToPostfix(input: String): String {
         // Once we find an operand (or encounter whitespace), we need to add any values that we found before this into
         // the output string first
         if((operand != null || input[i].isWhitespace()) && storage.isNotEmpty()) {
-            output += storage + " "
+            output += "$storage "
 
             storage = ""
         }
@@ -311,7 +311,7 @@ internal fun convertToPostfix(input: String): String {
 
     // If there's any trailing literal or variable we haven't yet added
     if(storage.isNotEmpty()) {
-        output += storage + " "
+        output += "$storage "
     }
 
     // Any operators left in the stack just get added in the order that they come off the stack - no need to evaluate

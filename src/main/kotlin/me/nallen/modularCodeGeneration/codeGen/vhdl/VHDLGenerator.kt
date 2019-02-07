@@ -1,15 +1,11 @@
 package me.nallen.modularCodeGeneration.codeGen.vhdl
 
-import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
-import me.nallen.modularCodeGeneration.codeGen.c.CCodeGenerator
-import me.nallen.modularCodeGeneration.codeGen.vhdl.Utils.createFileName
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 import me.nallen.modularCodeGeneration.logging.Logger
-import me.nallen.modularCodeGeneration.parseTree.VariableType
 import me.nallen.modularCodeGeneration.utils.getRelativePath
 import java.io.File
 import java.util.*
@@ -22,12 +18,9 @@ import kotlin.collections.ArrayList
  */
 class VHDLGenerator {
     companion object {
-        const val SYSTEM = "system.vhdl"
-        const val CONFIG_FILE = "config.vhdl"
-        const val LIBRARY_FILE = "lib.vhdl"
-
-        // We need to keep track of the variables we need to delay
-        private val delayedTypes = ArrayList<VariableType>()
+        private const val SYSTEM = "system.vhdl"
+        private const val CONFIG_FILE = "config.vhdl"
+        private const val LIBRARY_FILE = "lib.vhdl"
 
         /**
          * Generate C code that captures the Hybrid Item. The code will be placed into the provided directory,

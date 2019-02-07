@@ -419,7 +419,7 @@ fun ParseTreeItem.evaluateBoolean(var_map: Map<String, Literal> = HashMap()): Bo
         is Equal -> operandA.evaluateReal(var_map) == operandB.evaluateReal(var_map)
         is NotEqual -> operandA.evaluateReal(var_map) != operandB.evaluateReal(var_map)
 
-        is Variable -> var_map[name]!!.evaluateBoolean(var_map) // Variables that we know about
+        is Variable -> var_map.getValue(name).evaluateBoolean(var_map) // Variables that we know about
         is Literal -> when (value) { // For Literals, Boolean values represent their value
             "true" -> true
             "false" -> false
@@ -459,7 +459,7 @@ fun ParseTreeItem.evaluateReal(var_map: Map<String, Literal> = HashMap()): Doubl
         is SquareRoot -> Math.sqrt(operandA.evaluateReal(var_map))
         is Exponential -> Math.exp(operandA.evaluateReal(var_map))
 
-        is Variable -> var_map[name]!!.evaluateReal(var_map) // Variables that we know about
+        is Variable -> var_map.getValue(name).evaluateReal(var_map) // Variables that we know about
         is Literal -> when (value) { // For Literals, Boolean values represent 1 or 0
             "true" -> 1.0
             "false" -> 0.0
@@ -541,7 +541,7 @@ fun ParseTreeItem.replaceVariables(map: Map<String, String>): ParseTreeItem {
         // Let's check if it exists
         if(map.containsKey(this.name)) {
             // Let's replace it
-            this.name = map[this.name]!!
+            this.name = map.getValue(this.name)
         }
     }
 

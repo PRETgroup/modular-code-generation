@@ -4,7 +4,6 @@ import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
 import me.nallen.modularCodeGeneration.codeGen.Configuration
 import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.codeGen.c.Utils.createFileName
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
 import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 import me.nallen.modularCodeGeneration.logging.Logger
@@ -21,10 +20,10 @@ import kotlin.collections.ArrayList
  */
 class CCodeGenerator {
     companion object {
-        const val RUNNABLE = "runnable.c"
-        const val MAKEFILE = "Makefile"
-        const val CONFIG_FILE = "config.h"
-        const val DELAYABLE_HEADER = "delayable.h"
+        private const val RUNNABLE = "runnable.c"
+        private const val MAKEFILE = "Makefile"
+        private const val CONFIG_FILE = "config.h"
+        private const val DELAYABLE_HEADER = "delayable.h"
 
         // We need to keep track of the variables we need to delay
         private val delayedTypes = ArrayList<VariableType>()
@@ -243,7 +242,7 @@ class CCodeGenerator {
                             throw IllegalArgumentException("Unable to find base machine ${instantiate.name} to instantiate!")
 
                         // Add all the delayed types that we've found
-                        delayedTypes.addAll(item.variables.filter({it.canBeDelayed()}).map({it.type}))
+                        delayedTypes.addAll(item.variables.filter {it.canBeDelayed()}.map {it.type})
 
                         // We need to create a sub-folder for all the instances. We can run into issues if this is the same
                         // name as the overall system, so check for that too
@@ -270,7 +269,7 @@ class CCodeGenerator {
                             definition.name = instantiate.name
 
                             // Add all the delayed types that we've found
-                            delayedTypes.addAll(definition.variables.filter({it.canBeDelayed()}).map({it.type}))
+                            delayedTypes.addAll(definition.variables.filter {it.canBeDelayed()}.map {it.type})
 
                             // Generate code for the unparametrised item
                             generateItem(definition, outputDir.absolutePath, config)

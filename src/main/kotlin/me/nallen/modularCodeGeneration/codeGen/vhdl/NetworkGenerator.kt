@@ -2,9 +2,9 @@ package me.nallen.modularCodeGeneration.codeGen.vhdl
 
 import com.hubspot.jinjava.Jinjava
 import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
 import me.nallen.modularCodeGeneration.codeGen.vhdl.Utils.VariableObject
-import me.nallen.modularCodeGeneration.hybridAutomata.*
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridAutomata
+import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
 import me.nallen.modularCodeGeneration.hybridAutomata.Locality
 import me.nallen.modularCodeGeneration.hybridAutomata.Variable
 import me.nallen.modularCodeGeneration.logging.Logger
@@ -124,7 +124,7 @@ object NetworkGenerator {
                             ))
 
                             // And keep track of the local signal that we just made
-                            signalNameMap["${name}.${variable.name}"] = localSignal.signal
+                            signalNameMap["$name.${variable.name}"] = localSignal.signal
                         }
                     }
 
@@ -251,7 +251,7 @@ object NetworkGenerator {
                         ))
 
                         // And keep track of the signal name as always
-                        signalNameMap["${name}.state"] = localSignal.signal
+                        signalNameMap["$name.state"] = localSignal.signal
                         instanceSignalNameMap["state"] = localSignal.signal
                     }
 
@@ -352,7 +352,7 @@ object NetworkGenerator {
                         }
 
                         // And keep track of the local signal that we just made
-                        signalNameMap["${name}.${variable.name}"] = localSignal.signal
+                        signalNameMap["$name.${variable.name}"] = localSignal.signal
                         instanceSignalNameMap[variable.name] = localSignal.signal
                     }
 
@@ -376,7 +376,7 @@ object NetworkGenerator {
                     }
 
                     // And then we want to run this instantiate
-                    rootItem.runtimeMappingProcesses.first { it.name.equals(Utils.createVariableName(instanceObject.name, "proc")) }.runtimeMappings.add(runtimeMappingObject)
+                    rootItem.runtimeMappingProcesses.first { it.name == Utils.createVariableName(instanceObject.name, "proc") }.runtimeMappings.add(runtimeMappingObject)
                 }
             }
 
