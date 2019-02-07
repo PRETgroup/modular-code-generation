@@ -64,7 +64,7 @@ class CodeGenTests : StringSpec() {
             "Can Compile C Code" {}.config(enabled = false)
         }
 
-        val canGhdl = "ghdl -v".runCommand(File("build"), ProcessBuilder.Redirect.PIPE) != 127
+        val canGhdl = "ghdl -v".runCommand(File("build"), ProcessBuilder.Redirect.PIPE) == 0
 
         File("examples").list().forEach {
             val folder = File("examples", it)
