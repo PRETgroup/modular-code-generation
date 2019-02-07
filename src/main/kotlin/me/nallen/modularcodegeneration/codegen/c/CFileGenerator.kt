@@ -1,16 +1,16 @@
-package me.nallen.modularCodeGeneration.codeGen.c
+package me.nallen.modularcodegeneration.codegen.c
 
-import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
-import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
-import me.nallen.modularCodeGeneration.codeGen.SaturationDirection
-import me.nallen.modularCodeGeneration.hybridAutomata.*
-import me.nallen.modularCodeGeneration.parseTree.Literal
-import me.nallen.modularCodeGeneration.parseTree.Multiply
-import me.nallen.modularCodeGeneration.parseTree.Plus
-import me.nallen.modularCodeGeneration.parseTree.VariableType
+import me.nallen.modularcodegeneration.codegen.CodeGenManager
+import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.codegen.ParametrisationMethod
+import me.nallen.modularcodegeneration.codegen.SaturationDirection
+import me.nallen.modularcodegeneration.hybridautomata.*
+import me.nallen.modularcodegeneration.parsetree.Literal
+import me.nallen.modularcodegeneration.parsetree.Multiply
+import me.nallen.modularcodegeneration.parsetree.Plus
+import me.nallen.modularcodegeneration.parsetree.VariableType
 
-import me.nallen.modularCodeGeneration.parseTree.Variable as ParseTreeVariable
+import me.nallen.modularcodegeneration.parsetree.Variable as ParseTreeVariable
 
 /**
  * The class that contains methods to do with the generation of Source Files for the Hybrid Item

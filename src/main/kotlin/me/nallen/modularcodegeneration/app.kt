@@ -1,11 +1,11 @@
-package me.nallen.modularCodeGeneration
+package me.nallen.modularcodegeneration
 
-import me.nallen.modularCodeGeneration.codeGen.CodeGenLanguage
-import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
-import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.description.Importer
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
+import me.nallen.modularcodegeneration.codegen.CodeGenLanguage
+import me.nallen.modularcodegeneration.codegen.CodeGenManager
+import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.description.Importer
+import me.nallen.modularcodegeneration.hybridautomata.HybridItem
+import me.nallen.modularcodegeneration.hybridautomata.HybridNetwork
 import kotlin.system.measureTimeMillis
 
 /**

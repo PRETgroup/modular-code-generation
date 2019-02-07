@@ -70,7 +70,6 @@ data class Program(
         // We need to parse everything at *this level* before delving into branches (i.e. a breadth-first-search) so
         // that we correctly work out at what level the variable should be created at.
         // To achieve this, we keep track of any sub-programs that we need to parse, and do them later
-        val bodiesToParse = ArrayList<Program>()
         for(line in lines) {
             // For each line, we need to search any logic it may contain for any new variables
             when(line) {

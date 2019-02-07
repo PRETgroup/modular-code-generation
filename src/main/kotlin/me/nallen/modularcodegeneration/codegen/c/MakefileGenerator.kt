@@ -1,13 +1,13 @@
-package me.nallen.modularCodeGeneration.codeGen.c
+package me.nallen.modularcodegeneration.codegen.c
 
 import com.hubspot.jinjava.Jinjava
-import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
+import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.hybridautomata.HybridItem
+import me.nallen.modularcodegeneration.hybridautomata.HybridNetwork
 import java.util.*
 
-import me.nallen.modularCodeGeneration.codeGen.c.MakefileGenerator.MakeObject.CompileObject as CompileObject
-import me.nallen.modularCodeGeneration.codeGen.c.MakefileGenerator.MakeObject.SubCallObject as SubCallObject
+import me.nallen.modularcodegeneration.codegen.c.MakefileGenerator.MakeObject.CompileObject as CompileObject
+import me.nallen.modularcodegeneration.codegen.c.MakefileGenerator.MakeObject.SubCallObject as SubCallObject
 
 /**
  * The class that contains methods to do with the generation of the MakeFile for the network

@@ -1,14 +1,14 @@
-package me.nallen.modularCodeGeneration.codeGen.c
+package me.nallen.modularcodegeneration.codegen.c
 
-import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
-import me.nallen.modularCodeGeneration.hybridAutomata.Locality
-import me.nallen.modularCodeGeneration.hybridAutomata.Variable
-import me.nallen.modularCodeGeneration.parseTree.*
-import me.nallen.modularCodeGeneration.utils.NamingConvention
-import me.nallen.modularCodeGeneration.utils.convertWordDelimiterConvention
+import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.hybridautomata.HybridItem
+import me.nallen.modularcodegeneration.hybridautomata.Locality
+import me.nallen.modularcodegeneration.hybridautomata.Variable
+import me.nallen.modularcodegeneration.parsetree.*
+import me.nallen.modularcodegeneration.utils.NamingConvention
+import me.nallen.modularcodegeneration.utils.convertWordDelimiterConvention
 
-typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
+typealias ParseTreeLocality = me.nallen.modularcodegeneration.parsetree.Locality
 
 /**
  * A set of utilities for C Code generation regarding types, ParseTree generation, and naming conventions
@@ -178,7 +178,7 @@ object Utils {
                     // If the name matches, and it has the correct number of arguments
                     if(item.arguments.size == 2) {
                         // The first argument also should be a Variable
-                        if(item.arguments[0] is me.nallen.modularCodeGeneration.parseTree.Variable) {
+                        if(item.arguments[0] is me.nallen.modularcodegeneration.parsetree.Variable) {
                             // Get the variable name we want to delay
                             val varName = item.arguments[0].getString()
 
@@ -213,7 +213,7 @@ object Utils {
                 return "${Utils.createFunctionName(item.functionName)}($builder)"
             }
             is Literal -> item.value
-            is me.nallen.modularCodeGeneration.parseTree.Variable -> {
+            is me.nallen.modularcodegeneration.parsetree.Variable -> {
                 // Variables also have a bit of extra logic that's needed
 
                 // If the variable has a value assigned to it

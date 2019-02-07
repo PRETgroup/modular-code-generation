@@ -1,8 +1,8 @@
-package me.nallen.modularCodeGeneration.codeGen.c
+package me.nallen.modularcodegeneration.codegen.c
 
 import com.hubspot.jinjava.Jinjava
-import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.hybridAutomata.*
+import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.hybridautomata.*
 import java.util.*
 
 /**

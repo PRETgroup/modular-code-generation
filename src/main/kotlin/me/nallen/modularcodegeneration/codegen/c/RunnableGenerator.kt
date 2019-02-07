@@ -1,10 +1,10 @@
-package me.nallen.modularCodeGeneration.codeGen.c
+package me.nallen.modularcodegeneration.codegen.c
 
 import com.hubspot.jinjava.Jinjava
-import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
-import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
+import me.nallen.modularcodegeneration.codegen.CodeGenManager
+import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.hybridautomata.HybridItem
+import me.nallen.modularcodegeneration.hybridautomata.HybridNetwork
 
 /**
  * The class that contains methods to do with the generation of the main runnable file for the system

@@ -1,14 +1,14 @@
-package me.nallen.modularCodeGeneration.codeGen.c
+package me.nallen.modularcodegeneration.codegen.c
 
-import me.nallen.modularCodeGeneration.codeGen.CodeGenManager
-import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.codeGen.ParametrisationMethod
-import me.nallen.modularCodeGeneration.codeGen.c.Utils.createFileName
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridItem
-import me.nallen.modularCodeGeneration.hybridAutomata.HybridNetwork
-import me.nallen.modularCodeGeneration.logging.Logger
-import me.nallen.modularCodeGeneration.parseTree.VariableType
-import me.nallen.modularCodeGeneration.utils.getRelativePath
+import me.nallen.modularcodegeneration.codegen.CodeGenManager
+import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.codegen.ParametrisationMethod
+import me.nallen.modularcodegeneration.codegen.c.Utils.createFileName
+import me.nallen.modularcodegeneration.hybridautomata.HybridItem
+import me.nallen.modularcodegeneration.hybridautomata.HybridNetwork
+import me.nallen.modularcodegeneration.logging.Logger
+import me.nallen.modularcodegeneration.parsetree.VariableType
+import me.nallen.modularcodegeneration.utils.getRelativePath
 import java.io.File
 import java.util.*
 import kotlin.collections.ArrayList
