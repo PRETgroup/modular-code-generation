@@ -66,7 +66,7 @@ class Importer {
          * Once all includes have been parsed, the final YAML document string will be returned.
          */
         private fun parseIncludes(path: String): String {
-            val file = File(path)
+            val file = File(path).absoluteFile
 
             // Try to open the file
             if(!file.exists() || !file.isFile) {
