@@ -6,6 +6,8 @@ import me.nallen.modularcodegeneration.codegen.Configuration
 import me.nallen.modularcodegeneration.description.Importer
 import me.nallen.modularcodegeneration.hybridautomata.HybridItem
 import me.nallen.modularcodegeneration.hybridautomata.HybridNetwork
+import me.nallen.modularcodegeneration.logging.Logger
+import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
 
 /**
@@ -18,17 +20,36 @@ fun main() {
 
     // Times are recorded and output for debugging purposes
 
-    // Import from the description
-    time = measureTimeMillis {
-        val imported = Importer.import("examples/water_heater/main.yaml")
-        item = imported.first
-        config = imported.second
-    }
-    println("Import time: $time ms")
+    val source = "examples/water_heater/main.yaml"
+    val language = CodeGenLanguage.C
+    val outputDir = "Generated"
 
-    // Generate C code
-    time = measureTimeMillis {
-        CodeGenManager.generate(item, CodeGenLanguage.C, "Generated", config)
+    try {
+        // Import from the description
+        time = measureTimeMillis {
+            val imported = Importer.import(source)
+            item = imported.first
+            config = imported.second
+        }
+        println("Import time: $time ms")
+
+        if(!item.validate()) {
+            throw IllegalArgumentException("One or more issues were encountered with the provided schema." +
+                    " Please fix these before re-trying code generation")
+        }
+
+        // Generate C code
+        time = measureTimeMillis {
+            CodeGenManager.generate(item, language, outputDir, config)
+        }
+        println("Code Generation time: $time ms")
     }
-    println("Code Generation time: $time ms")
+    catch(e: Exception) {
+        Logger.error(e.message ?: "Unexpected Error")
+        exitProcess(1)
+    }
+    catch(e: Error) {
+        Logger.error(e.message ?: "Unexpected Error")
+        exitProcess(1)
+    }
 }

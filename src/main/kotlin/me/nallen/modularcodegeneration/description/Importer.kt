@@ -9,9 +9,10 @@ import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.Literal
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
 import me.nallen.modularcodegeneration.parsetree.VariableDeclaration
+import me.nallen.modularcodegeneration.utils.getRelativePath
 import java.io.File
+import java.io.FileNotFoundException
 import java.util.*
-import kotlin.system.exitProcess
 
 typealias ParseTreeVariableType = me.nallen.modularcodegeneration.parsetree.VariableType
 typealias ParseTreeLocality = me.nallen.modularcodegeneration.parsetree.Locality
@@ -36,6 +37,8 @@ class Importer {
             // Now we want to read the file as a YAML file...
             val mapper = ObjectMapper(YAMLFactory())
             mapper.registerModule(KotlinModule())
+
+            Logger.info("Parsing Schema...")
 
             // ... and convert it into a Schema object
             val schema = mapper.readValue(parsedFile, Schema::class.java)
@@ -68,10 +71,11 @@ class Importer {
         private fun parseIncludes(path: String): String {
             val file = File(path).absoluteFile
 
+            Logger.info("Reading source file ${file.getRelativePath()}")
+
             // Try to open the file
             if(!file.exists() || !file.isFile) {
-                Logger.error("Unable to find the requested file at $path")
-                exitProcess(1)
+                throw FileNotFoundException("Unable to find the requested file at $path")
             }
 
             val builder = StringBuilder()
