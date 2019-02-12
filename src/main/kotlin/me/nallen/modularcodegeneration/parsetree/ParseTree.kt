@@ -551,3 +551,25 @@ fun ParseTreeItem.replaceVariables(map: Map<String, String>): ParseTreeItem {
 
     return this
 }
+
+/**
+ * Collects all variables used within a ParseTreeItem
+ */
+fun ParseTreeItem.collectVariables(): List<String> {
+    val variables = ArrayList<String>()
+
+    // If this is a variable
+    if(this is Variable) {
+        // Then let's add what we've found!
+        variables.add(this.name)
+    }
+    else {
+        // Otherwise we go through each child and fetch its variables
+        for(child in this.getChildren()) {
+            variables.addAll(child.collectVariables())
+        }
+    }
+
+    // Return the list of variables we've found
+    return variables
+}

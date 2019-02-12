@@ -17,9 +17,6 @@ data class HybridAutomata(
         val functions: ArrayList<FunctionDefinition> = ArrayList()
 ) : HybridItem() {
     fun addLocation(location: Location): HybridAutomata {
-        /*if(locations.any({it.name == location.name}))
-            throw IllegalArgumentException("Location with name ${location.name} already exists!")*/
-
         // Check for any continuous variables
         checkParseTreeForNewContinuousVariable(location.invariant)
 
@@ -39,23 +36,6 @@ data class HybridAutomata(
     }
 
     fun addEdge(edge: Edge): HybridAutomata {
-        /*if(!locations.any({ it.name == edge.fromLocation }))
-            throw IllegalArgumentException("Location with name ${edge.fromLocation} does not exist!")
-
-        if(!locations.any({ it.name == edge.toLocation }))
-            throw IllegalArgumentException("Location with name ${edge.toLocation} does not exist!")
-
-        for((fromLocation, toLocation, guard) in edges) {
-            if(fromLocation == edge.fromLocation
-                    && toLocation == edge.toLocation && guard == edge.guard) {
-                //TODO: Should become a WARN once logging implemented
-                throw IllegalArgumentException("Edge with same (from, to, guard) " +
-                        "($fromLocation, $toLocation, $guard pairing already exists!")
-
-                //TODO: Should be updated to merge updates if different
-            }
-        }*/
-
         // Check for any continuous variables
         checkParseTreeForNewContinuousVariable(edge.guard)
 
@@ -119,6 +99,11 @@ data class HybridAutomata(
 
             function.logic.setParameterValue(key, value)
         }
+    }
+
+    override fun validate(): Boolean {
+        //TODO: Validate that this is a valid automaton
+        return true
     }
 }
 

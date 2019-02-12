@@ -54,6 +54,10 @@ abstract class HybridItem(
         return this
     }
 
+    open fun validate(): Boolean {
+        return true
+    }
+
     /* Private Methods */
 
     protected fun checkParseTreeForNewContinuousVariable(item: ParseTreeItem, locality: Locality = Locality.INTERNAL) {

@@ -33,11 +33,6 @@ fun main() {
         }
         println("Import time: $time ms")
 
-        if(!item.validate()) {
-            throw IllegalArgumentException("One or more issues were encountered with the provided schema." +
-                    " Please fix these before re-trying code generation")
-        }
-
         // Generate C code
         time = measureTimeMillis {
             CodeGenManager.generate(item, language, outputDir, config)
