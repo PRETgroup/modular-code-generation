@@ -101,9 +101,16 @@ data class HybridAutomata(
         }
     }
 
+    /**
+     * Check if this Hybrid Automata is valid, this includes things like variable names being correct, transitions being
+     * between valid locations, etc. This can help the user detect errors during the compile stage rather than by
+     * analysing the generated code.
+     */
     override fun validate(): Boolean {
-        //TODO: Validate that this is a valid automaton
-        return true
+        // Let's try see if anything isn't valid
+        var valid = super.validate()
+
+        return valid
     }
 }
 

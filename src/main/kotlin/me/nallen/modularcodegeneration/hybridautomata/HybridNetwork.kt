@@ -199,7 +199,7 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
      */
     override fun validate(): Boolean {
         // Let's try see if anything isn't valid
-        var valid = true
+        var valid = super.validate()
 
         val writeableVars = ArrayList<String>()
         val readableVars = ArrayList<String>()

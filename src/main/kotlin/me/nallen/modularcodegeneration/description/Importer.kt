@@ -421,11 +421,11 @@ private fun HybridItem.loadVariables(variables: Map<String, VariableDefinition>?
             // Check the type of the variable
             if(value.type == VariableType.REAL) {
                 // Real variables go to Continuous Variables
-                this.addContinuousVariable(name, type, value.default, value.delayableBy)
+                this.addContinuousVariable(name, type, value.default, value.delayableBy, true)
             }
             else if(value.type == VariableType.BOOLEAN) {
                 // Booleans become Events
-                this.addEvent(name, type, value.delayableBy)
+                this.addEvent(name, type, value.delayableBy, true)
             }
         }
     }

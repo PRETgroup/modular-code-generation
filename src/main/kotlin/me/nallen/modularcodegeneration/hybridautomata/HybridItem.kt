@@ -1,5 +1,6 @@
 package me.nallen.modularcodegeneration.hybridautomata
 
+import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
 import me.nallen.modularcodegeneration.parsetree.VariableType
 import me.nallen.modularcodegeneration.parsetree.getChildren
@@ -11,8 +12,8 @@ abstract class HybridItem(
 
         val variables: ArrayList<Variable> = ArrayList()
 ) {
-    fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null, delayableBy: ParseTreeItem? = null): HybridItem {
-        if(!variables.any {it.name == item}) {
+    fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null, delayableBy: ParseTreeItem? = null, forceAdd: Boolean = false): HybridItem {
+        if(forceAdd || !variables.any {it.name == item}) {
             variables.add(Variable(item, VariableType.REAL, locality, default, delayableBy))
 
             if(default != null)
@@ -22,8 +23,8 @@ abstract class HybridItem(
         return this
     }
 
-    fun addEvent(item: String, locality: Locality = Locality.INTERNAL, delayableBy: ParseTreeItem? = null): HybridItem {
-        if(!variables.any {it.name == item}) {
+    fun addEvent(item: String, locality: Locality = Locality.INTERNAL, delayableBy: ParseTreeItem? = null, forceAdd: Boolean = false): HybridItem {
+        if(forceAdd || !variables.any {it.name == item}) {
             variables.add(Variable(item, VariableType.BOOLEAN, locality, delayableBy = delayableBy))
         }
 
@@ -54,8 +55,21 @@ abstract class HybridItem(
         return this
     }
 
+    /**
+     * Check if the basic parts of this Hybrid Item are valid, this only involves variables. This can help the user
+     * detect errors during the compile stage rather than by analysing the generated code.
+     */
     open fun validate(): Boolean {
-        return true
+        // Let's try see if anything isn't valid
+        var valid = true
+
+        // The only thing we really have an issue with is duplicate variable names, so let's check for that
+        for((name, list) in variables.groupBy { it.name }.filter { it.value.size > 1 }) {
+            Logger.error("Multiple definitions (${list.size} of variable '$name' in '${this.name}'.")
+            valid = false
+        }
+
+        return valid
     }
 
     /* Private Methods */
