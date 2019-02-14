@@ -135,11 +135,4 @@ abstract class HybridItem(
 
         return valid
     }
-
-    protected fun validateFunctionCalls(eq: ParseTreeItem, functionArguments: Map<String, List<VariableType>>, location: String = "'$name'"): Boolean {
-        // Let's try see if anything isn't valid
-        var valid = true
-
-        return valid
-    }
 }
