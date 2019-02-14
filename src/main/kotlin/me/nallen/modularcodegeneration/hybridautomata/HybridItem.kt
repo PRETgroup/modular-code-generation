@@ -1,11 +1,9 @@
 package me.nallen.modularcodegeneration.hybridautomata
 
 import me.nallen.modularcodegeneration.logging.Logger
-import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
-import me.nallen.modularcodegeneration.parsetree.VariableType
-import me.nallen.modularcodegeneration.parsetree.getChildren
-import me.nallen.modularcodegeneration.parsetree.setParameterValue
+import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable as ParseTreeVariable
+import me.nallen.modularcodegeneration.parsetree.Locality as ParseTreeLocality
 
 abstract class HybridItem(
         open var name: String = "Item",
@@ -92,5 +90,56 @@ abstract class HybridItem(
         for(child in item.getChildren()) {
             checkParseTreeForNewEvent(child, locality)
         }
+    }
+
+    protected fun validateWritingVariables(eq: ParseTreeItem, readableVars: List<String>, writeableVars: List<String>, location: String = "'$name'"): Boolean {
+        // Let's try see if anything isn't valid
+        var valid = true
+
+        // Let's go through every variable
+        for(variable in eq.collectVariables()) {
+            // Check if we know about this variable and can write to it
+            if(!writeableVars.contains(variable)) {
+                // If we try to write to a read-only variable we can have a different error message
+                if(readableVars.contains(variable))
+                    Logger.error("Unable to write to read-only variable '$variable' in $location.")
+                else
+                    Logger.error("Unable to write to unknown variable '$variable' in $location'.")
+
+                // Regardless, it's an issue
+                valid = false
+            }
+        }
+
+        return valid
+    }
+
+    protected fun validateReadingVariables(eq: ParseTreeItem, readableVars: List<String>, writeableVars: List<String>, location: String = "'$name'"): Boolean {
+        // Let's try see if anything isn't valid
+        var valid = true
+
+        // Let's go through every variable
+        for(variable in eq.collectVariables()) {
+            // Check if we know about this variable and can write to it
+            if(!readableVars.contains(variable)) {
+                // If we try to read from a write-only variable we can have a different error message
+                if(writeableVars.contains(variable))
+                    Logger.error("Unable to read from write-only variable '$variable' in $location.")
+                else
+                    Logger.error("Unable to read from unknown variable '$variable' in $location.")
+
+                // Regardless, it's an issue
+                valid = false
+            }
+        }
+
+        return valid
+    }
+
+    protected fun validateFunctionCalls(eq: ParseTreeItem, functionArguments: Map<String, List<VariableType>>, location: String = "'$name'"): Boolean {
+        // Let's try see if anything isn't valid
+        var valid = true
+
+        return valid
     }
 }

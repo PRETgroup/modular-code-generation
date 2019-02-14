@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 import me.nallen.modularcodegeneration.codegen.c.Utils
 import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
+import me.nallen.modularcodegeneration.parsetree.Variable
 import me.nallen.modularcodegeneration.parsetree.collectVariables
 import me.nallen.modularcodegeneration.parsetree.prependVariables
 import me.nallen.modularcodegeneration.parsetree.replaceVariables
@@ -216,15 +217,23 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
             }
         }
 
+        // We want to keep track of each definition we've validated so that we don't run it multiple times
+        val validated = ArrayList<UUID>()
+
         // Firstly, let's iterate over every sub-instance
         for((name, instance) in this.instances) {
             // Fetch the definition
             val definition = this.getDefinitionForInstantiateId(instance.instantiate)
 
             if(definition != null) {
-                // And check if it's valid
-                if(!definition.validate())
-                    valid = false
+                // If we haven't seen this before
+                if (!validated.contains(instance.instantiate)) {
+                    // Then we want to check if it's valid
+                    if (!definition.validate())
+                        valid = false
+
+                    validated.add(instance.instantiate)
+                }
 
                 // Now we want to check that each parameter is valid
                 for((param, _) in instance.parameters) {
@@ -255,33 +264,12 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
         }
 
         // Now check for all variables in the I/O Mapping
-        for((from, to) in this.ioMapping) {
+        for((to, from) in this.ioMapping) {
             // First let's start with where we're writing to
-            if(!writeableVars.contains(from.getString())) {
-                // If we try to write to a read-only variable we can have a different error message
-                if(readableVars.contains(from.getString()))
-                    Logger.error("Unable to write to read-only variable '${from.getString()}' in '$name'.")
-                else
-                    Logger.error("Unable to write to unknown variable '${from.getString()}' in '$name'.")
+            valid = valid and validateWritingVariables(Variable(to.getString()), readableVars, writeableVars)
 
-                // Regardless, it's an issue
-                valid = false
-            }
-
-            // Now let's go through every variable in the right-hand-side
-            for(variable in to.collectVariables()) {
-                // Check if we know about this variable and can write to it
-                if(!readableVars.contains(variable)) {
-                    // If we try to read from a write-only variable we can have a different error message
-                    if(writeableVars.contains(variable))
-                        Logger.error("Unable to read from write-only variable '$variable' in '$name'.")
-                    else
-                        Logger.error("Unable to read from unknown variable '$variable' in '$name'.")
-
-                    // Regardless, it's an issue
-                    valid = false
-                }
-            }
+            // Now let's validate the right-hand-side
+            valid = valid and validateReadingVariables(from, readableVars, writeableVars)
         }
 
         return valid

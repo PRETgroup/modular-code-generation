@@ -3,6 +3,7 @@ package me.nallen.modularcodegeneration.parsetree
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
 import me.nallen.modularcodegeneration.codegen.c.Utils
+import me.nallen.modularcodegeneration.logging.Logger
 
 /**
  * A class that represents a single node of a Parse Tree.
@@ -572,4 +573,84 @@ fun ParseTreeItem.collectVariables(): List<String> {
 
     // Return the list of variables we've found
     return variables
+}
+
+fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTypes: Map<String, VariableType?>, functionArguments: Map<String, List<VariableType>>, location: String = "'${this.generateString()}'"): Boolean {
+    var valid = true
+
+    val expectedTypes = when(this) {
+        is And -> arrayOf(VariableType.BOOLEAN, VariableType.BOOLEAN)
+        is Or -> arrayOf(VariableType.BOOLEAN, VariableType.BOOLEAN)
+        is Not -> arrayOf(VariableType.BOOLEAN)
+        is GreaterThanOrEqual -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is GreaterThan -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is LessThanOrEqual -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is LessThan -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Equal -> arrayOf()
+        is NotEqual -> arrayOf()
+        is FunctionCall -> {
+            if(functionArguments.containsKey(functionName)) {
+                functionArguments[this.functionName]!!.toTypedArray()
+            }
+            else {
+                Logger.error("Unknown function '$functionName' used in $location.")
+                valid = false
+                arrayOf()
+            }
+        }
+        is Plus -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Minus -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Multiply -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Divide -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Negative -> arrayOf(VariableType.REAL)
+        is SquareRoot -> arrayOf(VariableType.REAL)
+        is Exponential -> arrayOf(VariableType.REAL)
+        is Variable -> {
+            if(!variableTypes.containsKey(name)) {
+                Logger.error("Unknown variable '$name' used in $location.")
+                valid = false
+            }
+
+            arrayOf()
+        }
+        is Literal -> {
+            arrayOf()
+        }
+    }
+
+    val children = getChildren()
+    if(this is FunctionCall && functionArguments.containsKey(functionName)) {
+        if(children.size != expectedTypes.size) {
+            Logger.error("Invalid number of arguments supplied to custom function '$functionName' in $location." +
+                    " Found ${children.size}, expected ${expectedTypes.size}.")
+            valid = false
+        }
+    }
+
+    for((i, type) in expectedTypes.withIndex()) {
+        if(children.size > i) {
+            val childType = children[i].getOperationResultType(variableTypes, functionTypes)
+            if(childType != type) {
+                Logger.error("Invalid argument supplied to position $i of '${this.type}' in $location." +
+                        " Found '$childType', expected '$type'.")
+                valid = false
+            }
+        }
+    }
+
+    if(this is Equal || this is NotEqual) {
+        val childType0 = children[0].getOperationResultType(variableTypes, functionTypes)
+        val childType1 = children[1].getOperationResultType(variableTypes, functionTypes)
+        if(childType0 != childType1) {
+            Logger.error("Non-matching arguments supplied to '${this.type}' in $location." +
+                    " Found '$childType0' and '$childType1', expected matching arguments.")
+            valid = false
+        }
+    }
+
+    for(child in children) {
+        valid = valid and child.validate(variableTypes, functionTypes, functionArguments, location)
+    }
+
+    return valid
 }

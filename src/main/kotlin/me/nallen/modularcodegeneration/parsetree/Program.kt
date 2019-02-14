@@ -144,6 +144,31 @@ data class Program(
     }
 
     /**
+     * Gets the total number of lines that would be taken up by this program, this assumes zero whitespace and places
+     * closing brackets on their own line
+     */
+    fun getTotalLines(): Int {
+        // Start at zero
+        var numberOfLines = 0
+
+        // And then go through each line
+        for(line in lines) {
+            // Adding on however many lines we've found
+            numberOfLines += when(line) {
+                is Statement -> 1
+                is Assignment -> 1
+                is Return -> 1
+                is IfStatement -> 2 + line.body.getTotalLines()
+                is ElseStatement -> 2 + line.body.getTotalLines()
+                is ElseIfStatement -> 2 + line.body.getTotalLines()
+            }
+        }
+
+        // Finally, return the number of lines we found
+        return numberOfLines
+    }
+
+    /**
      * Combines two VariableTypes into a single VariableType that matches both of the arguments.
      * A null as input is treated as "don't care", and if the two arguments are both non-null and non-equal then no
      * common type could be found and an exception wil be thrown.

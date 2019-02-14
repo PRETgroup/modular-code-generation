@@ -1,5 +1,7 @@
 package me.nallen.modularcodegeneration.hybridautomata
 
+import me.nallen.modularcodegeneration.description.ParseTreeLocality
+import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable as ParseTreeVariable
 
@@ -109,6 +111,170 @@ data class HybridAutomata(
     override fun validate(): Boolean {
         // Let's try see if anything isn't valid
         var valid = super.validate()
+
+        // Let's first start by checking through all functions
+        // TODO: These maps should be used to verify function calls in ParseTreeItems
+        val functionArgumentsMap = HashMap<String, List<VariableType>>()
+        val functionReturnMap = HashMap<String, VariableType?>()
+        for(function in functions) {
+            // We need to store function types so we can make sure it's called correctly
+            functionArgumentsMap[function.name] = function.inputs.map { it.type }
+
+            // And keep track of what it returns
+            functionReturnMap[function.name] = function.returnType
+
+            // When checking the body we want to keep track of what variables can be written to or read from
+            val writeableVars = function.logic.variables
+                    .filter { it.locality == ParseTreeLocality.INTERNAL && !variables.any { v -> v.locality == Locality.PARAMETER && v.name == it.name } }
+                    .map { Pair(it.name, it.type) }.toMap()
+            val readableVars = function.logic.variables
+                    .filter { it.locality == ParseTreeLocality.INTERNAL || it.locality == ParseTreeLocality.EXTERNAL_INPUT }
+                    .plus(function.inputs)
+                    .map { Pair(it.name, it.type) }.toMap()
+
+            // And then validate the function body
+            valid = valid and validateFunction(function.logic, readableVars, writeableVars, "function '${function.name}' of '$name'")
+        }
+
+        val writeableVars = ArrayList<String>()
+        val readableVars = ArrayList<String>()
+        val variableTypes = HashMap<String, VariableType>()
+
+        // We need to keep track of what variables we can write to and read from in this network
+        for(variable in this.variables) {
+            // Keep track of variable types
+            variableTypes[variable.name] = variable.type
+
+            // Many things can be read from
+            readableVars.add(variable.name)
+
+            // But fewer can be written to
+            if(variable.locality == Locality.EXTERNAL_OUTPUT || variable.locality == Locality.INTERNAL) {
+                writeableVars.add(variable.name)
+            }
+        }
+
+        // Check through all the locations
+        for(location in locations) {
+            // First, let's check the invariant
+            valid = valid and validateReadingVariables(location.invariant, readableVars, writeableVars, "invariant of '${location.name}' in '$name'")
+            valid = valid and location.invariant.validate(variableTypes, functionReturnMap, functionArgumentsMap, "invariant of '${location.name}' in '$name'")
+
+            // Now we check each flow constraint
+            for((to, from) in location.flow) {
+                // Check where we're writing to
+                valid = valid and validateWritingVariables(ParseTreeVariable(to), readableVars, writeableVars, "flow constraint of '${location.name}' in '$name'")
+
+                // And where the value is coming from
+                valid = valid and validateReadingVariables(from, readableVars, writeableVars, "flow constraint for '$to' of '${location.name}' in '$name'")
+                valid = valid and from.validate(variableTypes, functionReturnMap, functionArgumentsMap, "flow constraint for '$to' of '${location.name}' in '$name'")
+
+                // Flow constraints should always return REAL numbers
+                val assignType = from.getOperationResultType(variableTypes, functionReturnMap)
+                if(VariableType.REAL != assignType) {
+                    Logger.error("Incorrect type assigned to flow constraint for '$to' of '${location.name}' in '$name'." +
+                            " Found '$assignType', expected '${VariableType.REAL}'")
+                    valid = false
+                }
+            }
+
+            // And finally the updates
+            for((to, from) in location.update) {
+                // Check where we're writing to
+                valid = valid and validateWritingVariables(ParseTreeVariable(to), readableVars, writeableVars, "update equation of '${location.name}' in '$name'")
+
+                // And where the value is coming from
+                valid = valid and validateReadingVariables(from, readableVars, writeableVars, "update equation for '$to' of '${location.name}' in '$name'")
+                valid = valid and from.validate(variableTypes, functionReturnMap, functionArgumentsMap, "update equation for '$to' of '${location.name}' in '$name'")
+
+                // Updates should return correct types
+                if(variableTypes.containsKey(to)) {
+                    val assignType = from.getOperationResultType(variableTypes, functionReturnMap)
+                    if(variableTypes[to] != assignType) {
+                        Logger.error("Incorrect type assigned to update equation for '$to' of '${location.name}' in '$name'." +
+                                " Found '$assignType', expected '${variableTypes[to]}'")
+                        valid = false
+                    }
+                }
+            }
+        }
+
+        // Check edges
+//        val edges: ArrayList<Edge> = ArrayList(),
+
+        // Check init
+//        var init: Initialisation = Initialisation(""),
+
+        return valid
+    }
+
+    /**
+     * Check if a function program is valid in terms of its definition. This will check that every variable used is used
+     * correctly (e.g. inputs aren't written to, etc.).
+     */
+    private fun validateFunction(program: Program, readableVars: Map<String, VariableType>, writeableVars: Map<String, VariableType>, location: String = "'$name'", lineNumberStart: Int = 1): Boolean {
+        var valid = true
+
+        // We keep track of the line number to be somewhat helpful when printing out errors
+        var lineNumber = lineNumberStart
+
+        // We need to iterate over every line
+        for(line in program.lines) {
+            // And then depending on what the line is, check each component of it
+            when(line) {
+                is Statement -> {
+                    valid = valid and validateReadingVariables(line.logic, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
+                    valid = valid and line.logic.validate(readableVars.plus(writeableVars), mapOf(), mapOf(), "line $lineNumber of $location")
+
+                    lineNumber++
+                }
+                is Assignment -> {
+                    valid = valid and validateWritingVariables(ParseTreeVariable(line.variableName.name), readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
+                    valid = valid and validateReadingVariables(line.variableValue, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
+                    valid = valid and line.variableValue.validate(readableVars.plus(writeableVars), mapOf(), mapOf(), "line $lineNumber of $location")
+
+                    // For assignments we should also check that we're assigning correct values
+                    if(writeableVars.containsKey(line.variableName.name)) {
+                        val assignType = line.variableValue.getOperationResultType(readableVars.plus(writeableVars))
+                        if(writeableVars[line.variableName.name] != assignType) {
+                            Logger.error("Incorrect type assigned to variable '${line.variableName.name} in line $lineNumber of $location'." +
+                                    " Found '$assignType', expected '${writeableVars[line.variableName.name]}'")
+                            valid = false
+                        }
+                    }
+
+                    lineNumber++
+                }
+                is Return -> {
+                    valid = valid and validateReadingVariables(line.logic, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
+                    valid = valid and line.logic.validate(readableVars.plus(writeableVars), mapOf(), mapOf(), "line $lineNumber of $location")
+
+                    lineNumber++
+                }
+                is IfStatement -> {
+                    // Statements with their own bodies also need to be recursively checked
+                    valid = valid and validateFunction(line.body, readableVars, writeableVars, location, lineNumber+1)
+                    valid = valid and validateReadingVariables(line.condition, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
+                    valid = valid and line.condition.validate(readableVars.plus(writeableVars), mapOf(), mapOf(), "line $lineNumber of $location")
+
+                    lineNumber += line.body.getTotalLines() + 2
+                }
+                is ElseStatement -> {
+                    // Statements with their own bodies also need to be recursively checked
+                    valid = valid and validateFunction(line.body, readableVars, writeableVars, location, lineNumber+1)
+
+                    lineNumber += line.body.getTotalLines() + 2
+                }
+                is ElseIfStatement -> {
+                    // Statements with their own bodies also need to be recursively checked
+                    valid = valid and validateFunction(line.body, readableVars, writeableVars, location, lineNumber+1)
+                    valid = valid and validateReadingVariables(line.condition, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
+                    valid = valid and line.condition.validate(readableVars.plus(writeableVars), mapOf(), mapOf(), "line $lineNumber of $location")
+
+                    lineNumber += line.body.getTotalLines() + 2
+                }
+            }
+        }
 
         return valid
     }
