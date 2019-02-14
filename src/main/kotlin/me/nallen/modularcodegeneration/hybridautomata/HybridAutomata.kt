@@ -199,11 +199,72 @@ data class HybridAutomata(
             }
         }
 
-        // Check edges
-//        val edges: ArrayList<Edge> = ArrayList(),
+        // Check through each edge between locations
+        for(edge in edges) {
+            // First, let's check where this edge came from
+            if(!locations.any { it.name == edge.fromLocation }) {
+                Logger.error("Unknown location '${edge.fromLocation}' used in transition from '${edge.fromLocation}' to '${edge.toLocation}' in '$name'.")
+                valid = false
+            }
 
-        // Check init
-//        var init: Initialisation = Initialisation(""),
+            // And where it goes to
+            if(!locations.any { it.name == edge.toLocation }) {
+                Logger.error("Unknown location '${edge.toLocation}' used in transition from '${edge.fromLocation}' to '${edge.toLocation}' in '$name'.")
+                valid = false
+            }
+
+            // Next, let's check the guard
+            valid = valid and validateReadingVariables(edge.guard, readableVars, writeableVars, "guard of transition '${edge.fromLocation} -> ${edge.toLocation}' in '$name'")
+            valid = valid and edge.guard.validate(variableTypes, functionReturnMap, functionArgumentsMap, "guard of transition '${edge.fromLocation} -> ${edge.toLocation}' in '$name'")
+
+
+            // Now the updates
+            for((to, from) in edge.update) {
+                // Check where we're writing to
+                valid = valid and validateWritingVariables(ParseTreeVariable(to), readableVars, writeableVars, "update equation of transition '${edge.fromLocation} -> ${edge.toLocation}' in '$name'")
+
+                // And where the value is coming from
+                valid = valid and validateReadingVariables(from, readableVars, writeableVars, "update equation for '$to' of transition '${edge.fromLocation} -> ${edge.toLocation}' in '$name'")
+                valid = valid and from.validate(variableTypes, functionReturnMap, functionArgumentsMap, "update equation for '$to' of transition '${edge.fromLocation} -> ${edge.toLocation}' in '$name'")
+
+                // Updates should return correct types
+                if(variableTypes.containsKey(to)) {
+                    val assignType = from.getOperationResultType(variableTypes, functionReturnMap)
+                    if(variableTypes[to] != assignType) {
+                        Logger.error("Incorrect type assigned to update equation for '$to' of transition '${edge.fromLocation} -> ${edge.toLocation}' in '$name'." +
+                                " Found '$assignType', expected '${variableTypes[to]}'")
+                        valid = false
+                    }
+                }
+            }
+        }
+
+        // Finally, let's validate the initialisation code
+        // Firstly, the state
+        if(!locations.any { it.name == init.state }) {
+            Logger.error("Unknown location '${init.state}' used in initialisation of '$name'.")
+            valid = false
+        }
+
+        // And then the valuations
+        for((to, from) in init.valuations) {
+            // Check where we're writing to
+            valid = valid and validateWritingVariables(ParseTreeVariable(to), readableVars, writeableVars, "initialisation equation in '$name'")
+
+            // And where the value is coming from
+            valid = valid and validateReadingVariables(from, readableVars, writeableVars, "initialisation equation for '$to' in '$name'")
+            valid = valid and from.validate(variableTypes, functionReturnMap, functionArgumentsMap, "initialisation equation for '$to' in '$name'")
+
+            // Updates should return correct types
+            if(variableTypes.containsKey(to)) {
+                val assignType = from.getOperationResultType(variableTypes, functionReturnMap)
+                if(variableTypes[to] != assignType) {
+                    Logger.error("Incorrect type assigned to initialisation equation for '$to' in '$name'." +
+                            " Found '$assignType', expected '${variableTypes[to]}'")
+                    valid = false
+                }
+            }
+        }
 
         return valid
     }
