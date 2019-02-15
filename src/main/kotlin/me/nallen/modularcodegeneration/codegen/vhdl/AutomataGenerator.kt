@@ -113,8 +113,7 @@ object AutomataGenerator {
 
             // We also need to find all of the internal variables that we need, this is any internal variable which
             // isn't a parameter
-            for(internal in func.logic.variables.filter {it.locality == ParseTreeLocality.INTERNAL}
-                    .filterNot {item.variables.any { search -> search.locality == Locality.PARAMETER && search.name == it.name }}) {
+            for(internal in func.logic.variables.filter {it.locality == ParseTreeLocality.INTERNAL}) {
                 // And then we can add internal variables
                 functionObject.variables.add(VariableObject.create(me.nallen.modularcodegeneration.hybridautomata.Variable(internal.name, internal.type, Locality.INTERNAL, internal.defaultValue)))
             }
@@ -122,7 +121,7 @@ object AutomataGenerator {
             // If we are doing run-time parametrisation then we also need to deal with parameters
             if(config.runTimeParametrisation) {
                 // We want to go through each parameter that is used in this function
-                for(internal in func.logic.variables.filter {it.locality == ParseTreeLocality.INTERNAL}
+                for(internal in func.logic.variables.filter {it.locality == ParseTreeLocality.EXTERNAL_INPUT}
                         .filter {item.variables.any { search -> search.locality == Locality.PARAMETER && search.name == it.name }}) {
                     // Add it as an external input
                     functionObject.inputs.add(VariableObject.create(me.nallen.modularcodegeneration.hybridautomata.Variable(internal.name, internal.type, Locality.EXTERNAL_INPUT, internal.defaultValue)))

@@ -126,7 +126,7 @@ data class HybridAutomata(
 
             // When checking the body we want to keep track of what variables can be written to or read from
             val writeableVars = function.logic.variables
-                    .filter { it.locality == ParseTreeLocality.INTERNAL && !variables.any { v -> v.locality == Locality.PARAMETER && v.name == it.name } }
+                    .filter { it.locality == ParseTreeLocality.INTERNAL }
                     .map { Pair(it.name, it.type) }.toMap()
             val readableVars = function.logic.variables
                     .filter { it.locality == ParseTreeLocality.INTERNAL || it.locality == ParseTreeLocality.EXTERNAL_INPUT }
