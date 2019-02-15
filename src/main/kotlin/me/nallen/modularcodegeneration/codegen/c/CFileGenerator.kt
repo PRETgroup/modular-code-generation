@@ -284,6 +284,7 @@ object CFileGenerator {
             VariableType.BOOLEAN -> Utils.generateCodeForParseTreeItem(Literal("false"))
             VariableType.REAL -> Utils.generateCodeForParseTreeItem(Literal("0"))
             VariableType.INTEGER -> Utils.generateCodeForParseTreeItem(Literal("0"))
+            else -> throw NotImplementedError("Unable to generate code for requested type '$type'")
         }
     }
 

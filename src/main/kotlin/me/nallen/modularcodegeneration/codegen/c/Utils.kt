@@ -28,6 +28,7 @@ object Utils {
             VariableType.BOOLEAN -> "bool"
             VariableType.REAL -> "double"
             VariableType.INTEGER -> "int"
+            else -> throw NotImplementedError("Unable to generate code for requested type '$type'")
         }
     }
 
@@ -40,6 +41,7 @@ object Utils {
             VariableType.BOOLEAN -> "%d"
             VariableType.REAL -> "%f"
             VariableType.INTEGER -> "%d"
+            else -> throw NotImplementedError("Unable to generate code for requested type '$type'")
         }
     }
 

@@ -125,6 +125,7 @@ object Utils {
             VariableType.BOOLEAN -> "boolean"
             VariableType.REAL -> "signed(31 downto 0)"
             VariableType.INTEGER -> "integer"
+            else -> throw NotImplementedError("Unable to generate code for requested type '$type'")
         }
     }
 
@@ -138,6 +139,7 @@ object Utils {
             VariableType.BOOLEAN -> "boolean"
             VariableType.REAL -> "signed"
             VariableType.INTEGER -> "integer"
+            else -> throw NotImplementedError("Unable to generate code for requested type '$type'")
         }
     }
 
@@ -151,6 +153,7 @@ object Utils {
             VariableType.BOOLEAN -> "false"
             VariableType.REAL -> "(others => '0')"
             VariableType.INTEGER -> "0"
+            else -> throw NotImplementedError("Unable to generate code for requested type '$type'")
         }
     }
 
