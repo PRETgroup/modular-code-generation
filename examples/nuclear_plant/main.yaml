@@ -110,7 +110,6 @@ system:
       initialisation:
         state: c1
         valuations:
-          x: 510
           y1: 0
           y2: 0
 
