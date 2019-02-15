@@ -19,8 +19,10 @@ fun main(args: Array<String>) = mainBody("piha") {
             if (flatten)
                 network = network.flatten()
 
-            // Generate the code
-            CodeGenManager.generate(network, language, outputDir, config)
+            if(!only_validation) {
+                // Generate the code
+                CodeGenManager.generate(network, language, outputDir, config)
+            }
         }
         catch(e: Exception) {
             Logger.error(e.message ?: "Unexpected Error")

@@ -22,4 +22,8 @@ class CliArgs(parser: ArgParser) {
     // Whether or not to "flatten" the network
     val flatten by parser.flagging("-f", "--flatten",
             help = "whether or not to flatten the network for generated code").default(false)
+
+    // A flag to just do validation of the description file
+    val only_validation by parser.flagging("-v", "--validate-only",
+            help = "whether to perform validation only of the description file, skipping code generation").default(false)
 }
