@@ -58,7 +58,7 @@ abstract class HybridItem(
 
         // The only thing we really have an issue with is duplicate variable names, so let's check for that
         for((name, list) in variables.groupBy { it.name }.filter { it.value.size > 1 }) {
-            Logger.error("Multiple definitions (${list.size} of variable '$name' in '${this.name}'.")
+            Logger.error("Multiple definitions (${list.size}) of variable '$name' in '${this.name}'.")
             valid = false
         }
 
