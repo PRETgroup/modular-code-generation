@@ -133,6 +133,11 @@ data class HybridAutomata(
                     .plus(function.inputs)
                     .map { Pair(it.name, it.type) }.toMap()
 
+            for(variable in function.logic.variables.filter { it.type == VariableType.ANY }) {
+                Logger.error("Unable to detect type for variable '${variable.name}' in function '${function.name}' of '$name'.")
+                valid = false
+            }
+
             // And then validate the function body
             valid = valid and validateFunction(function.logic, readableVars, writeableVars, "function '${function.name}' of '$name'")
         }
@@ -191,7 +196,7 @@ data class HybridAutomata(
                 // Updates should return correct types
                 if(variableTypes.containsKey(to)) {
                     val assignType = from.getOperationResultType(variableTypes, functionReturnMap)
-                    if(variableTypes[to] != assignType) {
+                    if(variableTypes[to] != assignType && variableTypes[to] != VariableType.ANY) {
                         Logger.error("Incorrect type assigned to update equation for '$to' of '${location.name}' in '$name'." +
                                 " Found '$assignType', expected '${variableTypes[to]}'")
                         valid = false
@@ -231,7 +236,7 @@ data class HybridAutomata(
                 // Updates should return correct types
                 if(variableTypes.containsKey(to)) {
                     val assignType = from.getOperationResultType(variableTypes, functionReturnMap)
-                    if(variableTypes[to] != assignType) {
+                    if(variableTypes[to] != assignType && variableTypes[to] != VariableType.ANY) {
                         Logger.error("Incorrect type assigned to update equation for '$to' of transition '${edge.fromLocation} -> ${edge.toLocation}' in '$name'." +
                                 " Found '$assignType', expected '${variableTypes[to]}'")
                         valid = false
@@ -259,7 +264,7 @@ data class HybridAutomata(
             // Updates should return correct types
             if(variableTypes.containsKey(to)) {
                 val assignType = from.getOperationResultType(variableTypes, functionReturnMap)
-                if(variableTypes[to] != assignType) {
+                if(variableTypes[to] != assignType && variableTypes[to] != VariableType.ANY) {
                     Logger.error("Incorrect type assigned to initialisation equation for '$to' in '$name'." +
                             " Found '$assignType', expected '${variableTypes[to]}'")
                     valid = false
@@ -298,7 +303,7 @@ data class HybridAutomata(
                     // For assignments we should also check that we're assigning correct values
                     if(writeableVars.containsKey(line.variableName.name)) {
                         val assignType = line.variableValue.getOperationResultType(readableVars.plus(writeableVars))
-                        if(writeableVars[line.variableName.name] != assignType) {
+                        if(writeableVars[line.variableName.name] != assignType && writeableVars[line.variableName.name] != VariableType.ANY) {
                             Logger.error("Incorrect type assigned to variable '${line.variableName.name} in line $lineNumber of $location'." +
                                     " Found '$assignType', expected '${writeableVars[line.variableName.name]}'")
                             valid = false

@@ -62,6 +62,12 @@ abstract class HybridItem(
             valid = false
         }
 
+        // We'll also check for variables that are of unknown type
+        for(variable in variables.filter { it.type == VariableType.ANY }) {
+            Logger.error("Unable to detect type for variable '${variable.name}' in '$name'.")
+            valid = false
+        }
+
         return valid
     }
 
