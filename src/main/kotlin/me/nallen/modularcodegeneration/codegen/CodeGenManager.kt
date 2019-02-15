@@ -107,6 +107,7 @@ object CodeGenManager {
             item.name = name
 
             val functionTypes = LinkedHashMap<String, VariableType?>()
+            val functionArguments = LinkedHashMap<String, List<VariableType>>()
 
             if(item is HybridAutomata) {
                 // We need to parametrise every function
@@ -116,11 +117,12 @@ object CodeGenManager {
                     inputs.addAll(item.variables.filter {it.locality == Locality.PARAMETER}.map { VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) })
 
                     // So now we collect all internal variables given we know about the external inputs and parameters
-                    function.logic.collectVariables(inputs, functionTypes)
+                    function.logic.collectVariables(inputs, functionTypes, functionArguments)
 
                     // Get the return type, and keep track of it too
                     function.returnType = function.logic.getReturnType(functionTypes)
                     functionTypes[function.name] = function.returnType
+                    functionArguments[function.name] = function.inputs.map { it.type }
                 }
             }
 
