@@ -137,14 +137,14 @@ private fun createHybridAutomata(name: String, definition: Automata): HybridAuto
     // Load the common features
     automata.loadData(name, definition)
 
+    // And then any custom functions that it may contain
+    automata.loadFunctions(definition.functions)
+
     // Add the locations (transitions are within locations)
     automata.loadLocations(definition.locations)
 
     // Set the initialisation
     automata.loadInitialisation(definition.initialisation)
-
-    // And then any custom functions that it may contain
-    automata.loadFunctions(definition.functions)
 
     return automata
 }
@@ -302,6 +302,7 @@ private fun HybridAutomata.loadInitialisation(init: Initialisation?) {
 private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
     // We need to keep track of functions we know about and their return types
     val existingFunctionTypes = LinkedHashMap<String, ParseTreeVariableType?>()
+    val existingFunctionArguments = LinkedHashMap<String, List<ParseTreeVariableType>>()
 
     // For each function that exists
     if(functions != null) {
@@ -317,7 +318,14 @@ private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
             }
 
             // Next let's find any internal variables inside the function that we'll need to instantiate
-            function.logic.collectVariables(inputs, existingFunctionTypes)
+            function.logic.collectVariables(inputs, existingFunctionTypes, existingFunctionArguments)
+
+            for(variable in function.logic.variables) {
+                if(variables.filter { it.locality == Locality.PARAMETER }.any { it.name == variable.name }) {
+                    variable.type = variables.filter { it.locality == Locality.PARAMETER }.first { it.name == variable.name }.type
+                    variable.locality = ParseTreeLocality.EXTERNAL_INPUT
+                }
+            }
 
             // Now we create the FunctionDefinition
             val func = FunctionDefinition(name, function.logic, inputs)
@@ -326,6 +334,7 @@ private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
             func.returnType = function.logic.getReturnType(existingFunctionTypes)
             // And then add it to the list of known types for future parsing
             existingFunctionTypes[func.name] = func.returnType
+            existingFunctionArguments[func.name] = func.inputs.map { it.type }
 
             this.functions.add(func)
         }
@@ -418,15 +427,7 @@ private fun HybridItem.loadVariables(variables: Map<String, VariableDefinition>?
     // Iterate over every variable we were given
     if(variables != null) {
         for((name, value) in variables) {
-            // Check the type of the variable
-            if(value.type == VariableType.REAL) {
-                // Real variables go to Continuous Variables
-                this.addContinuousVariable(name, type, value.default, value.delayableBy, true)
-            }
-            else if(value.type == VariableType.BOOLEAN) {
-                // Booleans become Events
-                this.addEvent(name, type, value.delayableBy, true)
-            }
+            this.addVariable(name, value.type.convertToParseTreeType(), type, value.default, value.delayableBy, true)
         }
     }
 }

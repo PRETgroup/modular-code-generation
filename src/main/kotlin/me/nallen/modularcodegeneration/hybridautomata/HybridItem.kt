@@ -10,20 +10,15 @@ abstract class HybridItem(
 
         val variables: ArrayList<Variable> = ArrayList()
 ) {
-    fun addContinuousVariable(item: String, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null, delayableBy: ParseTreeItem? = null, forceAdd: Boolean = false): HybridItem {
+    fun addVariable(item: String, type: VariableType = VariableType.ANY, locality: Locality = Locality.INTERNAL, default: ParseTreeItem? = null, delayableBy: ParseTreeItem? = null, forceAdd: Boolean = false): HybridItem {
         if(forceAdd || !variables.any {it.name == item}) {
-            variables.add(Variable(item, VariableType.REAL, locality, default, delayableBy))
+            variables.add(Variable(item, type, locality, default, delayableBy))
 
             if(default != null)
-                checkParseTreeForNewContinuousVariable(default)
+                checkParseTreeForNewVariables(default, type)
         }
-
-        return this
-    }
-
-    fun addEvent(item: String, locality: Locality = Locality.INTERNAL, delayableBy: ParseTreeItem? = null, forceAdd: Boolean = false): HybridItem {
-        if(forceAdd || !variables.any {it.name == item}) {
-            variables.add(Variable(item, VariableType.BOOLEAN, locality, delayableBy = delayableBy))
+        else {
+            variables.filter { it.name == item && it.type == VariableType.ANY }.forEach { it.type = type }
         }
 
         return this
@@ -72,23 +67,39 @@ abstract class HybridItem(
 
     /* Private Methods */
 
-    protected fun checkParseTreeForNewContinuousVariable(item: ParseTreeItem, locality: Locality = Locality.INTERNAL) {
+    protected fun checkParseTreeForNewVariables(item: ParseTreeItem, currentType: VariableType, functionArguments: Map<String, List<VariableType>> = mapOf(), locality: Locality = Locality.INTERNAL) {
         if(item is ParseTreeVariable) {
-            addContinuousVariable(item.name, locality)
+            addVariable(item.name, currentType, locality)
         }
 
-        for(child in item.getChildren()) {
-            checkParseTreeForNewContinuousVariable(child)
-        }
-    }
+        val expectedTypes = item.getExpectedTypes(functionArguments)
 
-    protected fun checkParseTreeForNewEvent(item: ParseTreeItem, locality: Locality = Locality.INTERNAL) {
-        if(item is ParseTreeVariable) {
-            addEvent(item.name, locality)
-        }
+        val children = item.getChildren()
 
-        for(child in item.getChildren()) {
-            checkParseTreeForNewEvent(child, locality)
+        if(item is Equal || item is NotEqual) {
+            val childType0 = children[0].getOperationResultType()
+            val childType1 = children[1].getOperationResultType()
+
+            if(childType0 != VariableType.ANY && childType1 == VariableType.ANY) {
+                checkParseTreeForNewVariables(children[0], childType0, functionArguments)
+                checkParseTreeForNewVariables(children[1], childType0, functionArguments)
+            }
+            else if(childType1 != VariableType.ANY && childType0 == VariableType.ANY) {
+                checkParseTreeForNewVariables(children[0], childType1, functionArguments)
+                checkParseTreeForNewVariables(children[1], childType1, functionArguments)
+            }
+            else {
+                checkParseTreeForNewVariables(children[0], childType0, functionArguments)
+                checkParseTreeForNewVariables(children[1], childType1, functionArguments)
+            }
+        }
+        else {
+            for((index, child) in children.withIndex()) {
+                if(index < expectedTypes.size)
+                    checkParseTreeForNewVariables(child, expectedTypes[index], functionArguments)
+                else
+                    checkParseTreeForNewVariables(child, VariableType.ANY, functionArguments)
+            }
         }
     }
 

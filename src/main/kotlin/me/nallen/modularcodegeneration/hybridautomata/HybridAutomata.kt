@@ -19,17 +19,22 @@ data class HybridAutomata(
         val functions: ArrayList<FunctionDefinition> = ArrayList()
 ) : HybridItem() {
     fun addLocation(location: Location): HybridAutomata {
+        val functionArguments = functions.map { Pair(it.name, it.inputs.map { it.type }) }.toMap()
+
         // Check for any continuous variables
-        checkParseTreeForNewContinuousVariable(location.invariant)
+        checkParseTreeForNewVariables(location.invariant, VariableType.BOOLEAN, functionArguments)
 
         for((key, value) in location.flow) {
-            addContinuousVariable(key)
-            checkParseTreeForNewContinuousVariable(value)
+            // Flow constraints have to be REAL
+            addVariable(key, VariableType.REAL)
+            checkParseTreeForNewVariables(value, VariableType.REAL, functionArguments)
         }
 
         for((key, value) in location.update) {
-            addContinuousVariable(key)
-            checkParseTreeForNewContinuousVariable(value)
+            // Updates could be anything, so let's guess the type
+            val type = value.getOperationResultType()
+            addVariable(key, type)
+            checkParseTreeForNewVariables(value, type, functionArguments)
         }
 
         locations.add(location)
@@ -38,19 +43,16 @@ data class HybridAutomata(
     }
 
     fun addEdge(edge: Edge): HybridAutomata {
+        val functionArguments = functions.map { Pair(it.name, it.inputs.map { it.type }) }.toMap()
+
         // Check for any continuous variables
-        checkParseTreeForNewContinuousVariable(edge.guard)
+        checkParseTreeForNewVariables(edge.guard, VariableType.BOOLEAN, functionArguments)
 
         for((key, value) in edge.update) {
-            addContinuousVariable(key)
-            checkParseTreeForNewContinuousVariable(value)
-        }
-
-        // Check for any events
-        checkParseTreeForNewEvent(edge.inEvents, Locality.EXTERNAL_INPUT)
-
-        for(event in edge.outEvents) {
-            addEvent(event, Locality.EXTERNAL_OUTPUT)
+            // Updates could be anything, so let's guess the type
+            val type = value.getOperationResultType()
+            addVariable(key, type)
+            checkParseTreeForNewVariables(value, type, functionArguments)
         }
 
         edges.add(edge)
@@ -113,7 +115,6 @@ data class HybridAutomata(
         var valid = super.validate()
 
         // Let's first start by checking through all functions
-        // TODO: These maps should be used to verify function calls in ParseTreeItems
         val functionArgumentsMap = HashMap<String, List<VariableType>>()
         val functionReturnMap = HashMap<String, VariableType?>()
         for(function in functions) {
@@ -352,9 +353,7 @@ data class Edge(
         var fromLocation: String,
         var toLocation: String,
         var guard: ParseTreeItem = Literal("true"),
-        var update: MutableMap<String, ParseTreeItem> = LinkedHashMap(),
-        var inEvents: ParseTreeItem = Literal("true"),
-        var outEvents: List<String> = ArrayList()
+        var update: MutableMap<String, ParseTreeItem> = LinkedHashMap()
 )
 
 data class Initialisation(
