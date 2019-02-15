@@ -586,6 +586,12 @@ fun ParseTreeItem.collectVariables(): List<String> {
     return variables
 }
 
+/**
+ * Get the expected types of each child of this ParseTreeItem. If this is a function call then we use the required
+ * arguments for the function to populate this list, otherwise it just depends on the operand.
+ * NOTE: There's a special case for Equal and NotEqual, which can take any type but require both operands be the same
+ * type
+ */
 fun ParseTreeItem.getExpectedTypes(functionArguments: Map<String, List<VariableType>> = mapOf()): Array<VariableType> {
     return when(this) {
         is And -> arrayOf(VariableType.BOOLEAN, VariableType.BOOLEAN)
@@ -598,6 +604,8 @@ fun ParseTreeItem.getExpectedTypes(functionArguments: Map<String, List<VariableT
         is Equal -> arrayOf(VariableType.ANY, VariableType.ANY)
         is NotEqual -> arrayOf(VariableType.ANY, VariableType.ANY)
         is FunctionCall -> {
+            // We also have a special custom function called "delayed" which takes a first parameter of any type, and
+            // then a real number as the second
             if(functionName == "delayed") {
                 arrayOf(VariableType.ANY, VariableType.REAL)
             }
@@ -620,19 +628,29 @@ fun ParseTreeItem.getExpectedTypes(functionArguments: Map<String, List<VariableT
     }
 }
 
+/**
+ * Validates a ParseTreeItem to make sure that the operations that it is performing make sense in terms of variable
+ * types, number of arguments to each operand, etc.
+ */
 fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTypes: Map<String, VariableType?>, functionArguments: Map<String, List<VariableType>>, location: String = "'${this.generateString()}'"): Boolean {
     var valid = true
 
+    // First we start by getting the types that we expect this operand to hold
     val expectedTypes = getExpectedTypes(functionArguments)
 
+    // Then if this is a variable we want to check that we know about it
     if(this is Variable && !variableTypes.containsKey(name)) {
         Logger.error("Unknown variable '$name' used in $location.")
         valid = false
     }
 
+    // Now we can start looking at the children of this item
     val children = getChildren()
     if(this is FunctionCall) {
+        // For functions, there's a special "delayed" function we need to look at, in addition to any other custom
+        // function
         if(functionName == "delayed" || functionArguments.containsKey(functionName)) {
+            // Check that the correct number of arguments is provided, otherwise error
             if(children.size != expectedTypes.size) {
                 Logger.error("Invalid number of arguments supplied to function '$functionName' in $location." +
                         " Found ${children.size}, expected ${expectedTypes.size}.")
@@ -640,16 +658,21 @@ fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTyp
             }
         }
         else {
+            // If we don't know the function, then that's an error
             Logger.error("Unknown function '$functionName' used in $location.")
             valid = false
         }
     }
 
+    // The user-friendly name that we'll print out during errors
     val name = if(this is FunctionCall) { functionName } else { type }
 
+    // Now let's go through each expected type
     for((i, type) in expectedTypes.withIndex()) {
         if(children.size > i) {
+            // And check that we provided a valid argument to it by first getting the type of the argument
             val childType = children[i].getOperationResultType(variableTypes, functionTypes)
+            // And then comparing it with what we expect
             if(childType != type && type != VariableType.ANY) {
                 Logger.error("Invalid argument supplied to position $i of '$name' in $location." +
                         " Found '$childType', expected '$type'.")
@@ -658,9 +681,13 @@ fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTyp
         }
     }
 
+    // Special case for Equal and Not-Equal
     if(this is Equal || this is NotEqual) {
+        // Here, the two arguments must have the SAME type, so get the type for each argument
         val childType0 = children[0].getOperationResultType(variableTypes, functionTypes)
         val childType1 = children[1].getOperationResultType(variableTypes, functionTypes)
+
+        // And then check that they're the same
         if(childType0 != childType1) {
             Logger.error("Non-matching arguments supplied to '$name' in $location." +
                     " Found '$childType0' and '$childType1', expected matching arguments.")
@@ -668,6 +695,7 @@ fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTyp
         }
     }
 
+    // Finally, recursively validate
     for(child in children) {
         valid = valid and child.validate(variableTypes, functionTypes, functionArguments, location)
     }

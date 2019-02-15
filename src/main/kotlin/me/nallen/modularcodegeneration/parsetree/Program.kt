@@ -196,20 +196,23 @@ data class Program(
     /**
      * Checks a Parse Tree for any new variables inside the program
      */
-
     private fun checkParseTreeForNewVariables(item: ParseTreeItem, currentType: VariableType, functionArguments: Map<String, List<VariableType>> = mapOf()) {
         if(item is Variable) {
             addVariable(item.name, currentType)
         }
 
+        // Get the list of types that we expect each child to have from this ParseTree
         val expectedTypes = item.getExpectedTypes(functionArguments)
 
         val children = item.getChildren()
 
+        // Equal and Not-equal are special - they work with any type but just require both sides to be the same
         if(item is Equal || item is NotEqual) {
+            // So let's get both the guesses for child types
             val childType0 = children[0].getOperationResultType()
             val childType1 = children[1].getOperationResultType()
 
+            // If one is unknown (ANY) and the other is known, then use the known one as the guess for both
             if(childType0 != VariableType.ANY && childType1 == VariableType.ANY) {
                 checkParseTreeForNewVariables(children[0], childType0, functionArguments)
                 checkParseTreeForNewVariables(children[1], childType0, functionArguments)
@@ -219,15 +222,20 @@ data class Program(
                 checkParseTreeForNewVariables(children[1], childType1, functionArguments)
             }
             else {
+                // Otherwise we have no idea, so just use their own ones
                 checkParseTreeForNewVariables(children[0], childType0, functionArguments)
                 checkParseTreeForNewVariables(children[1], childType1, functionArguments)
             }
         }
         else {
+            // If it's not the special case then we just iterate over every child
             for((index, child) in children.withIndex()) {
+                // And if we have a guess of what this should be based off of the operand
                 if(index < expectedTypes.size)
+                    // Then use that as the initial guess
                     checkParseTreeForNewVariables(child, expectedTypes[index], functionArguments)
                 else
+                    // Otherwise we don't know (ANY)
                     checkParseTreeForNewVariables(child, VariableType.ANY, functionArguments)
             }
         }
