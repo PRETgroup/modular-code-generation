@@ -105,11 +105,11 @@ class ParseTreeTests : StringSpec() {
                     "}\n" +
                     "return 0\n")
 
+            program.collectVariables()
+
             program.getReturnType()
 
             program.generateString()
-
-            program.collectVariables()
         }
 
         "Invalid Program Return Types" {
