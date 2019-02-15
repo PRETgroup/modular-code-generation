@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonValue
 import me.nallen.modularcodegeneration.codegen.c.Utils
+import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
+import me.nallen.modularcodegeneration.parsetree.Variable
+import me.nallen.modularcodegeneration.parsetree.collectVariables
 import me.nallen.modularcodegeneration.parsetree.prependVariables
 import me.nallen.modularcodegeneration.parsetree.replaceVariables
 import java.util.*
@@ -21,71 +24,6 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
 
     @JsonIgnore
     var parent: HybridNetwork? = null
-
-    /*fun addDefinition(
-            ha: HybridAutomata
-    ): HybridNetwork {
-        /*if(definitions.any({it.name == ha.name}))
-            throw IllegalArgumentException("Hybrid Automata with name ${ha.name} already exists!")*/
-
-        definitions.add(ha)
-
-        return this
-    }*/
-
-    /*fun addInstance(
-            name: String,
-            instantiate: AutomataInstance
-    ): HybridNetwork {
-        /*if(instances.containsKey(name))
-            throw IllegalArgumentException("Instance with name ${name} already exists!")
-
-        if(!definitions.any({it.name == instantiate.automata}))
-            throw IllegalArgumentException("Instance of undefined definition ${instantiate.automata}!")
-
-        // Check all parameters
-        val ha = definitions.first({it.name == instantiate.automata})
-        val params = ha.continuousVariables.filter({it.locality == Locality.PARAMETER})
-        for(param in params) {
-            if(!instantiate.parameters.containsKey(param.name))
-                throw IllegalArgumentException("Instance ${name} does not declare value for parameter ${param.name} of ${instantiate.automata}!")
-        }*/
-
-        instances[name] = instantiate
-
-        return this
-    }*/
-
-    /*fun addMapping(
-            to: AutomataVariablePair,
-            from: ParseTreeItem
-    ): HybridNetwork {
-        /*if(!instances.containsKey(to.automata))
-            throw IllegalArgumentException("Unknown instantiate for 'to' connection ${to.automata}!")
-
-        val toInstance = instances.get(to.automata)!!
-        val toHa = definitions.first({it.name == toInstance.automata})
-
-        if(!toHa.continuousVariables.any({it.locality == Locality.EXTERNAL_INPUT && it.name == to.variable}))
-            throw IllegalArgumentException("Unknown input for 'to' connection ${to.variable}!")
-
-        if(!instances.containsKey(from.automata))
-            throw IllegalArgumentException("Unknown instantiate for 'from' connection ${from.automata}!")
-
-        val fromInstance = instances.get(from.automata)!!
-        val fromHa = definitions.first({it.name == fromInstance.automata})
-
-        if(!fromHa.continuousVariables.any({it.locality == Locality.EXTERNAL_OUTPUT && it.name == from.variable}))
-            throw IllegalArgumentException("Unknown input for 'from' connection ${from.variable}!")
-
-        if(ioMapping.containsKey(to)) {
-            throw IllegalArgumentException("A previous assignment to ${to.automata}.${to.variable} has already been created!")
-        }*/
-
-        ioMapping[to] = from
-
-        return this
-    }*/
 
     fun getAllInstances(): Map<String, AutomataInstance> {
         val collection = instances.toMutableMap()
@@ -253,6 +191,88 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
         }
 
         return flattenedNetwork
+    }
+
+    /**
+     * Check if this Hybrid Network is valid, this includes things like variable names being correct, instances being
+     * able to be instantiated, correct parameters, etc. This can help the user detect errors during the compile stage
+     * rather than by analysing the generated code.
+     */
+    override fun validate(): Boolean {
+        // Let's try see if anything isn't valid
+        var valid = super.validate()
+
+        val writeableVars = ArrayList<String>()
+        val readableVars = ArrayList<String>()
+
+        // We need to keep track of what variables we can write to and read from in this network
+        for(variable in this.variables) {
+            // Many things can be read from
+            if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.INTERNAL || variable.locality == Locality.PARAMETER) {
+                readableVars.add(variable.name)
+            }
+            // But fewer can be written to
+            if(variable.locality == Locality.EXTERNAL_OUTPUT || variable.locality == Locality.INTERNAL) {
+                writeableVars.add(variable.name)
+            }
+        }
+
+        // We want to keep track of each definition we've validated so that we don't run it multiple times
+        val validated = ArrayList<UUID>()
+
+        // Firstly, let's iterate over every sub-instance
+        for((name, instance) in this.instances) {
+            // Fetch the definition
+            val definition = this.getDefinitionForInstantiateId(instance.instantiate)
+
+            if(definition != null) {
+                // If we haven't seen this before
+                if (!validated.contains(instance.instantiate)) {
+                    // Then we want to check if it's valid
+                    if (!definition.validate())
+                        valid = false
+
+                    validated.add(instance.instantiate)
+                }
+
+                // Now we want to check that each parameter is valid
+                for((param, _) in instance.parameters) {
+                    // Check if there's a matching parameter in the definition
+                    if(!definition.variables.any { it.locality == Locality.PARAMETER && it.name == param }) {
+                        // If not, then this is just a warning because we can just ignore it
+                        Logger.warn("Unable to find parameter '$param' in '${definition.name}' used by '$name'." +
+                                " Removing this parameter.")
+                        instance.parameters.remove(param)
+                    }
+                }
+
+                // We also need to keep track of what variables we can write to and read from in this network
+                for(variable in definition.variables) {
+                    // Inputs of this instance can be written to, while outputs can be read from
+                    if(variable.locality == Locality.EXTERNAL_INPUT) {
+                        writeableVars.add("$name.${variable.name}")
+                    }
+                    else if(variable.locality == Locality.EXTERNAL_OUTPUT) {
+                        readableVars.add("$name.${variable.name}")
+                    }
+                }
+            }
+            else {
+                // No definition found, that's an issue but should have been logged earlier
+                valid = false
+            }
+        }
+
+        // Now check for all variables in the I/O Mapping
+        for((to, from) in this.ioMapping) {
+            // First let's start with where we're writing to
+            valid = valid and validateWritingVariables(Variable(to.getString()), readableVars, writeableVars)
+
+            // Now let's validate the right-hand-side
+            valid = valid and validateReadingVariables(from, readableVars, writeableVars)
+        }
+
+        return valid
     }
 }
 

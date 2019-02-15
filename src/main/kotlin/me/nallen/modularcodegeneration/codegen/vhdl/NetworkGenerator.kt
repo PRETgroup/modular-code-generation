@@ -7,14 +7,12 @@ import me.nallen.modularcodegeneration.hybridautomata.HybridAutomata
 import me.nallen.modularcodegeneration.hybridautomata.HybridNetwork
 import me.nallen.modularcodegeneration.hybridautomata.Locality
 import me.nallen.modularcodegeneration.hybridautomata.Variable
-import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.And
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
 import me.nallen.modularcodegeneration.parsetree.VariableType
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
-import kotlin.system.exitProcess
 
 /**
  * The class that contains methods to do with the generation of a Hybrid Network
@@ -38,8 +36,7 @@ object NetworkGenerator {
         for(variable in item.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
             // Delayed variables are not currently supported in VHDL, so we currently error out
             if(variable.canBeDelayed()) {
-                Logger.error("Delayed variables are currently not supported in VHDL Generation")
-                exitProcess(1)
+                throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
             }
 
             // Now let's create the variable object and add it
@@ -98,8 +95,7 @@ object NetworkGenerator {
                     for (variable in definition.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
                         // Delayed variables are not currently supported in VHDL, so we currently error out
                         if (variable.canBeDelayed()) {
-                            Logger.error("Delayed variables are currently not supported in VHDL Generation")
-                            exitProcess(1)
+                            throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
                         }
 
                         // Create the inner variable object
@@ -259,8 +255,7 @@ object NetworkGenerator {
                     for (variable in definition.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
                         // Delayed variables are not currently supported in VHDL, so we currently error out
                         if (variable.canBeDelayed()) {
-                            Logger.error("Delayed variables are currently not supported in VHDL Generation")
-                            exitProcess(1)
+                            throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
                         }
 
                         // Let's try and find a default value for this variable

@@ -39,7 +39,7 @@ data class Program(
 
             // If a default value was provided, we want to check it for new variables too
             if(default != null)
-                checkParseTreeForNewVariable(default, HashMap(), HashMap())
+                checkParseTreeForNewVariables(default, type)
         }
 
         // Return the program for chaining
@@ -52,7 +52,7 @@ data class Program(
      * In addition, it is recommended to provide the return type of any functions so that variable types can be
      * accurately captured
      */
-    fun collectVariables(existing: List<VariableDeclaration> = ArrayList(), knownFunctionTypes: Map<String, VariableType?> = LinkedHashMap()): Map<String, VariableType> {
+    fun collectVariables(existing: List<VariableDeclaration> = ArrayList(), knownFunctionTypes: Map<String, VariableType?> = mapOf(), knownFunctionArguments: Map<String, List<VariableType>> = mapOf()): Map<String, VariableType> {
         val knownVariables = LinkedHashMap<String, VariableType>()
 
         // First, we need to record that we know all the external variables
@@ -73,27 +73,29 @@ data class Program(
         for(line in lines) {
             // For each line, we need to search any logic it may contain for any new variables
             when(line) {
-                is Statement -> checkParseTreeForNewVariable(line.logic, knownVariables, knownFunctionTypes)
+                is Statement -> checkParseTreeForNewVariables(line.logic, VariableType.ANY, knownFunctionArguments)
                 is Assignment -> {
                     // When we come across a variable assignment, we need to see if we know it, and if not then add it.
                     // The type needs to be guessed from the logic that is assigned to it
                     if(!knownVariables.containsKey(line.variableName.name))
                         knownVariables[line.variableName.name] = line.variableValue.getOperationResultType(knownVariables, knownFunctionTypes)
 
+                    val type = knownVariables[line.variableName.name]!!
+
                     // The following line will actually add the variable to the Program
-                    checkParseTreeForNewVariable(line.variableName, knownVariables, knownFunctionTypes)
-                    checkParseTreeForNewVariable(line.variableValue, knownVariables, knownFunctionTypes)
+                    checkParseTreeForNewVariables(line.variableName, type, knownFunctionArguments)
+                    checkParseTreeForNewVariables(line.variableValue, type, knownFunctionArguments)
                 }
-                is Return -> checkParseTreeForNewVariable(line.logic, knownVariables, knownFunctionTypes)
+                is Return -> checkParseTreeForNewVariables(line.logic, VariableType.ANY, knownFunctionArguments)
                 is IfStatement -> {
-                    checkParseTreeForNewVariable(line.condition, knownVariables, knownFunctionTypes)
-                    knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes))
+                    checkParseTreeForNewVariables(line.condition, VariableType.ANY, knownFunctionArguments)
+                    knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments))
                 }
                 is ElseIfStatement -> {
-                    checkParseTreeForNewVariable(line.condition, knownVariables, knownFunctionTypes)
-                    knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes))
+                    checkParseTreeForNewVariables(line.condition, VariableType.ANY, knownFunctionArguments)
+                    knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments))
                 }
-                is ElseStatement -> knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes))
+                is ElseStatement -> knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments))
             }
         }
 
@@ -144,6 +146,31 @@ data class Program(
     }
 
     /**
+     * Gets the total number of lines that would be taken up by this program, this assumes zero whitespace and places
+     * closing brackets on their own line
+     */
+    fun getTotalLines(): Int {
+        // Start at zero
+        var numberOfLines = 0
+
+        // And then go through each line
+        for(line in lines) {
+            // Adding on however many lines we've found
+            numberOfLines += when(line) {
+                is Statement -> 1
+                is Assignment -> 1
+                is Return -> 1
+                is IfStatement -> 2 + line.body.getTotalLines()
+                is ElseStatement -> 2 + line.body.getTotalLines()
+                is ElseIfStatement -> 2 + line.body.getTotalLines()
+            }
+        }
+
+        // Finally, return the number of lines we found
+        return numberOfLines
+    }
+
+    /**
      * Combines two VariableTypes into a single VariableType that matches both of the arguments.
      * A null as input is treated as "don't care", and if the two arguments are both non-null and non-equal then no
      * common type could be found and an exception wil be thrown.
@@ -169,15 +196,48 @@ data class Program(
     /**
      * Checks a Parse Tree for any new variables inside the program
      */
-    private fun checkParseTreeForNewVariable(item: ParseTreeItem, variables: Map<String, VariableType>, functions: Map<String, VariableType?>) {
-        // If we're currently at a Variable, we want to try add it!
+    private fun checkParseTreeForNewVariables(item: ParseTreeItem, currentType: VariableType, functionArguments: Map<String, List<VariableType>> = mapOf()) {
         if(item is Variable) {
-            addVariable(item.name, item.getOperationResultType(variables, functions))
+            addVariable(item.name, currentType)
         }
 
-        // Recursively call for all children
-        for(child in item.getChildren()) {
-            checkParseTreeForNewVariable(child, variables, functions)
+        // Get the list of types that we expect each child to have from this ParseTree
+        val expectedTypes = item.getExpectedTypes(functionArguments)
+
+        val children = item.getChildren()
+
+        // Equal and Not-equal are special - they work with any type but just require both sides to be the same
+        if(item is Equal || item is NotEqual) {
+            // So let's get both the guesses for child types
+            val childType0 = children[0].getOperationResultType()
+            val childType1 = children[1].getOperationResultType()
+
+            // If one is unknown (ANY) and the other is known, then use the known one as the guess for both
+            if(childType0 != VariableType.ANY && childType1 == VariableType.ANY) {
+                checkParseTreeForNewVariables(children[0], childType0, functionArguments)
+                checkParseTreeForNewVariables(children[1], childType0, functionArguments)
+            }
+            else if(childType1 != VariableType.ANY && childType0 == VariableType.ANY) {
+                checkParseTreeForNewVariables(children[0], childType1, functionArguments)
+                checkParseTreeForNewVariables(children[1], childType1, functionArguments)
+            }
+            else {
+                // Otherwise we have no idea, so just use their own ones
+                checkParseTreeForNewVariables(children[0], childType0, functionArguments)
+                checkParseTreeForNewVariables(children[1], childType1, functionArguments)
+            }
+        }
+        else {
+            // If it's not the special case then we just iterate over every child
+            for((index, child) in children.withIndex()) {
+                // And if we have a guess of what this should be based off of the operand
+                if(index < expectedTypes.size)
+                    // Then use that as the initial guess
+                    checkParseTreeForNewVariables(child, expectedTypes[index], functionArguments)
+                else
+                    // Otherwise we don't know (ANY)
+                    checkParseTreeForNewVariables(child, VariableType.ANY, functionArguments)
+            }
         }
     }
 }

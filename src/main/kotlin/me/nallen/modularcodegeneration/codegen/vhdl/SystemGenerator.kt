@@ -6,8 +6,6 @@ import me.nallen.modularcodegeneration.codegen.vhdl.Utils.VariableObject
 import me.nallen.modularcodegeneration.hybridautomata.HybridItem
 import me.nallen.modularcodegeneration.hybridautomata.Locality
 import me.nallen.modularcodegeneration.hybridautomata.Variable
-import me.nallen.modularcodegeneration.logging.Logger
-import kotlin.system.exitProcess
 
 /**
  * The class that contains methods to do with the generation of the main runnable file for the system
@@ -41,8 +39,7 @@ object SystemGenerator {
         for(variable in item.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
             // Delayed variables are not currently supported in VHDL, so we currently error out
             if(variable.canBeDelayed()) {
-                Logger.error("Delayed variables are currently not supported in VHDL Generation")
-                exitProcess(1)
+                throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
             }
 
             // Now let's create the variable object and add it

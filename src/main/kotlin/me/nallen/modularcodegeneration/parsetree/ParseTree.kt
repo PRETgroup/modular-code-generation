@@ -3,6 +3,7 @@ package me.nallen.modularcodegeneration.parsetree
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
 import me.nallen.modularcodegeneration.codegen.c.Utils
+import me.nallen.modularcodegeneration.logging.Logger
 
 /**
  * A class that represents a single node of a Parse Tree.
@@ -72,7 +73,7 @@ data class Literal(var value: String): ParseTreeItem("literal")
  * The supported types of variables, either Boolean (true / false), or Real (generally represented by double)
  */
 enum class VariableType {
-    BOOLEAN, REAL, INTEGER
+    BOOLEAN, REAL, INTEGER, ANY
 }
 
 /**
@@ -363,7 +364,7 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
  *
  * This can be useful when checking whether a formula makes sense, or for evaluating the formula.
  * A map of known variables and their types, as well as the return types of functions, is recommended if either
- * variables or function calls exist in the formula, otherwise they will both default to Real
+ * variables or function calls exist in the formula, otherwise they will both default to ANY
  */
 fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableType> = HashMap(), knownFunctions: Map<String, VariableType?> = HashMap()): VariableType {
     // Each ParseTreeItem has a different return type, which is pretty straightforward
@@ -377,7 +378,17 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         is LessThan -> VariableType.BOOLEAN
         is Equal -> VariableType.BOOLEAN
         is NotEqual -> VariableType.BOOLEAN
-        is FunctionCall -> knownFunctions[functionName] ?: VariableType.REAL // If we know it, otherwise Real
+        is FunctionCall -> {
+            // First we want to check if it's the inbuilt "delayed" function
+            if(functionName == "delayed") {
+                if(arguments.size >= 1) {
+                    return arguments[0].getOperationResultType(knownVariables, knownFunctions)
+                }
+                return VariableType.ANY
+            }
+
+            knownFunctions[functionName] ?: VariableType.ANY // If we know it, otherwise ANY
+        }
         is Plus -> VariableType.REAL
         is Minus -> VariableType.REAL
         is Multiply -> VariableType.REAL
@@ -385,8 +396,8 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         is Negative -> VariableType.REAL
         is SquareRoot -> VariableType.REAL
         is Exponential -> VariableType.REAL
-        is Variable -> knownVariables[name] ?: VariableType.REAL // If we know it, otherwise Real
-        is Literal -> getTypeFromLiteral(value) ?: VariableType.REAL // We try to get the type from the value
+        is Variable -> knownVariables[name] ?: VariableType.ANY // If we know it, otherwise ANY
+        is Literal -> getTypeFromLiteral(value) ?: VariableType.ANY // We try to get the type from the value
     }
 }
 
@@ -483,6 +494,7 @@ fun ParseTreeItem.evaluate(var_map: Map<String, Literal> = HashMap()): Any {
         VariableType.BOOLEAN -> this.evaluateBoolean(var_map)
         VariableType.REAL -> this.evaluateReal(var_map)
         VariableType.INTEGER -> this.evaluateReal(var_map)
+        VariableType.ANY -> this.evaluateReal(var_map)
     }
 }
 
@@ -550,4 +562,143 @@ fun ParseTreeItem.replaceVariables(map: Map<String, String>): ParseTreeItem {
     }
 
     return this
+}
+
+/**
+ * Collects all variables used within a ParseTreeItem
+ */
+fun ParseTreeItem.collectVariables(): List<String> {
+    val variables = ArrayList<String>()
+
+    // If this is a variable
+    if(this is Variable) {
+        // Then let's add what we've found!
+        variables.add(this.name)
+    }
+    else {
+        // Otherwise we go through each child and fetch its variables
+        for(child in this.getChildren()) {
+            variables.addAll(child.collectVariables())
+        }
+    }
+
+    // Return the list of variables we've found
+    return variables
+}
+
+/**
+ * Get the expected types of each child of this ParseTreeItem. If this is a function call then we use the required
+ * arguments for the function to populate this list, otherwise it just depends on the operand.
+ * NOTE: There's a special case for Equal and NotEqual, which can take any type but require both operands be the same
+ * type
+ */
+fun ParseTreeItem.getExpectedTypes(functionArguments: Map<String, List<VariableType>> = mapOf()): Array<VariableType> {
+    return when(this) {
+        is And -> arrayOf(VariableType.BOOLEAN, VariableType.BOOLEAN)
+        is Or -> arrayOf(VariableType.BOOLEAN, VariableType.BOOLEAN)
+        is Not -> arrayOf(VariableType.BOOLEAN)
+        is GreaterThanOrEqual -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is GreaterThan -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is LessThanOrEqual -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is LessThan -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Equal -> arrayOf(VariableType.ANY, VariableType.ANY)
+        is NotEqual -> arrayOf(VariableType.ANY, VariableType.ANY)
+        is FunctionCall -> {
+            // We also have a special custom function called "delayed" which takes a first parameter of any type, and
+            // then a real number as the second
+            if(functionName == "delayed") {
+                arrayOf(VariableType.ANY, VariableType.REAL)
+            }
+            else if(functionArguments.containsKey(functionName)) {
+                functionArguments[this.functionName]!!.toTypedArray()
+            }
+            else {
+                arrayOf()
+            }
+        }
+        is Plus -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Minus -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Multiply -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Divide -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Negative -> arrayOf(VariableType.REAL)
+        is SquareRoot -> arrayOf(VariableType.REAL)
+        is Exponential -> arrayOf(VariableType.REAL)
+        is Variable -> arrayOf()
+        is Literal -> arrayOf()
+    }
+}
+
+/**
+ * Validates a ParseTreeItem to make sure that the operations that it is performing make sense in terms of variable
+ * types, number of arguments to each operand, etc.
+ */
+fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTypes: Map<String, VariableType?>, functionArguments: Map<String, List<VariableType>>, location: String = "'${this.generateString()}'"): Boolean {
+    var valid = true
+
+    // First we start by getting the types that we expect this operand to hold
+    val expectedTypes = getExpectedTypes(functionArguments)
+
+    // Then if this is a variable we want to check that we know about it
+    if(this is Variable && !variableTypes.containsKey(name)) {
+        Logger.error("Unknown variable '$name' used in $location.")
+        valid = false
+    }
+
+    // Now we can start looking at the children of this item
+    val children = getChildren()
+    if(this is FunctionCall) {
+        // For functions, there's a special "delayed" function we need to look at, in addition to any other custom
+        // function
+        if(functionName == "delayed" || functionArguments.containsKey(functionName)) {
+            // Check that the correct number of arguments is provided, otherwise error
+            if(children.size != expectedTypes.size) {
+                Logger.error("Invalid number of arguments supplied to function '$functionName' in $location." +
+                        " Found ${children.size}, expected ${expectedTypes.size}.")
+                valid = false
+            }
+        }
+        else {
+            // If we don't know the function, then that's an error
+            Logger.error("Unknown function '$functionName' used in $location.")
+            valid = false
+        }
+    }
+
+    // The user-friendly name that we'll print out during errors
+    val name = if(this is FunctionCall) { functionName } else { type }
+
+    // Now let's go through each expected type
+    for((i, type) in expectedTypes.withIndex()) {
+        if(children.size > i) {
+            // And check that we provided a valid argument to it by first getting the type of the argument
+            val childType = children[i].getOperationResultType(variableTypes, functionTypes)
+            // And then comparing it with what we expect
+            if(childType != type && type != VariableType.ANY) {
+                Logger.error("Invalid argument supplied to position $i of '$name' in $location." +
+                        " Found '$childType', expected '$type'.")
+                valid = false
+            }
+        }
+    }
+
+    // Special case for Equal and Not-Equal
+    if(this is Equal || this is NotEqual) {
+        // Here, the two arguments must have the SAME type, so get the type for each argument
+        val childType0 = children[0].getOperationResultType(variableTypes, functionTypes)
+        val childType1 = children[1].getOperationResultType(variableTypes, functionTypes)
+
+        // And then check that they're the same
+        if(childType0 != childType1) {
+            Logger.error("Non-matching arguments supplied to '$name' in $location." +
+                    " Found '$childType0' and '$childType1', expected matching arguments.")
+            valid = false
+        }
+    }
+
+    // Finally, recursively validate
+    for(child in children) {
+        valid = valid and child.validate(variableTypes, functionTypes, functionArguments, location)
+    }
+
+    return valid
 }

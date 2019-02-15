@@ -7,10 +7,8 @@ import me.nallen.modularcodegeneration.hybridautomata.Locality
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable
 import me.nallen.modularcodegeneration.codegen.vhdl.Utils.VariableObject
-import me.nallen.modularcodegeneration.logging.Logger
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
-import kotlin.system.exitProcess
 
 /**
  * The class that contains methods to do with the generation of a single Automaton
@@ -34,8 +32,7 @@ object AutomataGenerator {
         for(variable in item.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
             // Delayed variables are not currently supported in VHDL, so we currently error out
             if(variable.canBeDelayed()) {
-                Logger.error("Delayed variables are currently not supported in VHDL Generation")
-                exitProcess(1)
+                throw NotImplementedError("Delayed variables are currently not supported in VHDL Generation")
             }
 
             // Depending on the parametrisation method, we'll do things slightly differently
@@ -116,8 +113,7 @@ object AutomataGenerator {
 
             // We also need to find all of the internal variables that we need, this is any internal variable which
             // isn't a parameter
-            for(internal in func.logic.variables.filter {it.locality == ParseTreeLocality.INTERNAL}
-                    .filterNot {item.variables.any { search -> search.locality == Locality.PARAMETER && search.name == it.name }}) {
+            for(internal in func.logic.variables.filter {it.locality == ParseTreeLocality.INTERNAL}) {
                 // And then we can add internal variables
                 functionObject.variables.add(VariableObject.create(me.nallen.modularcodegeneration.hybridautomata.Variable(internal.name, internal.type, Locality.INTERNAL, internal.defaultValue)))
             }
@@ -125,7 +121,7 @@ object AutomataGenerator {
             // If we are doing run-time parametrisation then we also need to deal with parameters
             if(config.runTimeParametrisation) {
                 // We want to go through each parameter that is used in this function
-                for(internal in func.logic.variables.filter {it.locality == ParseTreeLocality.INTERNAL}
+                for(internal in func.logic.variables.filter {it.locality == ParseTreeLocality.EXTERNAL_INPUT}
                         .filter {item.variables.any { search -> search.locality == Locality.PARAMETER && search.name == it.name }}) {
                     // Add it as an external input
                     functionObject.inputs.add(VariableObject.create(me.nallen.modularcodegeneration.hybridautomata.Variable(internal.name, internal.type, Locality.EXTERNAL_INPUT, internal.defaultValue)))
