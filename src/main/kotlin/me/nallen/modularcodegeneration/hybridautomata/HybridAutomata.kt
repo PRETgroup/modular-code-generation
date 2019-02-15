@@ -19,6 +19,8 @@ data class HybridAutomata(
         val functions: ArrayList<FunctionDefinition> = ArrayList()
 ) : HybridItem() {
     fun addLocation(location: Location): HybridAutomata {
+        val variableTypes = variables.map { Pair(it.name, it.type) }.toMap()
+        val functionTypes = functions.map { Pair(it.name, it.returnType) }.toMap()
         val functionArguments = functions.map { Pair(it.name, it.inputs.map { it.type }) }.toMap()
 
         // Check for any continuous variables
@@ -32,7 +34,7 @@ data class HybridAutomata(
 
         for((key, value) in location.update) {
             // Updates could be anything, so let's guess the type
-            val type = value.getOperationResultType()
+            val type = value.getOperationResultType(variableTypes, functionTypes)
             addVariable(key, type)
             checkParseTreeForNewVariables(value, type, functionArguments)
         }
@@ -43,6 +45,8 @@ data class HybridAutomata(
     }
 
     fun addEdge(edge: Edge): HybridAutomata {
+        val variableTypes = variables.map { Pair(it.name, it.type) }.toMap()
+        val functionTypes = functions.map { Pair(it.name, it.returnType) }.toMap()
         val functionArguments = functions.map { Pair(it.name, it.inputs.map { it.type }) }.toMap()
 
         // Check for any continuous variables
@@ -50,7 +54,7 @@ data class HybridAutomata(
 
         for((key, value) in edge.update) {
             // Updates could be anything, so let's guess the type
-            val type = value.getOperationResultType()
+            val type = value.getOperationResultType(variableTypes, functionTypes)
             addVariable(key, type)
             checkParseTreeForNewVariables(value, type, functionArguments)
         }
