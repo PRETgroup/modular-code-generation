@@ -73,7 +73,7 @@ data class Literal(var value: String): ParseTreeItem("literal")
  * The supported types of variables, either Boolean (true / false), or Real (generally represented by double)
  */
 enum class VariableType {
-    BOOLEAN, REAL, INTEGER
+    BOOLEAN, REAL, INTEGER, ANY
 }
 
 /**
@@ -364,7 +364,7 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
  *
  * This can be useful when checking whether a formula makes sense, or for evaluating the formula.
  * A map of known variables and their types, as well as the return types of functions, is recommended if either
- * variables or function calls exist in the formula, otherwise they will both default to Real
+ * variables or function calls exist in the formula, otherwise they will both default to ANY
  */
 fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableType> = HashMap(), knownFunctions: Map<String, VariableType?> = HashMap()): VariableType {
     // Each ParseTreeItem has a different return type, which is pretty straightforward
@@ -378,7 +378,17 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         is LessThan -> VariableType.BOOLEAN
         is Equal -> VariableType.BOOLEAN
         is NotEqual -> VariableType.BOOLEAN
-        is FunctionCall -> knownFunctions[functionName] ?: VariableType.REAL // If we know it, otherwise Real
+        is FunctionCall -> {
+            // First we want to check if it's the inbuilt "delayed" function
+            if(functionName == "delayed") {
+                if(arguments.size >= 1) {
+                    return arguments[0].getOperationResultType(knownVariables, knownFunctions)
+                }
+                return VariableType.ANY
+            }
+
+            knownFunctions[functionName] ?: VariableType.ANY // If we know it, otherwise ANY
+        }
         is Plus -> VariableType.REAL
         is Minus -> VariableType.REAL
         is Multiply -> VariableType.REAL
@@ -386,8 +396,8 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         is Negative -> VariableType.REAL
         is SquareRoot -> VariableType.REAL
         is Exponential -> VariableType.REAL
-        is Variable -> knownVariables[name] ?: VariableType.REAL // If we know it, otherwise Real
-        is Literal -> getTypeFromLiteral(value) ?: VariableType.REAL // We try to get the type from the value
+        is Variable -> knownVariables[name] ?: VariableType.ANY // If we know it, otherwise ANY
+        is Literal -> getTypeFromLiteral(value) ?: VariableType.ANY // We try to get the type from the value
     }
 }
 
@@ -484,6 +494,7 @@ fun ParseTreeItem.evaluate(var_map: Map<String, Literal> = HashMap()): Any {
         VariableType.BOOLEAN -> this.evaluateBoolean(var_map)
         VariableType.REAL -> this.evaluateReal(var_map)
         VariableType.INTEGER -> this.evaluateReal(var_map)
+        VariableType.ANY -> this.evaluateReal(var_map)
     }
 }
 
@@ -575,10 +586,8 @@ fun ParseTreeItem.collectVariables(): List<String> {
     return variables
 }
 
-fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTypes: Map<String, VariableType?>, functionArguments: Map<String, List<VariableType>>, location: String = "'${this.generateString()}'"): Boolean {
-    var valid = true
-
-    val expectedTypes = when(this) {
+fun ParseTreeItem.getExpectedTypes(functionArguments: Map<String, List<VariableType>> = mapOf()): Array<VariableType> {
+    return when(this) {
         is And -> arrayOf(VariableType.BOOLEAN, VariableType.BOOLEAN)
         is Or -> arrayOf(VariableType.BOOLEAN, VariableType.BOOLEAN)
         is Not -> arrayOf(VariableType.BOOLEAN)
@@ -586,15 +595,16 @@ fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTyp
         is GreaterThan -> arrayOf(VariableType.REAL, VariableType.REAL)
         is LessThanOrEqual -> arrayOf(VariableType.REAL, VariableType.REAL)
         is LessThan -> arrayOf(VariableType.REAL, VariableType.REAL)
-        is Equal -> arrayOf()
-        is NotEqual -> arrayOf()
+        is Equal -> arrayOf(VariableType.ANY, VariableType.ANY)
+        is NotEqual -> arrayOf(VariableType.ANY, VariableType.ANY)
         is FunctionCall -> {
-            if(functionArguments.containsKey(functionName)) {
+            if(functionName == "delayed") {
+                arrayOf(VariableType.ANY, VariableType.REAL)
+            }
+            else if(functionArguments.containsKey(functionName)) {
                 functionArguments[this.functionName]!!.toTypedArray()
             }
             else {
-                Logger.error("Unknown function '$functionName' used in $location.")
-                valid = false
                 arrayOf()
             }
         }
@@ -605,33 +615,43 @@ fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTyp
         is Negative -> arrayOf(VariableType.REAL)
         is SquareRoot -> arrayOf(VariableType.REAL)
         is Exponential -> arrayOf(VariableType.REAL)
-        is Variable -> {
-            if(!variableTypes.containsKey(name)) {
-                Logger.error("Unknown variable '$name' used in $location.")
-                valid = false
-            }
+        is Variable -> arrayOf()
+        is Literal -> arrayOf()
+    }
+}
 
-            arrayOf()
-        }
-        is Literal -> {
-            arrayOf()
-        }
+fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTypes: Map<String, VariableType?>, functionArguments: Map<String, List<VariableType>>, location: String = "'${this.generateString()}'"): Boolean {
+    var valid = true
+
+    val expectedTypes = getExpectedTypes(functionArguments)
+
+    if(this is Variable && !variableTypes.containsKey(name)) {
+        Logger.error("Unknown variable '$name' used in $location.")
+        valid = false
     }
 
     val children = getChildren()
-    if(this is FunctionCall && functionArguments.containsKey(functionName)) {
-        if(children.size != expectedTypes.size) {
-            Logger.error("Invalid number of arguments supplied to custom function '$functionName' in $location." +
-                    " Found ${children.size}, expected ${expectedTypes.size}.")
+    if(this is FunctionCall) {
+        if(functionName == "delayed" || functionArguments.containsKey(functionName)) {
+            if(children.size != expectedTypes.size) {
+                Logger.error("Invalid number of arguments supplied to function '$functionName' in $location." +
+                        " Found ${children.size}, expected ${expectedTypes.size}.")
+                valid = false
+            }
+        }
+        else {
+            Logger.error("Unknown function '$functionName' used in $location.")
             valid = false
         }
     }
 
+    val name = if(this is FunctionCall) { functionName } else { type }
+
     for((i, type) in expectedTypes.withIndex()) {
         if(children.size > i) {
             val childType = children[i].getOperationResultType(variableTypes, functionTypes)
-            if(childType != type) {
-                Logger.error("Invalid argument supplied to position $i of '${this.type}' in $location." +
+            if(childType != type && type != VariableType.ANY) {
+                Logger.error("Invalid argument supplied to position $i of '$name' in $location." +
                         " Found '$childType', expected '$type'.")
                 valid = false
             }
@@ -642,7 +662,7 @@ fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTyp
         val childType0 = children[0].getOperationResultType(variableTypes, functionTypes)
         val childType1 = children[1].getOperationResultType(variableTypes, functionTypes)
         if(childType0 != childType1) {
-            Logger.error("Non-matching arguments supplied to '${this.type}' in $location." +
+            Logger.error("Non-matching arguments supplied to '$name' in $location." +
                     " Found '$childType0' and '$childType1', expected matching arguments.")
             valid = false
         }
