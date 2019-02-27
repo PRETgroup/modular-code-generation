@@ -70,7 +70,7 @@ begin
     {%- endif %}
         port map(
             clk => clk
-    {%- if config.runTimeParametrisation and not item.component.automaton %};
+    {%- if config.runTimeParametrisation and not item.component.automaton %},
             start => true
     {%- endif %}
     {%- for mapping in item.instance.mappings %},
