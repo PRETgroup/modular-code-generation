@@ -74,7 +74,7 @@ architecture behavior of {{ item.name }} is
     {%- endif %}
         port(
             clk : in std_logic
-    {%- if config.runTimeParametrisation %};
+    {%- if config.runTimeParametrisation and not component.automaton %};
             start : in boolean;
             finish : out boolean
     {%- endif %}
@@ -113,52 +113,60 @@ begin
     -- Perform Runtime functions for each instance
     {%- for runtimeMappingProcess in item.runtimeMappingProcesses %}
     {{ runtimeMappingProcess.name }}: process(clk)
-        variable count : integer range 0 to {{ runtimeMappingProcess.runtimeMappings|length }} := {{ runtimeMappingProcess.runtimeMappings|length }};
+        variable count : integer range 0 to {{ runtimeMappingProcess.runtimeMappings|length + 1 }} := {{ runtimeMappingProcess.runtimeMappings|length + 1 }};
     begin
         if clk'event and clk = '1' then
             -- First let's do some transitions
-            if count < {{ runtimeMappingProcess.runtimeMappings|length }} then
+            if count < {{ runtimeMappingProcess.runtimeMappings|length + 1 }} then
+        {%- if runtimeMappingProcess.finishSignal != '' %}
                 if {{ runtimeMappingProcess.finishSignal }} then
                     count := count + 1;
                 end if;
-            elsif count = {{ runtimeMappingProcess.runtimeMappings|length }} then
+        {%- else %}
+                count := count + 1;
+        {%- endif %}
+            elsif count = {{ runtimeMappingProcess.runtimeMappings|length + 1 }} then
                 if {{ runtimeMappingProcess.processStartSignal }} then
                     count := 0;
-                    {{ runtimeMappingProcess.processDoneSignal }} <= false;
                 end if;
             end if;
 
+        {%- if runtimeMappingProcess.startSignal != '' %}
             if count < 1 then
                 {{ runtimeMappingProcess.startSignal }} <= true;
             else
                 {{ runtimeMappingProcess.startSignal }} <= false;
             end if;
+        {%- endif %}
 
             -- Then, state logic
-        {%- for runtimeMapping in runtimeMappingProcess.runtimeMappings %}
-            {% if not loop.first -%} els {%- endif -%}
-            if count = {{ loop.index0 }} then
-                {%- if loop.index0 > 0 %}
+        {%- for i in range(2+runtimeMappingProcess.runtimeMappings|length) %}
+            {% if i != 0 -%} els {%- endif -%}
+            if count = {{ i }} then
+                {%- if ((1+i+runtimeMappingProcess.runtimeMappings|length)%(2+runtimeMappingProcess.runtimeMappings|length)) < runtimeMappingProcess.runtimeMappings|length %}
                 -- Map Outputs from previous iteration
-                {%- for mapping in runtimeMappingProcess.runtimeMappings[loop.index0-1].mappingsOut %}
+                {%- for mapping in runtimeMappingProcess.runtimeMappings[((1+i+runtimeMappingProcess.runtimeMappings|length)%(2+runtimeMappingProcess.runtimeMappings|length))].mappingsOut %}
                 {{ mapping.left }} <= {{ mapping.right }};
                 {%- endfor %}
                 {% endif %}
-                -- Map Inputs for this iteration
-                {%- for mapping in runtimeMapping.mappingsIn %}
-                {{ mapping.left }} <= {{ mapping.right }};
-                {%- endfor %}
-        {%- endfor %}
-            elsif count = {{ runtimeMappingProcess.runtimeMappings|length }} then
-                {%- if runtimeMappingProcess.runtimeMappings|length > 0 %}
-                -- Map Outputs from previous iteration
-                {%- for mapping in runtimeMappingProcess.runtimeMappings[runtimeMappingProcess.runtimeMappings|length-1].mappingsOut %}
-                {{ mapping.left }} <= {{ mapping.right }};
-                {%- endfor %}
-                {%- endif %}
 
+                {%- if ((1+i)%(2+runtimeMappingProcess.runtimeMappings|length)) < runtimeMappingProcess.runtimeMappings|length %}
+                -- Map Inputs for next iteration
+                {%- for mapping in runtimeMappingProcess.runtimeMappings[((1+i)%(2+runtimeMappingProcess.runtimeMappings|length))].mappingsIn %}
+                {{ mapping.left }} <= {{ mapping.right }};
+                {%- endfor %}
+                {% endif %}
+
+                {%- if i == runtimeMappingProcess.runtimeMappings|length-1 %}
                 -- We're done!
                 {{ runtimeMappingProcess.processDoneSignal }} <= true;
+                {% endif %}
+
+                {%- if i == 1+runtimeMappingProcess.runtimeMappings|length %}
+                -- We're waiting to restart!
+                {{ runtimeMappingProcess.processDoneSignal }} <= false;
+                {% endif %}
+        {%- endfor %}
             end if;
         end if;
     end process;

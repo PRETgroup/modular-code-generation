@@ -46,7 +46,7 @@ architecture behavior of {{ item.name }} is
     {%- endif %}
         port(
             clk : in std_logic
-    {%- if config.runTimeParametrisation %};
+    {%- if config.runTimeParametrisation and not item.component.automaton %};
             start : in boolean;
             finish : out boolean
     {%- endif %}
@@ -70,7 +70,7 @@ begin
     {%- endif %}
         port map(
             clk => clk
-    {%- if config.runTimeParametrisation %},
+    {%- if config.runTimeParametrisation and not item.component.automaton %};
             start => true
     {%- endif %}
     {%- for mapping in item.instance.mappings %},

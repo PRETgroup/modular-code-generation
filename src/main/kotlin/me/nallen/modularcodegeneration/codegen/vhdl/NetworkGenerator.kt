@@ -72,7 +72,8 @@ object NetworkGenerator {
 
                     // Create a component for the thing we need to create
                     val component = ComponentObject(
-                            Utils.createTypeName(definition.name)
+                            Utils.createTypeName(definition.name),
+                            definition is HybridAutomata
                     )
 
                     // Create an instance that will be executed
@@ -151,7 +152,8 @@ object NetworkGenerator {
 
                     // Create a component for the thing we need to create
                     val component = ComponentObject(
-                            Utils.createTypeName(definition.name)
+                            Utils.createTypeName(definition.name),
+                            definition is HybridAutomata
                     )
 
                     // Create an instance that will be executed
@@ -165,15 +167,17 @@ object NetworkGenerator {
                     val instanceSignalNameMap = HashMap<String, String>()
 
                     // For run-time parametrisation we need a start and finish signal to be mapped
-                    instanceObject.mappings.add(MappingObject(
-                            "start",
-                            Utils.createVariableName(instanceObject.id, "start")
-                    ))
+                    if(definition !is HybridAutomata) {
+                        instanceObject.mappings.add(MappingObject(
+                                "start",
+                                Utils.createVariableName(instanceObject.id, "start")
+                        ))
 
-                    instanceObject.mappings.add(MappingObject(
-                            "finish",
-                            Utils.createVariableName(instanceObject.id, "finish")
-                    ))
+                        instanceObject.mappings.add(MappingObject(
+                                "finish",
+                                Utils.createVariableName(instanceObject.id, "finish")
+                        ))
+                    }
 
                     // Now we want to create something which stores all the data that we need for executing this
                     // instance
@@ -188,9 +192,16 @@ object NetworkGenerator {
                             Utils.createVariableName(instanceObject.name, "proc", "start")
                     )
 
+                    if(definition is HybridAutomata) {
+                        runtimeMappingProcess.startSignal = ""
+                        runtimeMappingProcess.finishSignal = ""
+                    }
+
                     // And then we want to create the variables needed for starting and stopping the execution
-                    runtimeMappingProcess.variables.add(VariableObject.create(Variable(Utils.createVariableName(instanceObject.id, "start"), VariableType.BOOLEAN, Locality.INTERNAL)))
-                    runtimeMappingProcess.variables.add(VariableObject.create(Variable(Utils.createVariableName(instanceObject.id, "finish"), VariableType.BOOLEAN, Locality.INTERNAL)))
+                    if(definition !is HybridAutomata) {
+                        runtimeMappingProcess.variables.add(VariableObject.create(Variable(Utils.createVariableName(instanceObject.id, "start"), VariableType.BOOLEAN, Locality.INTERNAL)))
+                        runtimeMappingProcess.variables.add(VariableObject.create(Variable(Utils.createVariableName(instanceObject.id, "finish"), VariableType.BOOLEAN, Locality.INTERNAL)))
+                    }
 
                     // Now, if the instance is an automata then we also need to extract the state
                     if(definition is HybridAutomata) {
@@ -466,6 +477,9 @@ object NetworkGenerator {
     data class ComponentObject(
             // The name of the component
             var name: String,
+
+            // Whether the component is an automaton
+            var automaton: Boolean,
 
             // The list of parameters that are used by the component
             var parameters: MutableList<VariableObject> = ArrayList(),

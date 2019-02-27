@@ -3,6 +3,7 @@ package me.nallen.modularcodegeneration.codegen.vhdl
 import com.hubspot.jinjava.Jinjava
 import me.nallen.modularcodegeneration.codegen.Configuration
 import me.nallen.modularcodegeneration.codegen.vhdl.Utils.VariableObject
+import me.nallen.modularcodegeneration.hybridautomata.HybridAutomata
 import me.nallen.modularcodegeneration.hybridautomata.HybridItem
 import me.nallen.modularcodegeneration.hybridautomata.Locality
 import me.nallen.modularcodegeneration.hybridautomata.Variable
@@ -25,7 +26,8 @@ object SystemGenerator {
 
         // Create the base component
         val component = ComponentObject(
-                Utils.createTypeName(item.name)
+                Utils.createTypeName(item.name),
+                item is HybridAutomata
         )
 
         // We have a single instance for the system
@@ -143,6 +145,9 @@ object SystemGenerator {
     data class ComponentObject(
             // The name of the component
             var name: String,
+
+            // Whether the component is an automaton
+            var automaton: Boolean,
 
             // The list of parameters the component has
             var parameters: MutableList<VariableObject> = ArrayList(),

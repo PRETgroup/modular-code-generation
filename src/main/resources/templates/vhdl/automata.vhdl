@@ -18,8 +18,6 @@ entity {{ item.name }} is
     port (
         clk : in std_logic
 {%- if config.runTimeParametrisation %};
-        start : in boolean;
-        finish : out boolean;
 
         -- Declare State
         state_in : in integer range 0 to {{ item.locations|length - 1 }};
@@ -245,11 +243,6 @@ begin
             {{ variable.signal }} <= {{ variable.variable }};
     {%- endif %}
 {%- endfor %}
-
-{%- if config.runTimeParametrisation %}
-
-            finish <= true;
-{%- endif %}
 
         end if;
     end process;
