@@ -51,6 +51,7 @@ This executable JAR file can then be run with the following arguments:
 | `-l`<br/>`--language` | The language to generate code for. Valid options are: `C`, `VHDL`.<br /><br/>**Default:** `C` |
 | `-o`<br/>`--output` | The directory to store the generated code in.<br/><br/>**Default:** `output` |
 | `-f`<br/>`--flatten` | A flag to indicate whether the network should be "flattened" when generating code.<br/><br/>**Default:** `false` |
+| `-v`<br/>`--validate-only` | A flag to indicate that the input file should just be validated, with no code to be generated.<br/><br/>**Default:** `false` |
 
 #### Example Commands
 
