@@ -130,15 +130,39 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
                 val flattenedDefinition = definition.flatten()
 
                 if(flattenedDefinition is HybridNetwork) {
+                    val skippedDefinitionMap = HashMap<UUID, UUID>()
+                    val skippedInstantiateMap = HashMap<UUID, UUID>()
                     for(item in flattenedDefinition.definitions) {
+                        if(flattenedNetwork.definitions.any { it.value == item.value }) {
+                            skippedDefinitionMap[item.key] = flattenedNetwork.definitions
+                                    .filter { it.value == item.value }
+                                    .keys.first()
+                            continue
+                        }
+
+                        if(flattenedNetwork.definitions.any { it.value.name == item.value.name })
+                            item.value.name = item.value.name + flattenedNetwork.definitions.count { it.value.name.startsWith(item.value.name) }
+
                         flattenedNetwork.definitions[item.key] = item.value
                     }
+                    for(item in flattenedDefinition.instantiates) {
+                        if(skippedDefinitionMap.containsKey(item.value.definition)) {
+                            skippedInstantiateMap[item.key] = flattenedNetwork.instantiates
+                                    .filter { it.value.definition == skippedDefinitionMap[item.value.definition] }
+                                    .keys.first()
+                            continue
+                        }
+
+                        if(flattenedNetwork.instantiates.any { it.value.name == item.value.name })
+                            item.value.name = item.value.name + flattenedNetwork.instantiates.count { it.value.name.startsWith(item.value.name) }
+
+                        flattenedNetwork.instantiates[item.key] = item.value
+                    }
                     for(item in flattenedDefinition.instances) {
+                        item.value.instantiate = skippedInstantiateMap[item.value.instantiate] ?: item.value.instantiate
+
                         val newKey = Utils.createVariableName(instantiate.name, item.key)
                         flattenedNetwork.instances[newKey] = item.value
-                    }
-                    for(item in flattenedDefinition.instantiates) {
-                        flattenedNetwork.instantiates[item.key] = item.value
                     }
                     for(item in flattenedDefinition.variables) {
                         flattenedNetwork.variables.add(item.copy(name = Utils.createVariableName(instantiate.name, item.name), locality = Locality.INTERNAL))
