@@ -565,6 +565,27 @@ fun ParseTreeItem.replaceVariables(map: Map<String, String>): ParseTreeItem {
 }
 
 /**
+ * Replaces variable names with something else
+ */
+fun ParseTreeItem.replaceVariablesWithParseTree(map: Map<String, ParseTreeItem>): ParseTreeItem {
+    // We only care about variables, otherwise we just leave it to be
+    // We recursively call this function until we reach the end of the tree
+    if(this is Variable) {
+        // Let's check if it exists
+        if(map.containsKey(this.name)) {
+            // Let's replace it
+            this.value = map.getValue(this.name)
+        }
+    }
+
+    for(child in this.getChildren()) {
+        child.replaceVariablesWithParseTree(map)
+    }
+
+    return this
+}
+
+/**
  * Collects all variables used within a ParseTreeItem
  */
 fun ParseTreeItem.collectVariables(): List<String> {

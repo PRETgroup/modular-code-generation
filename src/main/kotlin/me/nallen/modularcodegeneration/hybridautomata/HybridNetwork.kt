@@ -5,11 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonValue
 import me.nallen.modularcodegeneration.codegen.c.Utils
 import me.nallen.modularcodegeneration.logging.Logger
-import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
+import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable
-import me.nallen.modularcodegeneration.parsetree.collectVariables
-import me.nallen.modularcodegeneration.parsetree.prependVariables
-import me.nallen.modularcodegeneration.parsetree.replaceVariables
 import java.util.*
 
 /**
@@ -122,6 +119,9 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
 
         val variableMappings = LinkedHashMap<String, String>()
 
+        val skipVariables = ArrayList<String>()
+        val ioVariablesReplace = LinkedHashMap<String, ParseTreeItem>()
+
         for((key, instance) in this.instances) {
             // Get the instance of the item we want to generate
             val instantiate = this.getInstantiateForInstantiateId(instance.instantiate)
@@ -165,12 +165,18 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
                         flattenedNetwork.instances[newKey] = item.value
                     }
                     for(item in flattenedDefinition.variables) {
-                        flattenedNetwork.variables.add(item.copy(name = Utils.createVariableName(instantiate.name, item.name), locality = Locality.INTERNAL))
+                        if(item.locality == Locality.INTERNAL || item.locality == Locality.PARAMETER) {
+                            flattenedNetwork.variables.add(item.copy(name = Utils.createVariableName(instantiate.name, item.name), locality = Locality.INTERNAL))
+                        }
+                        else {
+                            skipVariables.add(Utils.createVariableName(instantiate.name, item.name))
+                        }
                         variableMappings[instantiate.name + "." + item.name] = Utils.createVariableName(instantiate.name, item.name)
                     }
 
                     for(item in flattenedDefinition.ioMapping) {
                         var newKey = AutomataVariablePair(Utils.createVariableName(instantiate.name, item.key.automata), item.key.variable)
+                        val newValue = item.value.prependVariables(instantiate.name)
                         if(item.key.automata.isNotEmpty()) {
                             val innerInstance = this.instances[item.key.automata]
                             if(innerInstance != null) {
@@ -186,7 +192,12 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
                             newKey = AutomataVariablePair("", Utils.createVariableName(instantiate.name, item.key.variable))
                         }
 
-                        flattenedNetwork.ioMapping[newKey] = item.value.prependVariables(instantiate.name)
+                        if(flattenedDefinition.variables.any { it.name == item.key.getString() && it.locality == Locality.EXTERNAL_OUTPUT }) {
+                            ioVariablesReplace[newKey.getString()] = newValue
+                        }
+                        else {
+                            flattenedNetwork.ioMapping[newKey] = newValue
+                        }
                     }
                 }
                 else {
@@ -199,6 +210,7 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
 
         for((key, value) in this.ioMapping) {
             var newKey = key
+            val newValue = value.replaceVariables(variableMappings).replaceVariablesWithParseTree(ioVariablesReplace)
             if(key.automata.isNotEmpty()) {
                 val instance = this.instances[key.automata]
                 if(instance != null) {
@@ -211,7 +223,14 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
                 }
             }
 
-            flattenedNetwork.ioMapping[newKey] = value.replaceVariables(variableMappings)
+            ioVariablesReplace[newKey.getString()] = newValue
+
+            if(!skipVariables.contains(newKey.getString()))
+                flattenedNetwork.ioMapping[newKey] = newValue
+        }
+
+        for((key, value) in flattenedNetwork.ioMapping) {
+            flattenedNetwork.ioMapping[key] = value.replaceVariablesWithParseTree(ioVariablesReplace)
         }
 
         return flattenedNetwork
