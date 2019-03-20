@@ -1,10 +1,20 @@
 package me.nallen.modularcodegeneration.hybridautomata
 
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable as ParseTreeVariable
 import me.nallen.modularcodegeneration.parsetree.Locality as ParseTreeLocality
 
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type")
+@JsonSubTypes(
+    JsonSubTypes.Type(value = HybridAutomata::class, name = "automata"),
+    JsonSubTypes.Type(value = HybridNetwork::class, name = "network")
+)
 abstract class HybridItem(
         open var name: String = "Item",
 

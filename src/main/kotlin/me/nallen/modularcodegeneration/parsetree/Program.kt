@@ -77,8 +77,10 @@ data class Program(
                 is Assignment -> {
                     // When we come across a variable assignment, we need to see if we know it, and if not then add it.
                     // The type needs to be guessed from the logic that is assigned to it
-                    if(!knownVariables.containsKey(line.variableName.name))
+                    if(!knownVariables.containsKey(line.variableName.name)) {
                         knownVariables[line.variableName.name] = line.variableValue.getOperationResultType(knownVariables, knownFunctionTypes)
+                        addVariable(line.variableName.name, knownVariables[line.variableName.name]!!, Locality.INTERNAL)
+                    }
 
                     val type = knownVariables[line.variableName.name]!!
 
@@ -89,13 +91,35 @@ data class Program(
                 is Return -> checkParseTreeForNewVariables(line.logic, VariableType.ANY, knownFunctionArguments)
                 is IfStatement -> {
                     checkParseTreeForNewVariables(line.condition, VariableType.ANY, knownFunctionArguments)
-                    knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments))
+
+                    val innerVariables = line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments)
+                    knownVariables.putAll(innerVariables)
+                    for((name, type) in innerVariables) {
+                        if(!variables.any { it.name == name }) {
+                            addVariable(name, type, Locality.INTERNAL)
+                        }
+                    }
                 }
                 is ElseIfStatement -> {
                     checkParseTreeForNewVariables(line.condition, VariableType.ANY, knownFunctionArguments)
-                    knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments))
+
+                    val innerVariables = line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments)
+                    knownVariables.putAll(innerVariables)
+                    for((name, type) in innerVariables) {
+                        if(!variables.any { it.name == name }) {
+                            addVariable(name, type, Locality.INTERNAL)
+                        }
+                    }
                 }
-                is ElseStatement -> knownVariables.putAll(line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments))
+                is ElseStatement -> {
+                    val innerVariables = line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments)
+                    knownVariables.putAll(innerVariables)
+                    for((name, type) in innerVariables) {
+                        if(!variables.any { it.name == name }) {
+                            addVariable(name, type, Locality.INTERNAL)
+                        }
+                    }
+                }
             }
         }
 
