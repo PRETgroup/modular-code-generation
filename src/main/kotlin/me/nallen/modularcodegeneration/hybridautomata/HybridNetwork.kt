@@ -122,7 +122,7 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
         val skipVariables = ArrayList<String>()
         val ioVariablesReplace = LinkedHashMap<String, ParseTreeItem>()
 
-        for((key, instance) in this.instances) {
+        for((instanceName, instance) in this.instances) {
             // Get the instance of the item we want to generate
             val instantiate = this.getInstantiateForInstantiateId(instance.instantiate)
             val definition = this.getDefinitionForInstantiateId(instance.instantiate)
@@ -161,22 +161,22 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
                     for(item in flattenedDefinition.instances) {
                         item.value.instantiate = skippedInstantiateMap[item.value.instantiate] ?: item.value.instantiate
 
-                        val newKey = Utils.createVariableName(instantiate.name, item.key)
+                        val newKey = Utils.createVariableName(instanceName, item.key)
                         flattenedNetwork.instances[newKey] = item.value
                     }
                     for(item in flattenedDefinition.variables) {
                         if(item.locality == Locality.INTERNAL || item.locality == Locality.PARAMETER) {
-                            flattenedNetwork.variables.add(item.copy(name = Utils.createVariableName(instantiate.name, item.name), locality = Locality.INTERNAL))
+                            flattenedNetwork.variables.add(item.copy(name = Utils.createVariableName(instanceName, item.name), locality = Locality.INTERNAL))
                         }
                         else {
-                            skipVariables.add(Utils.createVariableName(instantiate.name, item.name))
+                            skipVariables.add(Utils.createVariableName(instanceName, item.name))
                         }
-                        variableMappings[instantiate.name + "." + item.name] = Utils.createVariableName(instantiate.name, item.name)
+                        variableMappings[instanceName + "." + item.name] = Utils.createVariableName(instanceName, item.name)
                     }
 
                     for(item in flattenedDefinition.ioMapping) {
-                        var newKey = AutomataVariablePair(Utils.createVariableName(instantiate.name, item.key.automata), item.key.variable)
-                        val newValue = item.value.prependVariables(instantiate.name)
+                        var newKey = AutomataVariablePair(Utils.createVariableName(instanceName, item.key.automata), item.key.variable)
+                        val newValue = item.value.prependVariables(instanceName)
                         if(item.key.automata.isNotEmpty()) {
                             val innerInstance = this.instances[item.key.automata]
                             if(innerInstance != null) {
@@ -189,7 +189,7 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
                             }
                         }
                         else {
-                            newKey = AutomataVariablePair("", Utils.createVariableName(instantiate.name, item.key.variable))
+                            newKey = AutomataVariablePair("", Utils.createVariableName(instanceName, item.key.variable))
                         }
 
                         if(flattenedDefinition.variables.any { it.name == item.key.getString() && it.locality == Locality.EXTERNAL_OUTPUT }) {
@@ -202,7 +202,7 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
                 }
                 else {
                     flattenedNetwork.definitions[instantiate.definition] = definition
-                    flattenedNetwork.instances[key] = instance
+                    flattenedNetwork.instances[instanceName] = instance
                     flattenedNetwork.instantiates[instance.instantiate] = instantiate
                 }
             }
