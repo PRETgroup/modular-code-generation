@@ -5,6 +5,7 @@ import me.nallen.modularcodegeneration.codegen.c.CCodeGenerator
 import me.nallen.modularcodegeneration.codegen.vhdl.VHDLGenerator
 import me.nallen.modularcodegeneration.hybridautomata.*
 import me.nallen.modularcodegeneration.hybridautomata.Locality
+import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable
 import java.io.File
@@ -37,13 +38,25 @@ object CodeGenManager {
         outputDir.deleteRecursively()
         outputDir.mkdirs()
 
-        if(item is HybridNetwork)
-            createInstantiates(item, config)
+        var generateItem = item
+
+        if(generateItem is HybridNetwork && !generateItem.isFlat()) {
+            // We need to flatten the network so we can generate efficient code
+            // Let's warn the user first
+            Logger.warn("Currently, \"flat\" networks are required due to an issue with the compiler. Network has " +
+                    "automatically been flattened.")
+
+            // And then flatten the network
+            generateItem = generateItem.flatten()
+        }
+
+        if(generateItem is HybridNetwork)
+            createInstantiates(generateItem, config)
 
         // Depending on the language, we want to call a different generator.
         when(language) {
-            CodeGenLanguage.C -> CCodeGenerator.generate(item, dir, config)
-            CodeGenLanguage.VHDL -> VHDLGenerator.generate(item, dir, config)
+            CodeGenLanguage.C -> CCodeGenerator.generate(generateItem, dir, config)
+            CodeGenLanguage.VHDL -> VHDLGenerator.generate(generateItem, dir, config)
         }
     }
 

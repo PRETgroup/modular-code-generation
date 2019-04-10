@@ -153,16 +153,20 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
                             continue
                         }
 
-                        if(flattenedNetwork.instantiates.any { it.value.name == item.value.name })
-                            item.value.name = item.value.name + flattenedNetwork.instantiates.count { it.value.name.startsWith(item.value.name) }
+                        val newInstantiate = item.value.copy()
+                        newInstantiate.name = Utils.createFileName(definition.name, newInstantiate.name)
 
-                        flattenedNetwork.instantiates[item.key] = item.value
+                        if(flattenedNetwork.instantiates.any { it.value.name == newInstantiate.name })
+                            newInstantiate.name = newInstantiate.name + flattenedNetwork.instantiates.count { it.value.name.startsWith(newInstantiate.name) }
+
+                        flattenedNetwork.instantiates[item.key] = newInstantiate
                     }
                     for(item in flattenedDefinition.instances) {
-                        item.value.instantiate = skippedInstantiateMap[item.value.instantiate] ?: item.value.instantiate
+                        val newInstance = item.value.copy()
+                        newInstance.instantiate = skippedInstantiateMap[newInstance.instantiate] ?: newInstance.instantiate
 
                         val newKey = Utils.createVariableName(instanceName, item.key)
-                        flattenedNetwork.instances[newKey] = item.value
+                        flattenedNetwork.instances[newKey] = newInstance
                     }
                     for(item in flattenedDefinition.variables) {
                         if(item.locality == Locality.INTERNAL || item.locality == Locality.PARAMETER) {
@@ -176,7 +180,7 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
 
                     for(item in flattenedDefinition.ioMapping) {
                         var newKey = AutomataVariablePair(Utils.createVariableName(instanceName, item.key.automata), item.key.variable)
-                        val newValue = item.value.prependVariables(instanceName)
+                        val newValue = ParseTreeItem.generate(item.value.generateString()).prependVariables(instanceName)
                         if(item.key.automata.isNotEmpty()) {
                             val innerInstance = this.instances[item.key.automata]
                             if(innerInstance != null) {

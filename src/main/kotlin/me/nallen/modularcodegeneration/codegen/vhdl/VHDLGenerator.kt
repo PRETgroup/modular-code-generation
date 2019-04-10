@@ -151,7 +151,7 @@ class VHDLGenerator {
             }
 
             // Check if we're meant to be doing run-time parametrisation but we don't have a flat network
-            if(generateConfig.runTimeParametrisation && generateItem is HybridNetwork && !generateItem.isFlat()) {
+            /*if(generateConfig.runTimeParametrisation && generateItem is HybridNetwork && !generateItem.isFlat()) {
                 // We need to flatten the network so we can generate efficient code
                 // Let's warn the user first
                 Logger.warn("VHDL Run-time generation requires a \"flat\" network. Network has automatically been " +
@@ -159,7 +159,7 @@ class VHDLGenerator {
 
                 // And then flatten the network
                 generateItem = generateItem.flatten()
-            }
+            }*/
 
             // If the directory doesn't already exist, we want to create it
             if(!outputDir.exists())
