@@ -82,7 +82,8 @@ internal fun getOperandForSequence(input: String): Operand? {
     for((operand, operator) in getMapOfOperators()) {
         // Check that the string starts with the given operator
         if(input.startsWith(operator.symbol))
-            matches.add(operand)
+            if(!operator.symbol.last().isLetterOrDigit() || input.length == operator.symbol.length || !input[operator.symbol.length].isLetterOrDigit())
+                matches.add(operand)
     }
 
     // If we found at least one operator that matches
