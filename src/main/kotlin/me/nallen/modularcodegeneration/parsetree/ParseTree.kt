@@ -65,6 +65,12 @@ data class Negative(var operandA: ParseTreeItem): ParseTreeItem("negative")
 data class SquareRoot(var operandA: ParseTreeItem): ParseTreeItem("squareRoot")
 data class Exponential(var operandA: ParseTreeItem): ParseTreeItem("exponential")
 
+data class Sine(var operandA: ParseTreeItem): ParseTreeItem("sine")
+data class Cosine(var operandA: ParseTreeItem): ParseTreeItem("cosine")
+data class Tangent(var operandA: ParseTreeItem): ParseTreeItem("tangent")
+
+class Pi(): ParseTreeItem("pi")
+
 // Also supported are variables and literals
 data class Variable(var name: String, var value: ParseTreeItem? = null): ParseTreeItem("variable")
 data class Literal(var value: String): ParseTreeItem("literal")
@@ -148,6 +154,10 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
                     Operand.EXPONENTIAL -> Exponential(stack[stack.size-1])
                     Operand.SCIENTIFIC_NOTATION_NEGATIVE -> Literal(String.format("%sE-%s", stack[stack.size-2].getString(), stack[stack.size-1].getString()))
                     Operand.SCIENTIFIC_NOTATION_POSITIVE -> Literal(String.format("%sE+%s", stack[stack.size-2].getString(), stack[stack.size-1].getString()))
+                    Operand.SINE -> Sine(stack[stack.size-1])
+                    Operand.COSINE -> Cosine(stack[stack.size-1])
+                    Operand.TANGENT -> Tangent(stack[stack.size-1])
+                    Operand.PI -> Pi()
                 }
 
                 // If we were able to extract an operator (i.e. it wasn't a bracket or function separator)
@@ -253,6 +263,10 @@ fun ParseTreeItem.getPrecedence(): Int {
         is Divide -> Operand.DIVIDE
         is SquareRoot -> Operand.SQUARE_ROOT
         is Exponential -> Operand.EXPONENTIAL
+        is Sine -> Operand.SINE
+        is Cosine -> Operand.COSINE
+        is Tangent -> Operand.TANGENT
+        is Pi -> Operand.PI
     }
 
     // And now the precedence that corresponds to that operator
@@ -284,6 +298,10 @@ fun ParseTreeItem.getCommutative(): Boolean {
         is Divide -> Operand.DIVIDE
         is SquareRoot -> Operand.SQUARE_ROOT
         is Exponential -> Operand.EXPONENTIAL
+        is Sine -> Operand.SINE
+        is Cosine -> Operand.COSINE
+        is Tangent -> Operand.TANGENT
+        is Pi -> Operand.PI
     }
 
     // And now whether or not that operator is commutative
@@ -328,6 +346,10 @@ fun ParseTreeItem.generateString(): String {
         is Divide -> return this.padOperand(operandA) + " / " + this.padOperand(operandB)
         is SquareRoot -> return "sqrt(" + operandA.generateString() + ")"
         is Exponential -> return "exp(" + operandA.generateString() + ")"
+        is Sine -> return "sin(" + operandA.generateString() + ")"
+        is Cosine -> return "cos(" + operandA.generateString() + ")"
+        is Tangent -> return "tan(" + operandA.generateString() + ")"
+        is Pi -> return "pi"
     }
 }
 
@@ -356,6 +378,10 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
         is Divide -> arrayOf(operandA, operandB)
         is SquareRoot -> arrayOf(operandA)
         is Exponential -> arrayOf(operandA)
+        is Sine -> arrayOf(operandA)
+        is Cosine -> arrayOf(operandA)
+        is Tangent -> arrayOf(operandA)
+        is Pi -> arrayOf()
     }
 }
 
@@ -398,6 +424,10 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         is Exponential -> VariableType.REAL
         is Variable -> knownVariables[name] ?: VariableType.ANY // If we know it, otherwise ANY
         is Literal -> getTypeFromLiteral(value) ?: VariableType.ANY // We try to get the type from the value
+        is Sine -> VariableType.REAL
+        is Cosine -> VariableType.REAL
+        is Tangent -> VariableType.REAL
+        is Pi -> VariableType.REAL
     }
 }
 
@@ -469,6 +499,10 @@ fun ParseTreeItem.evaluateReal(var_map: Map<String, Literal> = HashMap()): Doubl
         is Negative -> -1 * operandA.evaluateReal(var_map)
         is SquareRoot -> Math.sqrt(operandA.evaluateReal(var_map))
         is Exponential -> Math.exp(operandA.evaluateReal(var_map))
+        is Sine -> Math.sin(operandA.evaluateReal(var_map))
+        is Cosine -> Math.cos(operandA.evaluateReal(var_map))
+        is Tangent -> Math.tan(operandA.evaluateReal(var_map))
+        is Pi -> Math.PI
 
         is Variable -> var_map.getValue(name).evaluateReal(var_map) // Variables that we know about
         is Literal -> when (value) { // For Literals, Boolean values represent 1 or 0
@@ -646,6 +680,10 @@ fun ParseTreeItem.getExpectedTypes(functionArguments: Map<String, List<VariableT
         is Exponential -> arrayOf(VariableType.REAL)
         is Variable -> arrayOf()
         is Literal -> arrayOf()
+        is Sine -> arrayOf(VariableType.REAL)
+        is Cosine -> arrayOf(VariableType.REAL)
+        is Tangent -> arrayOf(VariableType.REAL)
+        is Pi -> arrayOf()
     }
 }
 

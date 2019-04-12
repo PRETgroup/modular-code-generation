@@ -18,6 +18,8 @@ internal enum class Operand {
     FUNCTION_CALL, FUNCTION_SEPARATOR,
     PLUS, MINUS, MULTIPLY, DIVIDE, NEGATIVE,
     SQUARE_ROOT, EXPONENTIAL,
+    SINE, COSINE, TANGENT,
+    PI,
     SCIENTIFIC_NOTATION_NEGATIVE, SCIENTIFIC_NOTATION_POSITIVE
 }
 
@@ -60,6 +62,10 @@ internal fun getOperator(operand: Operand): Operator {
         Operand.SCIENTIFIC_NOTATION_NEGATIVE -> Operator("E-", 2, Associativity.LEFT, 2, false)
         Operand.SCIENTIFIC_NOTATION_POSITIVE -> Operator("E+", 2, Associativity.LEFT, 2, false)
         Operand.FUNCTION_CALL -> Operator("function<>(", 0, Associativity.RIGHT, 1, false)
+        Operand.SINE -> Operator("sin", 1, Associativity.RIGHT, 3, true)
+        Operand.COSINE -> Operator("cos", 1, Associativity.RIGHT, 3, true)
+        Operand.TANGENT -> Operator("tan", 1, Associativity.RIGHT, 3, true)
+        Operand.PI -> Operator("pi", 0, Associativity.NONE, 1, true)
     }
 }
 

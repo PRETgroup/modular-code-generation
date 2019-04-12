@@ -300,7 +300,7 @@ object Utils {
                 }
 
                 // And then return the final function name
-                return "${Utils.createFunctionName(item.functionName)}($builder)"
+                return "${createFunctionName(item.functionName)}($builder)"
             }
             is Literal -> {
                 // If the literal can be a double, then we'll use our custom function to create a fixed-point number
@@ -330,7 +330,7 @@ object Utils {
                     // It may consist of data inside structs, separated by periods
                     val parts = item.name.split(".")
 
-                    return Utils.createVariableName(*parts.toTypedArray())
+                    return createVariableName(*parts.toTypedArray())
                 }
             }
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
@@ -349,6 +349,10 @@ object Utils {
             is Divide -> "FP_DIV(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
             is SquareRoot -> throw NotImplementedError("Square Root is currently not supported in VHDL Generation")
             is Exponential -> throw NotImplementedError("Exponential is currently not supported in VHDL Generation")
+            is Sine -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
+            is Cosine -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
+            is Tangent -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
+            is Pi -> "CREATE_FP(${Math.PI})"
         }
     }
 

@@ -38,6 +38,9 @@ class ParseTreeTests : StringSpec() {
                 EquationSet("1.2E-6", "1.2E-6", 1.2E-6),
                 EquationSet("9.52E+10", "9.52E+10", 9.52E10),
                 EquationSet("1.23E5", "1.23E5", 1.23E5),
+                EquationSet("sin(0.5 * PI)", "sin(0.5 * PI)", 1.0),
+                EquationSet("4 + cos(PI / 2)", "4 + cos(PI / 2)", 4.0),
+                EquationSet("tan(0)", "tan(0)", 0.0),
 
                 EquationSet("my_custom_function(a, b c)"),
                 EquationSet("my_custom_function(a, b, c"),
@@ -69,6 +72,8 @@ class ParseTreeTests : StringSpec() {
             if(equation.result != null) {
                 ("Result of " + equation.original) {
                     val result = ParseTreeItem.generate(equation.original).evaluate()
+
+                    println("$result / ${equation.result}")
 
                     if(result is Double && equation.result is Double) {
                         result should matchDouble(equation.result)
