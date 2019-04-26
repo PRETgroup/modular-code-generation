@@ -333,6 +333,9 @@ object Utils {
                     return createVariableName(*parts.toTypedArray())
                 }
             }
+            is Constant -> when(item.name) {
+                ConstantType.PI -> "CREATE_FP(${Math.PI})"
+            }
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
             is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)
             is Negative -> {
@@ -352,7 +355,6 @@ object Utils {
             is Sine -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
             is Cosine -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
             is Tangent -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
-            is Pi -> "CREATE_FP(${Math.PI})"
         }
     }
 

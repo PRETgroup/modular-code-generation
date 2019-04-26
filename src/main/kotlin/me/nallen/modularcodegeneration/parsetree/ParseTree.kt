@@ -69,17 +69,41 @@ data class Sine(var operandA: ParseTreeItem): ParseTreeItem("sine")
 data class Cosine(var operandA: ParseTreeItem): ParseTreeItem("cosine")
 data class Tangent(var operandA: ParseTreeItem): ParseTreeItem("tangent")
 
-class Pi(): ParseTreeItem("pi")
-
-// Also supported are variables and literals
+// Also supported are variables, literals and constants
 data class Variable(var name: String, var value: ParseTreeItem? = null): ParseTreeItem("variable")
 data class Literal(var value: String): ParseTreeItem("literal")
+data class Constant(var name: ConstantType): ParseTreeItem("constant")
 
 /**
  * The supported types of variables, either Boolean (true / false), or Real (generally represented by double)
  */
 enum class VariableType {
     BOOLEAN, REAL, INTEGER, ANY
+}
+
+/**
+ * The set of inbuilt constants that are supported in parse trees
+ */
+enum class ConstantType {
+    PI;
+
+    companion object Factory {
+        fun createFromName(name: String): ConstantType? {
+            return ConstantType.values().firstOrNull { it.getTextualName().equals(name, ignoreCase = true) }
+        }
+    }
+
+    fun getTextualName(): String {
+        return when(this) {
+            ConstantType.PI -> "pi"
+        }
+    }
+
+    fun getType(): VariableType {
+        return when(this) {
+            ConstantType.PI -> VariableType.REAL
+        }
+    }
 }
 
 /**
@@ -157,7 +181,6 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
                     Operand.SINE -> Sine(stack[stack.size-1])
                     Operand.COSINE -> Cosine(stack[stack.size-1])
                     Operand.TANGENT -> Tangent(stack[stack.size-1])
-                    Operand.PI -> Pi()
                 }
 
                 // If we were able to extract an operator (i.e. it wasn't a bracket or function separator)
@@ -182,13 +205,21 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
             }
         }
         else {
-            // Not an operator, either a literal or variable, so let's test
-            if(getTypeFromLiteral(argument) != null)
+            // Not an operator, either a literal, variable or constant, so let's test
+            if(getTypeFromLiteral(argument) != null) {
                 // If we can successfully parse it as a literal then it must be a literal
                 stack.add(Literal(argument))
-            else
+            }
+            else {
+                // Either a variable or a constant, so let's check constant first
+                val constant = ConstantType.createFromName(argument)
+                if (constant != null)
+                    // It's a valid constant!
+                    stack.add(Constant(constant))
+                else
                 // Must be a variable, so let's say so
-                stack.add(Variable(argument))
+                    stack.add(Variable(argument))
+            }
         }
     }
 
@@ -256,6 +287,7 @@ fun ParseTreeItem.getPrecedence(): Int {
         is FunctionCall -> Operand.FUNCTION_CALL
         is Variable -> return 0 // Variables are of the highest precedence, 0
         is Literal -> return 0 // Literals are of the highest precedence, 0
+        is Constant -> return 0 // Constants are of the highest precedence, 0
         is Plus -> Operand.PLUS
         is Minus -> Operand.MINUS
         is Negative -> Operand.NEGATIVE
@@ -266,7 +298,6 @@ fun ParseTreeItem.getPrecedence(): Int {
         is Sine -> Operand.SINE
         is Cosine -> Operand.COSINE
         is Tangent -> Operand.TANGENT
-        is Pi -> Operand.PI
     }
 
     // And now the precedence that corresponds to that operator
@@ -291,6 +322,7 @@ fun ParseTreeItem.getCommutative(): Boolean {
         is FunctionCall -> Operand.FUNCTION_CALL
         is Literal -> return false // Does not matter, Literals have no children
         is Variable -> return false // Does not matter, Variables have no children
+        is Constant -> return false // Does not matter, Constants have no children
         is Plus -> Operand.PLUS
         is Minus -> Operand.MINUS
         is Negative -> Operand.NEGATIVE
@@ -301,7 +333,6 @@ fun ParseTreeItem.getCommutative(): Boolean {
         is Sine -> Operand.SINE
         is Cosine -> Operand.COSINE
         is Tangent -> Operand.TANGENT
-        is Pi -> Operand.PI
     }
 
     // And now whether or not that operator is commutative
@@ -339,6 +370,7 @@ fun ParseTreeItem.generateString(): String {
         }
         is Literal -> return this.value
         is Variable -> return this.name
+        is Constant -> return this.name.getTextualName()
         is Plus -> return this.padOperand(operandA) + " + " + this.padOperand(operandB)
         is Minus -> return this.padOperand(operandA) + " - " + this.padOperand(operandB)
         is Negative -> return "-" + this.padOperand(operandA)
@@ -349,7 +381,6 @@ fun ParseTreeItem.generateString(): String {
         is Sine -> return "sin(" + operandA.generateString() + ")"
         is Cosine -> return "cos(" + operandA.generateString() + ")"
         is Tangent -> return "tan(" + operandA.generateString() + ")"
-        is Pi -> return "pi"
     }
 }
 
@@ -371,6 +402,7 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
         is FunctionCall -> arguments.toTypedArray() // Functions have children defined as "arguments"
         is Literal -> arrayOf() // Literals have no children
         is Variable -> if(value != null) arrayOf(value!!) else arrayOf()
+        is Constant -> arrayOf() // Constants have no children
         is Plus -> arrayOf(operandA, operandB)
         is Minus -> arrayOf(operandA, operandB)
         is Negative -> arrayOf(operandA)
@@ -381,7 +413,6 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
         is Sine -> arrayOf(operandA)
         is Cosine -> arrayOf(operandA)
         is Tangent -> arrayOf(operandA)
-        is Pi -> arrayOf()
     }
 }
 
@@ -424,10 +455,10 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         is Exponential -> VariableType.REAL
         is Variable -> knownVariables[name] ?: VariableType.ANY // If we know it, otherwise ANY
         is Literal -> getTypeFromLiteral(value) ?: VariableType.ANY // We try to get the type from the value
+        is Constant -> name.getType()
         is Sine -> VariableType.REAL
         is Cosine -> VariableType.REAL
         is Tangent -> VariableType.REAL
-        is Pi -> VariableType.REAL
     }
 }
 
@@ -466,6 +497,9 @@ fun ParseTreeItem.evaluateBoolean(var_map: Map<String, Literal> = HashMap()): Bo
             "false" -> false
             else -> (value.toDoubleOrNull() ?: 0.0) != 0.0 // While Real values are tested whether they're 0
         }
+        is Constant -> when(name) {
+            else -> this.evaluateReal(var_map) != 0.0
+        }
 
         // Otherwise this must be an operator that actually returns a Real, so let's test whether it equals 0
         else -> this.evaluateReal(var_map) != 0.0
@@ -486,7 +520,7 @@ fun ParseTreeItem.evaluateReal(var_map: Map<String, Literal> = HashMap()): Doubl
 
     // If we're trying to evaluate a variable we need to make sure that we're provided a value for it
     if(this is Variable && !var_map.containsKey(name)) {
-        throw IllegalArgumentException("Unable to evaluate expression where not all variables have values")
+        throw IllegalArgumentException("Unable to evaluate expression where not all variables have values ($name)")
     }
 
     // Depending on what ParseTreeItem this is, we'll do a different operation. Arguments get called recursively to
@@ -502,13 +536,15 @@ fun ParseTreeItem.evaluateReal(var_map: Map<String, Literal> = HashMap()): Doubl
         is Sine -> Math.sin(operandA.evaluateReal(var_map))
         is Cosine -> Math.cos(operandA.evaluateReal(var_map))
         is Tangent -> Math.tan(operandA.evaluateReal(var_map))
-        is Pi -> Math.PI
 
         is Variable -> var_map.getValue(name).evaluateReal(var_map) // Variables that we know about
         is Literal -> when (value) { // For Literals, Boolean values represent 1 or 0
             "true" -> 1.0
             "false" -> 0.0
             else -> value.toDoubleOrNull() ?: 0.0 // While Real values are just their value
+        }
+        is Constant -> when(name) {
+            ConstantType.PI -> Math.PI
         }
 
         // Otherwise this must be an operator that actually returns a Boolean, so make it represent 1 and 0
@@ -680,10 +716,10 @@ fun ParseTreeItem.getExpectedTypes(functionArguments: Map<String, List<VariableT
         is Exponential -> arrayOf(VariableType.REAL)
         is Variable -> arrayOf()
         is Literal -> arrayOf()
+        is Constant -> arrayOf()
         is Sine -> arrayOf(VariableType.REAL)
         is Cosine -> arrayOf(VariableType.REAL)
         is Tangent -> arrayOf(VariableType.REAL)
-        is Pi -> arrayOf()
     }
 }
 

@@ -251,6 +251,9 @@ object Utils {
                     return builder.toString()
                 }
             }
+            is Constant -> when(item.name) {
+                ConstantType.PI -> "PI()"
+            }
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
             is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)
             is Negative -> "-" + padOperand(item, item.operandA, prefixData)
@@ -261,7 +264,6 @@ object Utils {
             is Sine -> "sin(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Cosine -> "cos(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Tangent -> "tan(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
-            is Pi -> "PI()"
         }
     }
 

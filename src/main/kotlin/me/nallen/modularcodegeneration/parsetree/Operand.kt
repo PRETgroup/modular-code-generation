@@ -19,7 +19,6 @@ internal enum class Operand {
     PLUS, MINUS, MULTIPLY, DIVIDE, NEGATIVE,
     SQUARE_ROOT, EXPONENTIAL,
     SINE, COSINE, TANGENT,
-    PI,
     SCIENTIFIC_NOTATION_NEGATIVE, SCIENTIFIC_NOTATION_POSITIVE
 }
 
@@ -65,7 +64,6 @@ internal fun getOperator(operand: Operand): Operator {
         Operand.SINE -> Operator("sin", 1, Associativity.RIGHT, 3, true)
         Operand.COSINE -> Operator("cos", 1, Associativity.RIGHT, 3, true)
         Operand.TANGENT -> Operator("tan", 1, Associativity.RIGHT, 3, true)
-        Operand.PI -> Operator("pi", 0, Associativity.NONE, 1, true)
     }
 }
 
@@ -87,7 +85,7 @@ internal fun getOperandForSequence(input: String): Operand? {
     val matches = ArrayList<Operand>()
     for((operand, operator) in getMapOfOperators()) {
         // Check that the string starts with the given operator
-        if(input.startsWith(operator.symbol))
+        if(input.startsWith(operator.symbol, ignoreCase = true))
             if(!operator.symbol.last().isLetterOrDigit() || input.length == operator.symbol.length || !input[operator.symbol.length].isLetterOrDigit())
                 matches.add(operand)
     }
