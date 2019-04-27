@@ -212,7 +212,7 @@ object Utils {
                 }
 
                 // And then return the final function name
-                return "${Utils.createFunctionName(item.functionName)}($builder)"
+                return "${createFunctionName(item.functionName)}($builder)"
             }
             is Literal -> item.value
             is me.nallen.modularcodegeneration.parsetree.Variable -> {
@@ -240,9 +240,9 @@ object Utils {
                         else
                             // Otherwise generate the C name for this variable
                             if(first)
-                                builder.append("${prefixData.prefix}${Utils.createVariableName(part)}")
+                                builder.append("${prefixData.prefix}${createVariableName(part)}")
                             else
-                                builder.append(Utils.createVariableName(part))
+                                builder.append(createVariableName(part))
 
                         first = false
                     }
@@ -251,6 +251,9 @@ object Utils {
                     return builder.toString()
                 }
             }
+            is Constant -> when(item.name) {
+                ConstantType.PI -> "PI()"
+            }
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
             is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)
             is Negative -> "-" + padOperand(item, item.operandA, prefixData)
@@ -258,6 +261,9 @@ object Utils {
             is Divide -> padOperand(item, item.operandA, prefixData) + " / " + padOperand(item, item.operandB, prefixData)
             is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Exponential -> "exp(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+            is Sine -> "sin(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+            is Cosine -> "cos(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+            is Tangent -> "tan(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
         }
     }
 

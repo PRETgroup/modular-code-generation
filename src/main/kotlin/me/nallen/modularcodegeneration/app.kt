@@ -7,6 +7,8 @@ import me.nallen.modularcodegeneration.description.Importer
 import me.nallen.modularcodegeneration.hybridautomata.HybridItem
 import me.nallen.modularcodegeneration.hybridautomata.HybridNetwork
 import me.nallen.modularcodegeneration.logging.Logger
+import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
+import me.nallen.modularcodegeneration.parsetree.evaluateReal
 import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
 
