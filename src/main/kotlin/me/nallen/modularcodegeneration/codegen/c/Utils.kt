@@ -252,7 +252,7 @@ object Utils {
                 }
             }
             is Constant -> when(item.name) {
-                ConstantType.PI -> "PI()"
+                ConstantType.PI -> "M_PI"
             }
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
             is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)
