@@ -1,36 +1,31 @@
-package me.nallen.modularcodegeneration.description
+package me.nallen.modularCodeGeneration.description.haml
 
-import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import me.nallen.modularcodegeneration.codegen.Configuration
-import me.nallen.modularcodegeneration.hybridautomata.*
-import me.nallen.modularcodegeneration.logging.Logger
-import me.nallen.modularcodegeneration.parsetree.Literal
-import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
-import me.nallen.modularcodegeneration.parsetree.VariableDeclaration
-import me.nallen.modularcodegeneration.utils.getRelativePath
+import me.nallen.modularCodeGeneration.codeGen.Configuration
+import me.nallen.modularCodeGeneration.hybridAutomata.*
+import me.nallen.modularCodeGeneration.parseTree.Literal
+import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
+import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
 import java.io.File
-import java.io.FileNotFoundException
 import java.util.*
 
-typealias ParseTreeVariableType = me.nallen.modularcodegeneration.parsetree.VariableType
-typealias ParseTreeLocality = me.nallen.modularcodegeneration.parsetree.Locality
-typealias HybridLocation = me.nallen.modularcodegeneration.hybridautomata.Location
+typealias ParseTreeVariableType = me.nallen.modularCodeGeneration.parseTree.VariableType
+typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
+typealias HybridLocation = me.nallen.modularCodeGeneration.hybridAutomata.Location
 
 /**
- * An Importer which is capable of reading in a specification and creating the associated Hybrid Item as described in
- * the document.
+ * An Importer which is capable of reading in a HAML Document specification and creating the associated Hybrid Item
+ * as described in the document.
  */
 class Importer {
     companion object Factory {
         /**
-         * Imports the provided document at the specified path and converts it to a Hybrid Item. The format of the input
-         * file is automatically detected by this method.
+         * Imports the HAML document at the specified path and converts it to a Hybrid Item.
          *
-         * Configuration settings are also parsed and returned as a separate Configuration object.
+         * The configuration settings stored in the HAML documents are also parsed and returned as a separate
+         * Configuration object.
          */
         fun import(path: String): Pair<HybridItem, Configuration> {
             // Firstly we want to handle any includes that may exist in the file
@@ -39,8 +34,6 @@ class Importer {
             // Now we want to read the file as a YAML file...
             val mapper = ObjectMapper(YAMLFactory())
             mapper.registerModule(KotlinModule())
-
-            Logger.info("Parsing Schema...")
 
             // ... and convert it into a Schema object
             val schema = mapper.readValue(parsedFile, Schema::class.java)
@@ -60,10 +53,6 @@ class Importer {
             // Create the configuration
             val config = schema.codegenConfig ?: Configuration()
 
-            if(!item.validate())
-                throw IllegalArgumentException("One or more issues were encountered with the provided schema." +
-                    " Please fix these before re-trying code generation")
-
             return Pair(item, config)
         }
 
@@ -75,31 +64,56 @@ class Importer {
          * Once all includes have been parsed, the final YAML document string will be returned.
          */
         private fun parseIncludes(path: String): String {
-            val file = File(path).absoluteFile
-
-            Logger.info("Reading source file ${file.getRelativePath()}")
+            val file = File(path)
 
             // Try to open the file
-            if(!file.exists() || !file.isFile) {
-                throw FileNotFoundException("Unable to find the requested file at $path")
-            }
+            if(!file.exists() || !file.isFile)
+                throw Exception("Whoops")
 
-            // Now we want to try read the file as a YAML file...
-            val yamlMapper = ObjectMapper(YAMLFactory())
-            val yamlTree = yamlMapper.registerModule(KotlinModule()).readTree(file)
+            val builder = StringBuilder()
+            val lines = file.readLines()
 
-            // Check if we could actually import it as a YAML file
-            if(yamlTree != null) {
-                // And if it looks like a HAML file
-                if(yamlTree.has("haml")) {
-                    return me.nallen.modularCodeGeneration.description.haml.Importer.import(path)
+            // A pair of regex for detecting include statements
+            val includeRegex = Regex("!include\\s+([^\\s]+)")
+            val indentRegex = Regex("^([\\s]*)[^\\s]+")
+
+            // Iterate over every line
+            for(line in lines) {
+                // Check if we can find an include statement on this line
+                val match = includeRegex.find(line)
+                if(match != null) {
+                    // We found one! Now time to parse it
+                    // Firstly we want to open the included file
+                    val includedFile = File(file.parentFile.absolutePath, match.groupValues[1]).absolutePath
+
+                    // Now we need to figure out how much of an indent there was at the start of this line, since
+                    // YAML is whitespace sensitive for indentation
+                    var indent = indentRegex.find(line)?.groupValues?.get(1) ?: ""
+
+                    // We include the line until the include statement as is
+                    val pretext = line.substring(0 until match.range.first)
+
+                    // If there was any text before the include statement then we want to append that, and now we need
+                    // to indent one level further (2 spaces per tab in YAML)
+                    if(pretext.isNotBlank()) {
+                        builder.appendln(pretext)
+                        indent += "  "
+                    }
+
+                    // Add the included file (parsing any includes it may have first) and apply the indent
+                    builder.appendln(parseIncludes(includedFile).trim().prependIndent(indent))
+                }
+                else {
+                    // No include statement, so let's just append the line
+                    builder.appendln(line)
                 }
             }
 
-            // Otherwise, let's try it as a CellML file
-            val xmlMapper = XmlMapper()
-            xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES,false);
-            val cellMLTree = xmlMapper.registerModule(KotlinModule()).readValue(file, me.nallen.modularCodeGeneration.description.cellml.Model::class.java)
+            // All done! Can return the final string
+            return builder.toString()
+        }
+    }
+}
 
 /**
  * Creates a Hybrid Automata from a definition, with the given name
@@ -111,14 +125,14 @@ private fun createHybridAutomata(name: String, definition: Automata): HybridAuto
     // Load the common features
     automata.loadData(name, definition)
 
-    // And then any custom functions that it may contain
-    automata.loadFunctions(definition.functions)
-
     // Add the locations (transitions are within locations)
     automata.loadLocations(definition.locations)
 
     // Set the initialisation
     automata.loadInitialisation(definition.initialisation)
+
+    // And then any custom functions that it may contain
+    automata.loadFunctions(definition.functions)
 
     return automata
 }
@@ -175,7 +189,7 @@ private fun HybridNetwork.importItems(definitions: Map<String, DefinitionItem>) 
             is Network -> this.loadNetwork(name, definition)
         }
 
-        this.instantiates[UUID.randomUUID()] = AutomataInstantiate(uuid, name)
+        this.instantiates.put(UUID.randomUUID(), AutomataInstantiate(uuid, name))
     }
 }
 
@@ -188,7 +202,7 @@ private fun HybridNetwork.loadNetwork(name: String, definition: Network): UUID {
 
     // Add it with its unqiue ID
     val definitionUUID = UUID.randomUUID()
-    this.definitions[definitionUUID] = network
+    this.definitions.put(definitionUUID, network)
 
     // Return the ID for use elsewhere
     return definitionUUID
@@ -203,7 +217,7 @@ private fun HybridNetwork.loadDefinition(name: String, definition: Automata): UU
 
     // Add it with its unqiue ID
     val definitionUUID = UUID.randomUUID()
-    this.definitions[definitionUUID] = automata
+    this.definitions.put(definitionUUID, automata)
 
     // Return the ID for use elsewhere
     return definitionUUID
@@ -276,7 +290,6 @@ private fun HybridAutomata.loadInitialisation(init: Initialisation?) {
 private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
     // We need to keep track of functions we know about and their return types
     val existingFunctionTypes = LinkedHashMap<String, ParseTreeVariableType?>()
-    val existingFunctionArguments = LinkedHashMap<String, List<ParseTreeVariableType>>()
 
     // For each function that exists
     if(functions != null) {
@@ -289,21 +302,10 @@ private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
                     // ... and create a VariableDeclaration that matches what we want
                     inputs.add(VariableDeclaration(input.key, input.value.type.convertToParseTreeType(), ParseTreeLocality.EXTERNAL_INPUT, input.value.default))
                 }
-            // Check if we could actually import it as an XML file
-            if(cellMLTree != null) {
-                return me.nallen.modularCodeGeneration.description.cellml.Importer.import(path)
             }
 
-            throw Exception("Unknown format provided for file")
             // Next let's find any internal variables inside the function that we'll need to instantiate
-            function.logic.collectVariables(inputs, existingFunctionTypes, existingFunctionArguments)
-
-            for(variable in function.logic.variables) {
-                if(variables.filter { it.locality == Locality.PARAMETER }.any { it.name == variable.name }) {
-                    variable.type = variables.filter { it.locality == Locality.PARAMETER }.first { it.name == variable.name }.type
-                    variable.locality = ParseTreeLocality.EXTERNAL_INPUT
-                }
-            }
+            function.logic.collectVariables(inputs, existingFunctionTypes)
 
             // Now we create the FunctionDefinition
             val func = FunctionDefinition(name, function.logic, inputs)
@@ -312,7 +314,6 @@ private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
             func.returnType = function.logic.getReturnType(existingFunctionTypes)
             // And then add it to the list of known types for future parsing
             existingFunctionTypes[func.name] = func.returnType
-            existingFunctionArguments[func.name] = func.inputs.map { it.type }
 
             this.functions.add(func)
         }
@@ -337,17 +338,15 @@ private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
     // For each instantiate that exists
     for((name, instance) in instances) {
         val instantiateId = getInstantiateIdForType(instance.type)
-        // We create the associated instantiate
-        val automataInstance = AutomataInstance(instantiateId ?: UUID.randomUUID())
+        if(instantiateId != null) {
+            // We create the associated instantiate
+            val automataInstance = AutomataInstance(instantiateId)
 
-        // And then add all the parameters that should be set on it
-        automataInstance.parameters.loadParseTreeItems(instance.parameters)
+            // And then add all the parameters that should be set on it
+            automataInstance.parameters.loadParseTreeItems(instance.parameters)
 
-        // Remembering that the instantiate name is the key in the Map they get stored in
-        this.instances[name] = automataInstance
-
-        if(instantiateId == null) {
-            Logger.error("Unable to find definition for '${instance.type}' required by '$name' in '${this.name}'")
+            // Remembering that the instantiate name is the key in the Map they get stored in
+            this.instances[name] = automataInstance
         }
     }
 }
@@ -357,7 +356,7 @@ private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
  */
 private fun HybridNetwork.getInstantiateIdForType(type: String): UUID? {
     // First try if it's within this network
-    val instantiateId = this.instantiates.filter { it.value.name == type }.keys.firstOrNull()
+    val instantiateId = this.instantiates.filter { it.value.name.equals(type) }.keys.firstOrNull()
 
     // If we managed to find it, then return it
     if(instantiateId != null)
@@ -405,7 +404,15 @@ private fun HybridItem.loadVariables(variables: Map<String, VariableDefinition>?
     // Iterate over every variable we were given
     if(variables != null) {
         for((name, value) in variables) {
-            this.addVariable(name, value.type.convertToParseTreeType(), type, value.default, value.delayableBy, true)
+            // Check the type of the variable
+            if(value.type == VariableType.REAL) {
+                // Real variables go to Continuous Variables
+                this.addContinuousVariable(name, type, value.default, value.delayableBy)
+            }
+            else if(value.type == VariableType.BOOLEAN) {
+                // Booleans become Events
+                this.addEvent(name, type, value.delayableBy)
+            }
         }
     }
 }

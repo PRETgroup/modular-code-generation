@@ -1,10 +1,7 @@
-package me.nallen.modularCodeGeneration.description
+package me.nallen.modularCodeGeneration.description.haml
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.util.TokenBuffer
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
 import me.nallen.modularCodeGeneration.codeGen.Configuration
@@ -14,6 +11,9 @@ import me.nallen.modularCodeGeneration.parseTree.Program
  * The root object of the HAML Document
  */
 data class Schema(
+        // The HAML version of this document
+        var haml: String,
+
         // The name of this HAML Document
         var name: String,
 
