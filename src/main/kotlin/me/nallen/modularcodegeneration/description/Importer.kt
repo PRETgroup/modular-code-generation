@@ -36,7 +36,7 @@ class Importer {
             // Check if we could actually import it as a YAML file
             if(yamlTree != null) {
                 // And if it looks like a HAML file
-                if(yamlTree.has("system")) {
+                if(yamlTree.has("haml")) {
                     return me.nallen.modularcodegeneration.description.haml.Importer.import(path)
                 }
             }
