@@ -1,4 +1,4 @@
-package me.nallen.modularCodeGeneration.description.cellml
+package me.nallen.modularcodegeneration.description.cellml
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement

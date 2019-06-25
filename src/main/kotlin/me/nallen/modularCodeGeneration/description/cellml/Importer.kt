@@ -1,11 +1,11 @@
-package me.nallen.modularCodeGeneration.description.cellml
+package me.nallen.modularcodegeneration.description.cellml
 
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
-import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.hybridAutomata.*
-import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
+import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.hybridautomata.*
+import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
 import java.io.File
 import java.lang.Math
 import java.util.*
@@ -291,7 +291,7 @@ private fun HybridItem.parseVariables(variables: List<Variable>) {
             InterfaceType.NONE -> Locality.INTERNAL
         }
 
-        this.addContinuousVariable(name, locality)
+        //this.addContinuousVariable(name, locality)
 
         if(this is HybridAutomata)
             this.init.valuations.put(name, ParseTreeItem.generate(variable.initialValue))

@@ -1,6 +1,6 @@
 package me.nallen.modularcodegeneration.hybridautomata
 
-import me.nallen.modularcodegeneration.description.ParseTreeLocality
+import me.nallen.modularcodegeneration.description.haml.ParseTreeLocality
 import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable as ParseTreeVariable

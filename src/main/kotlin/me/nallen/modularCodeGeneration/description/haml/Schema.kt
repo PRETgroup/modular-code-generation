@@ -1,11 +1,11 @@
-package me.nallen.modularCodeGeneration.description.haml
+package me.nallen.modularcodegeneration.description.haml
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
-import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.parseTree.Program
+import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
+import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.parsetree.Program
 
 /**
  * The root object of the HAML Document

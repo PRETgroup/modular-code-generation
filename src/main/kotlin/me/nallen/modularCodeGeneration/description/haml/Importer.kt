@@ -1,19 +1,22 @@
-package me.nallen.modularCodeGeneration.description.haml
+package me.nallen.modularcodegeneration.description.haml
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import me.nallen.modularCodeGeneration.codeGen.Configuration
-import me.nallen.modularCodeGeneration.hybridAutomata.*
-import me.nallen.modularCodeGeneration.parseTree.Literal
-import me.nallen.modularCodeGeneration.parseTree.ParseTreeItem
-import me.nallen.modularCodeGeneration.parseTree.VariableDeclaration
+import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.hybridautomata.*
+import me.nallen.modularcodegeneration.logging.Logger
+import me.nallen.modularcodegeneration.parsetree.Literal
+import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
+import me.nallen.modularcodegeneration.parsetree.VariableDeclaration
+import me.nallen.modularcodegeneration.utils.getRelativePath
 import java.io.File
+import java.io.FileNotFoundException
 import java.util.*
 
-typealias ParseTreeVariableType = me.nallen.modularCodeGeneration.parseTree.VariableType
-typealias ParseTreeLocality = me.nallen.modularCodeGeneration.parseTree.Locality
-typealias HybridLocation = me.nallen.modularCodeGeneration.hybridAutomata.Location
+typealias ParseTreeVariableType = me.nallen.modularcodegeneration.parsetree.VariableType
+typealias ParseTreeLocality = me.nallen.modularcodegeneration.parsetree.Locality
+typealias HybridLocation = me.nallen.modularcodegeneration.hybridautomata.Location
 
 /**
  * An Importer which is capable of reading in a HAML Document specification and creating the associated Hybrid Item
@@ -35,6 +38,8 @@ class Importer {
             val mapper = ObjectMapper(YAMLFactory())
             mapper.registerModule(KotlinModule())
 
+            Logger.info("Parsing Schema...")
+
             // ... and convert it into a Schema object
             val schema = mapper.readValue(parsedFile, Schema::class.java)
 
@@ -53,6 +58,10 @@ class Importer {
             // Create the configuration
             val config = schema.codegenConfig ?: Configuration()
 
+            if(!item.validate())
+                throw IllegalArgumentException("One or more issues were encountered with the provided schema." +
+                        " Please fix these before re-trying code generation")
+
             return Pair(item, config)
         }
 
@@ -64,11 +73,14 @@ class Importer {
          * Once all includes have been parsed, the final YAML document string will be returned.
          */
         private fun parseIncludes(path: String): String {
-            val file = File(path)
+            val file = File(path).absoluteFile
+
+            Logger.info("Reading source file ${file.getRelativePath()}")
 
             // Try to open the file
-            if(!file.exists() || !file.isFile)
-                throw Exception("Whoops")
+            if(!file.exists() || !file.isFile) {
+                throw FileNotFoundException("Unable to find the requested file at $path")
+            }
 
             val builder = StringBuilder()
             val lines = file.readLines()
@@ -125,14 +137,14 @@ private fun createHybridAutomata(name: String, definition: Automata): HybridAuto
     // Load the common features
     automata.loadData(name, definition)
 
+    // And then any custom functions that it may contain
+    automata.loadFunctions(definition.functions)
+
     // Add the locations (transitions are within locations)
     automata.loadLocations(definition.locations)
 
     // Set the initialisation
     automata.loadInitialisation(definition.initialisation)
-
-    // And then any custom functions that it may contain
-    automata.loadFunctions(definition.functions)
 
     return automata
 }
@@ -189,7 +201,7 @@ private fun HybridNetwork.importItems(definitions: Map<String, DefinitionItem>) 
             is Network -> this.loadNetwork(name, definition)
         }
 
-        this.instantiates.put(UUID.randomUUID(), AutomataInstantiate(uuid, name))
+        this.instantiates[UUID.randomUUID()] = AutomataInstantiate(uuid, name)
     }
 }
 
@@ -202,7 +214,7 @@ private fun HybridNetwork.loadNetwork(name: String, definition: Network): UUID {
 
     // Add it with its unqiue ID
     val definitionUUID = UUID.randomUUID()
-    this.definitions.put(definitionUUID, network)
+    this.definitions[definitionUUID] = network
 
     // Return the ID for use elsewhere
     return definitionUUID
@@ -217,7 +229,7 @@ private fun HybridNetwork.loadDefinition(name: String, definition: Automata): UU
 
     // Add it with its unqiue ID
     val definitionUUID = UUID.randomUUID()
-    this.definitions.put(definitionUUID, automata)
+    this.definitions[definitionUUID] = automata
 
     // Return the ID for use elsewhere
     return definitionUUID
@@ -290,6 +302,7 @@ private fun HybridAutomata.loadInitialisation(init: Initialisation?) {
 private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
     // We need to keep track of functions we know about and their return types
     val existingFunctionTypes = LinkedHashMap<String, ParseTreeVariableType?>()
+    val existingFunctionArguments = LinkedHashMap<String, List<ParseTreeVariableType>>()
 
     // For each function that exists
     if(functions != null) {
@@ -305,7 +318,14 @@ private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
             }
 
             // Next let's find any internal variables inside the function that we'll need to instantiate
-            function.logic.collectVariables(inputs, existingFunctionTypes)
+            function.logic.collectVariables(inputs, existingFunctionTypes, existingFunctionArguments)
+
+            for(variable in function.logic.variables) {
+                if(variables.filter { it.locality == Locality.PARAMETER }.any { it.name == variable.name }) {
+                    variable.type = variables.filter { it.locality == Locality.PARAMETER }.first { it.name == variable.name }.type
+                    variable.locality = ParseTreeLocality.EXTERNAL_INPUT
+                }
+            }
 
             // Now we create the FunctionDefinition
             val func = FunctionDefinition(name, function.logic, inputs)
@@ -314,6 +334,7 @@ private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
             func.returnType = function.logic.getReturnType(existingFunctionTypes)
             // And then add it to the list of known types for future parsing
             existingFunctionTypes[func.name] = func.returnType
+            existingFunctionArguments[func.name] = func.inputs.map { it.type }
 
             this.functions.add(func)
         }
@@ -338,15 +359,17 @@ private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
     // For each instantiate that exists
     for((name, instance) in instances) {
         val instantiateId = getInstantiateIdForType(instance.type)
-        if(instantiateId != null) {
-            // We create the associated instantiate
-            val automataInstance = AutomataInstance(instantiateId)
+        // We create the associated instantiate
+        val automataInstance = AutomataInstance(instantiateId ?: UUID.randomUUID())
 
-            // And then add all the parameters that should be set on it
-            automataInstance.parameters.loadParseTreeItems(instance.parameters)
+        // And then add all the parameters that should be set on it
+        automataInstance.parameters.loadParseTreeItems(instance.parameters)
 
-            // Remembering that the instantiate name is the key in the Map they get stored in
-            this.instances[name] = automataInstance
+        // Remembering that the instantiate name is the key in the Map they get stored in
+        this.instances[name] = automataInstance
+
+        if(instantiateId == null) {
+            Logger.error("Unable to find definition for '${instance.type}' required by '$name' in '${this.name}'")
         }
     }
 }
@@ -356,7 +379,7 @@ private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
  */
 private fun HybridNetwork.getInstantiateIdForType(type: String): UUID? {
     // First try if it's within this network
-    val instantiateId = this.instantiates.filter { it.value.name.equals(type) }.keys.firstOrNull()
+    val instantiateId = this.instantiates.filter { it.value.name == type }.keys.firstOrNull()
 
     // If we managed to find it, then return it
     if(instantiateId != null)
@@ -404,15 +427,7 @@ private fun HybridItem.loadVariables(variables: Map<String, VariableDefinition>?
     // Iterate over every variable we were given
     if(variables != null) {
         for((name, value) in variables) {
-            // Check the type of the variable
-            if(value.type == VariableType.REAL) {
-                // Real variables go to Continuous Variables
-                this.addContinuousVariable(name, type, value.default, value.delayableBy)
-            }
-            else if(value.type == VariableType.BOOLEAN) {
-                // Booleans become Events
-                this.addEvent(name, type, value.delayableBy)
-            }
+            this.addVariable(name, value.type.convertToParseTreeType(), type, value.default, value.delayableBy, true)
         }
     }
 }
