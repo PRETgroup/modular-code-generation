@@ -2,7 +2,7 @@
 
 # configure variables in the section below
 GHDL_BACKEND="mcode"
-GHDL_VERSION="0.35"
+GHDL_VERSION="0.36"
 PLATFORM="ubuntu14"
 
 GITHUB_SERVER="https://github.com"
