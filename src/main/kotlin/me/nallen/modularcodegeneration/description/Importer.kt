@@ -9,6 +9,7 @@ import me.nallen.modularcodegeneration.codegen.Configuration
 import me.nallen.modularcodegeneration.description.cellml.Units
 import me.nallen.modularcodegeneration.hybridautomata.*
 import java.io.File
+import java.io.FileNotFoundException
 
 /**
  * An Importer which is capable of reading in a specification and creating the associated Hybrid Item as described in
@@ -27,7 +28,7 @@ class Importer {
 
             // Try to open the file
             if(!file.exists() || !file.isFile)
-                throw Exception("Whoops")
+                throw FileNotFoundException("Unable to find the requested file at $path")
 
             // Now we want to try read the file as a YAML file...
             val yamlMapper = ObjectMapper(YAMLFactory())
@@ -51,7 +52,7 @@ class Importer {
                 return me.nallen.modularcodegeneration.description.cellml.Importer.import(path)
             }
 
-            throw Exception("Unknown format provided for file")
+            throw Exception("Unable to determine the provided format for file at $path")
         }
     }
 }
