@@ -349,6 +349,7 @@ private fun VariableType.convertToParseTreeType(): ParseTreeVariableType {
     return when(this) {
         VariableType.BOOLEAN -> ParseTreeVariableType.BOOLEAN
         VariableType.REAL -> ParseTreeVariableType.REAL
+        VariableType.INTEGER -> ParseTreeVariableType.INTEGER
     }
 }
 
