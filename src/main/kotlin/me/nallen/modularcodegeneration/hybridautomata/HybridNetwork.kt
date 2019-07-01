@@ -321,6 +321,49 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
 
         return valid
     }
+
+    override fun equals(other: Any?): Boolean {
+        if(other !is HybridNetwork)
+            return false
+
+        if(this.name != other.name)
+            return false
+
+        if(this.variables != other.variables)
+            return false
+
+        if(this.ioMapping != other.ioMapping)
+            return false
+
+        if(this.definitions.size != other.definitions.size)
+            return false
+        for((_, definition) in this.definitions) {
+            if(!other.definitions.any { it.value == definition })
+                return false
+        }
+
+        if(this.instances.size != other.instances.size)
+            return false
+        for((name, instance) in this.instances) {
+            val otherInstance = other.instances.filter { it.key == name }.values.firstOrNull()
+            if(otherInstance == null)
+                return false
+
+            val thisDefinition = this.getDefinitionForInstantiateId(instance.instantiate)
+            val otherDefinition = other.getDefinitionForInstantiateId(otherInstance.instantiate)
+
+            if(thisDefinition == null || otherDefinition == null)
+                return false
+
+            if(thisDefinition.name != otherDefinition.name)
+                return false
+
+            if(instance.parameters != otherInstance.parameters)
+                return false
+        }
+
+        return true
+    }
 }
 
 data class AutomataInstance(
