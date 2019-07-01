@@ -6,17 +6,21 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.hybridautomata.AutomataVariablePair
 import me.nallen.modularcodegeneration.hybridautomata.HybridAutomata
 import me.nallen.modularcodegeneration.hybridautomata.HybridItem
 import me.nallen.modularcodegeneration.hybridautomata.HybridNetwork
 import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.Locality
+import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
 import me.nallen.modularcodegeneration.parsetree.evaluateBoolean
+import java.io.File
 
 typealias HybridVariable = me.nallen.modularcodegeneration.hybridautomata.Variable
 typealias HybridEdge = me.nallen.modularcodegeneration.hybridautomata.Edge
 typealias HybridFunction = me.nallen.modularcodegeneration.hybridautomata.FunctionDefinition
 typealias HybridInitialisation = me.nallen.modularcodegeneration.hybridautomata.Initialisation
+typealias HybridAutomataInstance = me.nallen.modularcodegeneration.hybridautomata.AutomataInstance
 typealias HybridLocality = me.nallen.modularcodegeneration.hybridautomata.Locality
 
 /**
@@ -30,6 +34,11 @@ class Exporter {
          * Configuration settings are also included in the output file, where appropriate.
          */
         fun export(item: HybridItem, dir: String, config: Configuration = Configuration()) {
+            val outputDir = File(dir)
+
+            // If the directory doesn't already exist, we want to create it
+            if(!outputDir.exists())
+                outputDir.mkdirs()
 
             val schema = Schema(
                     haml = "0.1.2",
@@ -47,6 +56,9 @@ class Exporter {
             val output = mapper.writeValueAsString(schema)
 
             println(output)
+
+            // Generate the Header File
+            File(outputDir, "main.yaml").writeText(output)
         }
     }
 }
@@ -91,9 +103,9 @@ private fun createNetwork(network: HybridNetwork): Network {
 
     definition.loadDefinitions(network.definitions.values.toList())
 
-    // Instances
+    definition.loadInstances(network.instances, network)
 
-    // Mapping
+    definition.loadMappings(network.ioMapping)
 
     return definition
 }
@@ -271,5 +283,46 @@ private fun Automata.loadInitialisation(init: HybridInitialisation) {
 private fun Network.loadDefinitions(definitions: List<HybridItem>) {
     for(definition in definitions) {
         this.definitions[definition.name] = createDefinitionItem(definition)
+    }
+}
+
+/**
+ * Loads the instances from a HybridNetwork into a Network DefinitionItem
+ */
+private fun Network.loadInstances(instances: Map<String, HybridAutomataInstance>, network: HybridNetwork) {
+    for((name, instance) in instances) {
+        this.instances[name] = createInstanceDefinition(instance, network)
+    }
+}
+
+/**
+ * Creates an InstanceDefinition for the given Hybrid Instance
+ */
+private fun createInstanceDefinition(instance: HybridAutomataInstance, network: HybridNetwork): Instance {
+    val type = network.getInstantiateForInstantiateId(instance.instantiate)?.name
+
+    if(type == null)
+        throw IllegalArgumentException("Unexpected error occured")
+
+    val instanceDefinition = Instance(
+            type = type,
+            parameters = instance.parameters
+    )
+
+    if(instanceDefinition.parameters?.isEmpty() == true)
+        instanceDefinition.parameters = null
+
+    return instanceDefinition
+}
+
+/**
+ * Loads the mappings from a HybridNetwork into a Network DefinitionItem
+ */
+private fun Network.loadMappings(mappings: Map<AutomataVariablePair, ParseTreeItem>) {
+    if(mappings.isNotEmpty())
+        this.mappings = HashMap()
+
+    for((to, from) in mappings) {
+        this.mappings!![to.getString()] = from
     }
 }
