@@ -193,15 +193,17 @@ private fun HybridItem.loadData(name: String, definition: DefinitionItem) {
 /**
  * Imports all Definitions in the HAML spec into their respective HybridAutomata representations
  */
-private fun HybridNetwork.importItems(definitions: Map<String, DefinitionItem>) {
-    // We want to add every definition, so iterate!
-    for((name, definition) in definitions) {
-        val uuid = when(definition) {
-            is Automata -> this.loadDefinition(name, definition)
-            is Network -> this.loadNetwork(name, definition)
-        }
+private fun HybridNetwork.importItems(definitions: Map<String, DefinitionItem>?) {
+    if(definitions != null) {
+        // We want to add every definition, so iterate!
+        for((name, definition) in definitions) {
+            val uuid = when(definition) {
+                is Automata -> this.loadDefinition(name, definition)
+                is Network -> this.loadNetwork(name, definition)
+            }
 
-        this.instantiates[UUID.randomUUID()] = AutomataInstantiate(uuid, name)
+            this.instantiates[UUID.randomUUID()] = AutomataInstantiate(uuid, name)
+        }
     }
 }
 
@@ -356,21 +358,23 @@ private fun VariableType.convertToParseTreeType(): ParseTreeVariableType {
 /**
  * Imports a set of HAML Instances into the given HybridNetwork instantiate
  */
-private fun HybridNetwork.importInstances(instances: Map<String, Instance>) {
-    // For each instantiate that exists
-    for((name, instance) in instances) {
-        val instantiateId = getInstantiateIdForType(instance.type)
-        // We create the associated instantiate
-        val automataInstance = AutomataInstance(instantiateId ?: UUID.randomUUID())
+private fun HybridNetwork.importInstances(instances: Map<String, Instance>?) {
+    if(instances != null) {
+        // For each instantiate that exists
+        for((name, instance) in instances) {
+            val instantiateId = getInstantiateIdForType(instance.type)
+            // We create the associated instantiate
+            val automataInstance = AutomataInstance(instantiateId ?: UUID.randomUUID())
 
-        // And then add all the parameters that should be set on it
-        automataInstance.parameters.loadParseTreeItems(instance.parameters)
+            // And then add all the parameters that should be set on it
+            automataInstance.parameters.loadParseTreeItems(instance.parameters)
 
-        // Remembering that the instantiate name is the key in the Map they get stored in
-        this.instances[name] = automataInstance
+            // Remembering that the instantiate name is the key in the Map they get stored in
+            this.instances[name] = automataInstance
 
-        if(instantiateId == null) {
-            Logger.error("Unable to find definition for '${instance.type}' required by '$name' in '${this.name}'")
+            if(instantiateId == null) {
+                Logger.error("Unable to find definition for '${instance.type}' required by '$name' in '${this.name}'")
+            }
         }
     }
 }

@@ -275,8 +275,11 @@ private fun Automata.loadInitialisation(init: HybridInitialisation) {
  * Loads the definitions from a HybridNetwork into a Network DefinitionItem
  */
 private fun Network.loadDefinitions(definitions: List<HybridItem>) {
+    if(definitions.isNotEmpty() && this.definitions == null)
+        this.definitions = HashMap()
+
     for(definition in definitions) {
-        this.definitions[definition.name] = createDefinitionItem(definition)
+        this.definitions!![definition.name] = createDefinitionItem(definition)
     }
 }
 
@@ -284,8 +287,11 @@ private fun Network.loadDefinitions(definitions: List<HybridItem>) {
  * Loads the instances from a HybridNetwork into a Network DefinitionItem
  */
 private fun Network.loadInstances(instances: Map<String, HybridAutomataInstance>, network: HybridNetwork) {
+    if(instances.isNotEmpty() && this.instances == null)
+        this.instances = HashMap()
+
     for((name, instance) in instances) {
-        this.instances[name] = createInstanceDefinition(instance, network)
+        this.instances!![name] = createInstanceDefinition(instance, network)
     }
 }
 
@@ -313,7 +319,7 @@ private fun createInstanceDefinition(instance: HybridAutomataInstance, network: 
  * Loads the mappings from a HybridNetwork into a Network DefinitionItem
  */
 private fun Network.loadMappings(mappings: Map<AutomataVariablePair, ParseTreeItem>) {
-    if(mappings.isNotEmpty())
+    if(mappings.isNotEmpty() && this.mappings == null)
         this.mappings = HashMap()
 
     for((to, from) in mappings) {

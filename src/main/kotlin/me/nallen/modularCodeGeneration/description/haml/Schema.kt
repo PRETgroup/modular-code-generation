@@ -30,10 +30,10 @@ data class Schema(
  */
 class Network: DefinitionItem() {
     // A set of definitions of Hybrid Automata or Hybrid Networks that can be instantiated
-    var definitions: HashMap<String, DefinitionItem> = HashMap()
+    var definitions: HashMap<String, DefinitionItem>? = null
 
     // A set of instances of previously defined Hybrid Automata or Hybrid Networks
-    var instances: HashMap<String, Instance> = HashMap()
+    var instances: HashMap<String, Instance>? = null
 
     // A set of mappings that determine the value of each input of each Instance
     var mappings: HashMap<String, ParseTreeItem>? = null
