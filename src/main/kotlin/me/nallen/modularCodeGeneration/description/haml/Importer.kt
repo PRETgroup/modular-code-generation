@@ -75,8 +75,6 @@ class Importer {
         private fun parseIncludes(path: String): String {
             val file = File(path).absoluteFile
 
-            println("In: " + File(path).absolutePath)
-
             Logger.info("Reading source file ${file.getRelativePath()}")
 
             // Try to open the file
