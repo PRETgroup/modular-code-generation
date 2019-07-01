@@ -16,20 +16,16 @@ class Exporter {
          *
          * Configuration settings are also included in the output file, where appropriate.
          */
-        fun export(item: HybridItem, format: ExportFormat, dir: String, config: Configuration = Configuration()) {
-            val outputDir = File(dir)
+        fun export(item: HybridItem, format: ExportFormat, file: String, config: Configuration = Configuration()) {
+            val outputFile = File(file)
 
             // If the desired output directory already exists and is a file, then we stop!
-            if(outputDir.exists() && !outputDir.isDirectory)
-                throw IllegalArgumentException("Desired output directory $dir is not a directory!")
-
-            // Easiest way to clear the directory is to recursively delete, then recreate
-            outputDir.deleteRecursively()
-            outputDir.mkdirs()
+            if(outputFile.exists() && outputFile.isDirectory)
+                throw IllegalArgumentException("Desired output file $file is a directory!")
 
             // Depending on the format, we want to call a different generator.
             when(format) {
-                ExportFormat.HAML -> HamlExporter.export(item, dir, config)
+                ExportFormat.HAML -> HamlExporter.export(item, file, config)
             }
         }
     }

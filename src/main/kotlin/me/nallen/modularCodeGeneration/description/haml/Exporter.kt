@@ -33,13 +33,7 @@ class Exporter {
          *
          * Configuration settings are also included in the output file, where appropriate.
          */
-        fun export(item: HybridItem, dir: String, config: Configuration = Configuration()) {
-            val outputDir = File(dir)
-
-            // If the directory doesn't already exist, we want to create it
-            if(!outputDir.exists())
-                outputDir.mkdirs()
-
+        fun export(item: HybridItem, file: String, config: Configuration = Configuration()) {
             val schema = Schema(
                     haml = "0.1.2",
                     name = item.name,
@@ -58,7 +52,7 @@ class Exporter {
             println(output)
 
             // Generate the Header File
-            File(outputDir, "main.yaml").writeText(output)
+            File(file).writeText(output)
         }
     }
 }

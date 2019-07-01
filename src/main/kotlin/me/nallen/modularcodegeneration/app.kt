@@ -25,6 +25,7 @@ fun main() {
 
     val source = "examples/water_heater/main.yaml"
     val exportFormat = Exporter.ExportFormat.HAML
+    val exportFile = "Generated/main.yaml"
     val language = CodeGenLanguage.C
     val outputDir = "Generated"
 
@@ -39,7 +40,7 @@ fun main() {
 
         // Export the description (for sanity)
         time = measureTimeMillis {
-            Exporter.export(item, exportFormat, outputDir, config)
+            Exporter.export(item, exportFormat, exportFile, config)
         }
         println("Export time: $time ms")
 

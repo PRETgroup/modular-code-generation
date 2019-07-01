@@ -1,16 +1,10 @@
 package me.nallen.modularcodegeneration
 
-import io.kotlintest.matchers.shouldBe
 import io.kotlintest.matchers.shouldEqual
 import io.kotlintest.specs.StringSpec
-import me.nallen.modularcodegeneration.codegen.*
 import me.nallen.modularcodegeneration.description.Importer
 import me.nallen.modularcodegeneration.description.haml.Exporter
-import me.nallen.modularcodegeneration.hybridautomata.HybridAutomata
 import java.io.File
-import java.io.IOException
-import java.lang.StringBuilder
-import java.util.concurrent.TimeUnit
 
 class ExportTests : StringSpec() {
     init {
@@ -26,7 +20,7 @@ class ExportTests : StringSpec() {
                     val config = imported.second
 
                     ("Can Export HAML File For $it") {
-                        Exporter.export(item, "build/tmp/export", config)
+                        Exporter.export(item, "build/tmp/export/main.yaml", config)
 
                         val imported2 = Importer.import("build/tmp/export/main.yaml")
 
