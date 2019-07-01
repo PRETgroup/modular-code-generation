@@ -129,7 +129,7 @@ data class Location(
         var update: Map<String, ParseTreeItem>?,
 
         // A set of transitions that exist out of this location
-        var transitions: List<Transition>?
+        var transitions: ArrayList<Transition>?
 )
 
 /**
@@ -152,7 +152,7 @@ data class Transition(
  */
 data class Function(
         // The set of inputs that this function accepts
-        var inputs: Map<String, VariableDefinition>?,
+        var inputs: HashMap<String, VariableDefinition>?,
 
         // The code that this function will perform when invoked
         var logic: Program
