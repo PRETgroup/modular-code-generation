@@ -28,7 +28,7 @@ class Exporter {
 
             // Depending on the format, we want to call a different generator.
             when(format) {
-                ExportFormat.HAML -> HamlExporter.export(item, file, config)
+                ExportFormat.HAML -> HamlExporter.export(item, outputFile.absolutePath, config)
             }
         }
     }

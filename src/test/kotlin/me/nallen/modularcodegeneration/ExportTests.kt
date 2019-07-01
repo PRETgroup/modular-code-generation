@@ -3,7 +3,7 @@ package me.nallen.modularcodegeneration
 import io.kotlintest.matchers.shouldEqual
 import io.kotlintest.specs.StringSpec
 import me.nallen.modularcodegeneration.description.Importer
-import me.nallen.modularcodegeneration.description.haml.Exporter
+import me.nallen.modularcodegeneration.description.Exporter
 import java.io.File
 
 class ExportTests : StringSpec() {
@@ -14,14 +14,14 @@ class ExportTests : StringSpec() {
                 val main = File(folder, "main.yaml")
                 val output = File("build/tmp/export/main.yaml")
 
-                val imported = Importer.import(main.absolutePath)
-
-                val item = imported.first
-                val config = imported.second
-
                 if(main.exists() && main.isFile) {
+                    val imported = Importer.import(main.absolutePath)
+
+                    val item = imported.first
+                    val config = imported.second
+
                     ("Can Export HAML File For $it") {
-                        Exporter.export(item, output.absolutePath, config)
+                        Exporter.export(item, Exporter.ExportFormat.HAML,output.absolutePath, config)
 
                         val imported2 = Importer.import(output.absolutePath)
 
