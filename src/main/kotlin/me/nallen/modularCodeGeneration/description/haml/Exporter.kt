@@ -50,9 +50,7 @@ class Exporter {
             val output = mapper.writeValueAsString(schema)
 
             // Generate the Header File
-            val outputFile = File(file)
-            println("Out: " + outputFile.absolutePath)
-            outputFile.writeText(output)
+            File(file).writeText(output)
         }
     }
 }

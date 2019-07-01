@@ -29,8 +29,6 @@ class Importer {
         fun import(path: String): Pair<HybridItem, Configuration> {
             val file = File(path)
 
-            println("In: " + file.absolutePath)
-
             // Try to open the file
             if(!file.exists() || !file.isFile)
                 throw FileNotFoundException("Unable to find the requested file at $path")

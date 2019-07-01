@@ -14,7 +14,7 @@ class CodeGenTests : StringSpec() {
     init {
         val canMake = "make".runCommand(File("build"), ProcessBuilder.Redirect.PIPE) != 127
 
-        /*File("examples").list().forEach {
+        File("examples").list().forEach {
             val folder = File("examples", it)
             if(folder.isDirectory) {
                 val main = File(folder, "main.yaml")
@@ -102,7 +102,7 @@ class CodeGenTests : StringSpec() {
 
         if(!canGhdl) {
             "Can Synthesise VHDL Code" {}.config(enabled = false)
-        }*/
+        }
     }
 
     private fun String.runCommand(workingDir: File, redirect: ProcessBuilder.Redirect = ProcessBuilder.Redirect.INHERIT): Int {

@@ -14,16 +14,14 @@ class ExportTests : StringSpec() {
                 val main = File(folder, "main.yaml")
                 val output = File("build/tmp/export/main.yaml")
 
+                val imported = Importer.import(main.absolutePath)
+
+                val item = imported.first
+                val config = imported.second
+
                 if(main.exists() && main.isFile) {
                     ("Can Export HAML File For $it") {
-                        val imported = Importer.import(main.absolutePath)
-
-                        val item = imported.first
-                        val config = imported.second
-
                         Exporter.export(item, output.absolutePath, config)
-
-                        println("File: ${output.absolutePath}")
 
                         val imported2 = Importer.import(output.absolutePath)
 
