@@ -1,6 +1,7 @@
 package me.nallen.modularcodegeneration.description.haml
 
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
@@ -104,6 +105,19 @@ data class VariableDefinition(
         @JsonCreator @JvmStatic
         fun create(input: String) = VariableDefinition(VariableType.valueOf(input))
     }
+
+    @JsonValue
+    fun serialise(): Any {
+        if(default == null && delayableBy == null) {
+            return type
+        }
+
+        return mapOf(
+                "type" to type,
+                "default" to default,
+                "delayableBy" to delayableBy
+        )
+    }
 }
 
 /**
@@ -183,5 +197,17 @@ data class Instance(
     companion object Factory {
         @JsonCreator @JvmStatic
         fun create(input: String) = Instance(input)
+    }
+
+    @JsonValue
+    fun serialise(): Any {
+        if(parameters == null) {
+            return type
+        }
+
+        return mapOf(
+                "type" to type,
+                "parameters" to parameters
+        )
     }
 }
