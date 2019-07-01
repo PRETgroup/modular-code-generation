@@ -12,6 +12,7 @@ class ExportTests : StringSpec() {
             val folder = File("examples", it)
             if(folder.isDirectory) {
                 val main = File(folder, "main.yaml")
+                val output = File("build/tmp/export/main.yaml")
 
                 if(main.exists() && main.isFile) {
                     val imported = Importer.import(main.absolutePath)
@@ -20,9 +21,9 @@ class ExportTests : StringSpec() {
                     val config = imported.second
 
                     ("Can Export HAML File For $it") {
-                        Exporter.export(item, "build/tmp/export/main.yaml", config)
+                        Exporter.export(item, output.absolutePath, config)
 
-                        val imported2 = Importer.import("build/tmp/export/main.yaml")
+                        val imported2 = Importer.import(output.absolutePath)
 
                         imported.first shouldEqual imported2.first
                         imported.second shouldEqual imported2.second
