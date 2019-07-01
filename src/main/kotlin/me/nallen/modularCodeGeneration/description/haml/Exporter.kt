@@ -42,17 +42,17 @@ class Exporter {
             )
 
             Logger.info("Generating HAML File...")
-
+            
             val mapper = ObjectMapper(YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES))
             mapper.setSerializationInclusion(Include.NON_NULL)
             mapper.registerModule(KotlinModule())
 
             val output = mapper.writeValueAsString(schema)
 
-            println(output)
-
             // Generate the Header File
-            File(file).writeText(output)
+            val outputFile = File(file)
+            println("Out: " + outputFile.absolutePath)
+            outputFile.writeText(output)
         }
     }
 }

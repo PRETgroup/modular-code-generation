@@ -20,8 +20,8 @@ class Exporter {
             val outputFile = File(file)
 
             // If the desired output directory already exists and is a file, then we stop!
-            if(outputFile.exists() && outputFile.isDirectory)
-                throw IllegalArgumentException("Desired output file $file is a directory!")
+            if(outputFile.exists() && !outputFile.isFile)
+                throw IllegalArgumentException("Desired output file $file already exists and is not a file!")
 
             // Depending on the format, we want to call a different generator.
             when(format) {
