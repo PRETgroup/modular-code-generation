@@ -35,7 +35,6 @@ class Exporter {
          */
         fun export(item: HybridItem, file: String, config: Configuration = Configuration()) {
             val schema = Schema(
-                    haml = "0.1.2",
                     name = item.name,
                     system = createDefinitionItem(item),
                     codegenConfig = config

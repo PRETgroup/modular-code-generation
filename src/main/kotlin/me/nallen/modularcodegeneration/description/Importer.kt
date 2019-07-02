@@ -40,7 +40,7 @@ class Importer {
             // Check if we could actually import it as a YAML file
             if(yamlTree != null) {
                 // And if it looks like a HAML file
-                if(yamlTree.has("haml")) {
+                if(yamlTree.has("system")) {
                     return HamlImporter.import(path)
                 }
             }

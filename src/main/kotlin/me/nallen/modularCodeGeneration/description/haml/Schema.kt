@@ -12,9 +12,6 @@ import me.nallen.modularcodegeneration.parsetree.Program
  * The root object of the HAML Document
  */
 data class Schema(
-        // The HAML version of this document
-        var haml: String,
-
         // The name of this HAML Document
         var name: String,
 
