@@ -6,10 +6,13 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import me.nallen.modularcodegeneration.codegen.Configuration
-import me.nallen.modularcodegeneration.description.cellml.Units
 import me.nallen.modularcodegeneration.hybridautomata.*
 import java.io.File
 import java.io.FileNotFoundException
+
+typealias HamlImporter = me.nallen.modularcodegeneration.description.haml.Importer
+typealias CellMLImporter = me.nallen.modularcodegeneration.description.cellml.Importer
+typealias CellMLModel = me.nallen.modularcodegeneration.description.cellml.Model
 
 /**
  * An Importer which is capable of reading in a specification and creating the associated Hybrid Item as described in
@@ -38,18 +41,18 @@ class Importer {
             if(yamlTree != null) {
                 // And if it looks like a HAML file
                 if(yamlTree.has("haml")) {
-                    return me.nallen.modularcodegeneration.description.haml.Importer.import(path)
+                    return HamlImporter.import(path)
                 }
             }
 
             // Otherwise, let's try it as a CellML file
             val xmlMapper = XmlMapper()
             xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES,false);
-            val cellMLTree = xmlMapper.registerModule(KotlinModule()).readValue(file, me.nallen.modularcodegeneration.description.cellml.Model::class.java)
+            val cellMLTree = xmlMapper.registerModule(KotlinModule()).readValue(file, CellMLModel::class.java)
 
             // Check if we could actually import it as an XML file
             if(cellMLTree != null) {
-                return me.nallen.modularcodegeneration.description.cellml.Importer.import(path)
+                return CellMLImporter.import(path)
             }
 
             throw Exception("Unable to determine the provided format for file at $path")

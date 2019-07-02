@@ -1,6 +1,7 @@
 package me.nallen.modularcodegeneration.description.haml
 
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
@@ -30,13 +31,13 @@ data class Schema(
  */
 class Network: DefinitionItem() {
     // A set of definitions of Hybrid Automata or Hybrid Networks that can be instantiated
-    var definitions: Map<String, DefinitionItem> = HashMap()
+    var definitions: HashMap<String, DefinitionItem>? = null
 
     // A set of instances of previously defined Hybrid Automata or Hybrid Networks
-    var instances: Map<String, Instance> = HashMap()
+    var instances: HashMap<String, Instance>? = null
 
     // A set of mappings that determine the value of each input of each Instance
-    var mappings: Map<String, ParseTreeItem>? = null
+    var mappings: HashMap<String, ParseTreeItem>? = null
 }
 
 /**
@@ -44,10 +45,10 @@ class Network: DefinitionItem() {
  */
 class Automata: DefinitionItem() {
     // The locations that exist inside this Hybrid Automata
-    var locations: Map<String, Location>? = null
+    var locations: HashMap<String, Location>? = null
 
     // A set of functions that exist inside this Hybrid Automata
-    var functions: Map<String, Function>? = null
+    var functions: HashMap<String, Function>? = null
 
     // Sets the initialisation options for the Hybrid Automata (location, variable states, etc.)
     var initialisation: Initialisation? = null
@@ -58,13 +59,13 @@ class Automata: DefinitionItem() {
  */
 sealed class DefinitionItem {
     // The variables that this Hybrid Item accepts as inputs
-    var inputs: Map<String, VariableDefinition>? = null
+    var inputs: HashMap<String, VariableDefinition>? = null
 
     // The variables that this Hybrid Item emits as outputs
-    var outputs: Map<String, VariableDefinition>? = null
+    var outputs: HashMap<String, VariableDefinition>? = null
 
     // The parameters that are available for configuration of this Hybrid Automata
-    var parameters: Map<String, VariableDefinition>? = null
+    var parameters: HashMap<String, VariableDefinition>? = null
 
     companion object Factory {
         // Method for creating from a String (used in JSON parsing)
@@ -104,13 +105,26 @@ data class VariableDefinition(
         @JsonCreator @JvmStatic
         fun create(input: String) = VariableDefinition(VariableType.valueOf(input))
     }
+
+    @JsonValue
+    fun serialise(): Any {
+        if(default == null && delayableBy == null) {
+            return type
+        }
+
+        return mapOf(
+                "type" to type,
+                "default" to default,
+                "delayableBy" to delayableBy
+        )
+    }
 }
 
 /**
  * An enum that represents the type of a variable
  */
 enum class VariableType {
-    BOOLEAN, REAL
+    BOOLEAN, REAL, INTEGER
 }
 
 /**
@@ -129,7 +143,7 @@ data class Location(
         var update: Map<String, ParseTreeItem>?,
 
         // A set of transitions that exist out of this location
-        var transitions: List<Transition>?
+        var transitions: ArrayList<Transition>?
 )
 
 /**
@@ -152,7 +166,7 @@ data class Transition(
  */
 data class Function(
         // The set of inputs that this function accepts
-        var inputs: Map<String, VariableDefinition>?,
+        var inputs: HashMap<String, VariableDefinition>?,
 
         // The code that this function will perform when invoked
         var logic: Program
@@ -183,5 +197,17 @@ data class Instance(
     companion object Factory {
         @JsonCreator @JvmStatic
         fun create(input: String) = Instance(input)
+    }
+
+    @JsonValue
+    fun serialise(): Any {
+        if(parameters == null) {
+            return type
+        }
+
+        return mapOf(
+                "type" to type,
+                "parameters" to parameters
+        )
     }
 }
