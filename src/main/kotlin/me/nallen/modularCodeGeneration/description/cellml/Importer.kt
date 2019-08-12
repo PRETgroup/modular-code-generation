@@ -5,12 +5,15 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import me.nallen.modularcodegeneration.codegen.Configuration
 import me.nallen.modularcodegeneration.hybridautomata.*
+import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
+import me.nallen.modularcodegeneration.parsetree.VariableType
 import java.io.File
 import java.lang.Math
 import java.util.*
 import kotlin.collections.HashMap
 
+typealias HybridVariable = me.nallen.modularcodegeneration.hybridautomata.Variable
 
 /**
  * An Importer which is capable of reading in a CellML Document specification and creating the associated Hybrid Item
@@ -231,6 +234,8 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
 
             variablesMap.put(variable.name, variable.units)
         }
+
+        item.parseVariables(component.variables)
     }
 
     if(component.maths != null) {
@@ -291,19 +296,68 @@ private fun HybridItem.parseVariables(variables: List<Variable>) {
             InterfaceType.NONE -> Locality.INTERNAL
         }
 
-        //this.addContinuousVariable(name, locality)
+        this.variables.add(HybridVariable(name, VariableType.REAL, locality))
 
         if(this is HybridAutomata)
-            this.init.valuations.put(name, ParseTreeItem.generate(variable.initialValue))
+            if(locality == Locality.EXTERNAL_OUTPUT || locality == Locality.INTERNAL)
+                this.init.valuations[name] = ParseTreeItem.generate(variable.initialValue)
     }
 }
 
 private fun HybridNetwork.importConnections(connections: List<Connection>) {
     for(connection in connections) {
         for(mapping in connection.variables) {
-            val to = AutomataVariablePair(connection.components.component1, mapping.variable1)
-            val from = connection.components.component2 + "." + mapping.variable2
-            this.ioMapping[to] = ParseTreeItem.generate(from)
+            val instance1 = this.instances[connection.components.component1]
+            val instance2 = this.instances[connection.components.component2]
+
+            if(instance1 != null && instance2 != null) {
+                val instantiate1 = this.instantiates[instance1.instantiate]
+                val instantiate2 = this.instantiates[instance2.instantiate]
+
+                if(instantiate1 != null && instantiate2 != null) {
+                    val definition1 = this.definitions[instantiate1.definition]
+                    val definition2 = this.definitions[instantiate2.definition]
+
+                    if(definition1 != null && definition2 != null) {
+                        val variable1 = definition1.variables.find { it.name == mapping.variable1 }
+                        val variable2 = definition2.variables.find { it.name == mapping.variable2 }
+
+                        if(variable1 != null && variable2 != null) {
+                            if(variable1.locality == Locality.EXTERNAL_OUTPUT && variable2.locality == Locality.EXTERNAL_INPUT) {
+                                val to = AutomataVariablePair(connection.components.component2, mapping.variable2)
+                                val from = connection.components.component1 + "." + mapping.variable1
+                                this.ioMapping[to] = ParseTreeItem.generate(from)
+                            }
+                            else if(variable1.locality == Locality.EXTERNAL_INPUT && variable2.locality == Locality.EXTERNAL_OUTPUT) {
+                                val to = AutomataVariablePair(connection.components.component1, mapping.variable1)
+                                val from = connection.components.component2 + "." + mapping.variable2
+                                this.ioMapping[to] = ParseTreeItem.generate(from)
+                            }
+                            else {
+                                Logger.error("Unable to map variables '${connection.components.component1}.${mapping.variable1}' to '${connection.components.component2}.${mapping.variable2}'")
+                            }
+                        }
+                        else {
+                            if(variable1 == null)
+                                Logger.error("Unable to find variable ${mapping.variable1} in ${connection.components.component1}")
+
+                            if(variable2 == null)
+                                Logger.error("Unable to find variable ${mapping.variable2} in ${connection.components.component2}")
+                        }
+                    }
+                }
+            }
+            else {
+                if(instance1 == null)
+                    Logger.error("Unable to find instance ${connection.components.component1}")
+
+                if(instance2 == null)
+                    Logger.error("Unable to find instance ${connection.components.component2}")
+            }
         }
     }
+
+    val sortedMappings = this.ioMapping.toList().sortedWith(compareBy({ it.first.automata }, { it.first.variable })).toMap()
+    this.ioMapping.clear()
+    this.ioMapping.putAll(sortedMappings)
 }
