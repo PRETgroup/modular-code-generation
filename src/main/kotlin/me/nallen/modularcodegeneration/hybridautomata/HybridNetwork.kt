@@ -383,7 +383,7 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
 
 data class AutomataInstance(
         var instantiate: UUID,
-        val parameters: MutableMap<String, ParseTreeItem> = LinkedHashMap()
+        val parameters: LinkedHashMap<String, ParseTreeItem> = LinkedHashMap()
 )
 
 data class AutomataInstantiate(

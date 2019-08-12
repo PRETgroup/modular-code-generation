@@ -28,13 +28,13 @@ data class Schema(
  */
 class Network: DefinitionItem() {
     // A set of definitions of Hybrid Automata or Hybrid Networks that can be instantiated
-    var definitions: HashMap<String, DefinitionItem>? = null
+    var definitions: LinkedHashMap<String, DefinitionItem>? = null
 
     // A set of instances of previously defined Hybrid Automata or Hybrid Networks
-    var instances: HashMap<String, Instance>? = null
+    var instances: LinkedHashMap<String, Instance>? = null
 
     // A set of mappings that determine the value of each input of each Instance
-    var mappings: HashMap<String, ParseTreeItem>? = null
+    var mappings: LinkedHashMap<String, ParseTreeItem>? = null
 }
 
 /**
@@ -42,10 +42,10 @@ class Network: DefinitionItem() {
  */
 class Automata: DefinitionItem() {
     // The locations that exist inside this Hybrid Automata
-    var locations: HashMap<String, Location>? = null
+    var locations: LinkedHashMap<String, Location>? = null
 
     // A set of functions that exist inside this Hybrid Automata
-    var functions: HashMap<String, Function>? = null
+    var functions: LinkedHashMap<String, Function>? = null
 
     // Sets the initialisation options for the Hybrid Automata (location, variable states, etc.)
     var initialisation: Initialisation? = null
@@ -56,13 +56,13 @@ class Automata: DefinitionItem() {
  */
 sealed class DefinitionItem {
     // The variables that this Hybrid Item accepts as inputs
-    var inputs: HashMap<String, VariableDefinition>? = null
+    var inputs: LinkedHashMap<String, VariableDefinition>? = null
 
     // The variables that this Hybrid Item emits as outputs
-    var outputs: HashMap<String, VariableDefinition>? = null
+    var outputs: LinkedHashMap<String, VariableDefinition>? = null
 
     // The parameters that are available for configuration of this Hybrid Automata
-    var parameters: HashMap<String, VariableDefinition>? = null
+    var parameters: LinkedHashMap<String, VariableDefinition>? = null
 
     companion object Factory {
         // Method for creating from a String (used in JSON parsing)
@@ -134,10 +134,10 @@ data class Location(
 
         // The set of flow constraints that exist for each ODE, these constraints will transform the values of the
         // variables while control remains in this location
-        var flow: Map<String, ParseTreeItem>?,
+        var flow: LinkedHashMap<String, ParseTreeItem>?,
 
         // A set of discrete operations that are done while inside this location
-        var update: Map<String, ParseTreeItem>?,
+        var update: LinkedHashMap<String, ParseTreeItem>?,
 
         // A set of transitions that exist out of this location
         var transitions: ArrayList<Transition>?
@@ -154,7 +154,7 @@ data class Transition(
         var guard: ParseTreeItem?,
 
         // A set of discrete operations that are done when this transition is taken
-        var update: Map<String, ParseTreeItem>?
+        var update: LinkedHashMap<String, ParseTreeItem>?
 )
 
 /**
@@ -163,7 +163,7 @@ data class Transition(
  */
 data class Function(
         // The set of inputs that this function accepts
-        var inputs: HashMap<String, VariableDefinition>?,
+        var inputs: LinkedHashMap<String, VariableDefinition>?,
 
         // The code that this function will perform when invoked
         var logic: Program
@@ -177,7 +177,7 @@ data class Initialisation(
         var state: String,
 
         // The initial set of valuations for variables in the Hybrid Automata
-        var valuations: Map<String, ParseTreeItem>?
+        var valuations: LinkedHashMap<String, ParseTreeItem>?
 )
 
 /**
@@ -189,7 +189,7 @@ data class Instance(
 
         // The values of any parameters inside the previous declaration. Any parameters which do not have an entry here
         // will inherit their default value (if any)
-        var parameters: Map<String, ParseTreeItem>? = null
+        var parameters: LinkedHashMap<String, ParseTreeItem>? = null
 ) {
     companion object Factory {
         @JsonCreator @JvmStatic

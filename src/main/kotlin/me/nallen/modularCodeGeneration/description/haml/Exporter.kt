@@ -112,17 +112,17 @@ private fun DefinitionItem.loadData(variables: List<HybridVariable>) {
         when(variable.locality) {
             HybridLocality.EXTERNAL_INPUT -> {
                 if (this.inputs == null)
-                    this.inputs = HashMap()
+                    this.inputs = LinkedHashMap()
                 this.inputs!![name] = variableDefinition
             }
             HybridLocality.EXTERNAL_OUTPUT -> {
                 if (this.outputs == null)
-                    this.outputs = HashMap()
+                    this.outputs = LinkedHashMap()
                 this.outputs!![name] = variableDefinition
             }
             HybridLocality.PARAMETER -> {
                 if (this.parameters == null)
-                    this.parameters = HashMap()
+                    this.parameters = LinkedHashMap()
                 this.parameters!![name] = variableDefinition
             }
             HybridLocality.INTERNAL -> {}
@@ -159,7 +159,7 @@ private fun ParseTreeVariableType.convertToVariableType(): VariableType {
  */
 private fun Automata.loadLocations(locations: List<HybridLocation>, edges: List<HybridEdge>) {
     if(locations.isNotEmpty() && this.locations == null)
-        this.locations = HashMap()
+        this.locations = LinkedHashMap()
 
     for(location in locations) {
         this.locations!![location.name] = createLocationDefinition(location, edges)
@@ -223,7 +223,7 @@ private fun createTransitionDefinition(edge: HybridEdge): Transition {
  */
 private fun Automata.loadFunctions(functions: List<HybridFunction>) {
     if(functions.isNotEmpty() && this.functions == null)
-        this.functions = HashMap()
+        this.functions = LinkedHashMap()
 
     for(function in functions) {
         this.functions!![function.name] = createFunctionDefinition(function)
@@ -240,7 +240,7 @@ private fun createFunctionDefinition(function: HybridFunction): Function {
     )
 
     if(function.inputs.filter { it.locality == Locality.EXTERNAL_INPUT }.isNotEmpty())
-        functionDefinition.inputs = HashMap()
+        functionDefinition.inputs = LinkedHashMap()
 
     for(input in function.inputs.filter { it.locality == Locality.EXTERNAL_INPUT }) {
         val name = input.name
@@ -273,7 +273,7 @@ private fun Automata.loadInitialisation(init: HybridInitialisation) {
  */
 private fun Network.loadDefinitions(definitions: List<HybridItem>) {
     if(definitions.isNotEmpty() && this.definitions == null)
-        this.definitions = HashMap()
+        this.definitions = LinkedHashMap()
 
     for(definition in definitions) {
         this.definitions!![definition.name] = createDefinitionItem(definition)
@@ -285,7 +285,7 @@ private fun Network.loadDefinitions(definitions: List<HybridItem>) {
  */
 private fun Network.loadInstances(instances: Map<String, HybridAutomataInstance>, network: HybridNetwork) {
     if(instances.isNotEmpty() && this.instances == null)
-        this.instances = HashMap()
+        this.instances = LinkedHashMap()
 
     for((name, instance) in instances) {
         this.instances!![name] = createInstanceDefinition(instance, network)
@@ -317,7 +317,7 @@ private fun createInstanceDefinition(instance: HybridAutomataInstance, network: 
  */
 private fun Network.loadMappings(mappings: Map<AutomataVariablePair, ParseTreeItem>) {
     if(mappings.isNotEmpty() && this.mappings == null)
-        this.mappings = HashMap()
+        this.mappings = LinkedHashMap()
 
     for((to, from) in mappings) {
         this.mappings!![to.getString()] = from
