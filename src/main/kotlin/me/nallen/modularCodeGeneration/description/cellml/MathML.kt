@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
+import me.nallen.modularcodegeneration.logging.Logger
 import java.util.*
 
 @JsonDeserialize(using = MathDeserializer::class)
@@ -252,6 +253,13 @@ data class Diff(
             return Diff(id, arguments[0] as Bvar, arguments[1])
         }
     }
+
+    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
+        val bvarUnits = bvar.calculateUnits(variableUnits, unitsMap).createToPowerOf(-1.0) //unitsMap[variableUnits["time"]]!!.createToPowerOf(-1.0)//
+        val argumentUnits = argument.calculateUnits(variableUnits, unitsMap)
+
+        return argumentUnits.createMultiplication(bvarUnits)
+    }
 }
 
 data class Minus(
@@ -267,6 +275,18 @@ data class Minus(
             return Minus(id, arguments[0], arguments.getOrNull(1))
         }
     }
+
+    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
+        val firstUnits = argument1.calculateUnits(variableUnits, unitsMap)
+        if(argument2 != null) {
+            val secondUnits = argument2.calculateUnits(variableUnits, unitsMap)
+
+            if(!firstUnits.canMapTo(secondUnits))
+                throw Exception("Invalid number of arguments provided to <${operation.getIdentifier()}>")
+        }
+
+        return firstUnits
+    }
 }
 
 data class UnaryOperation(
@@ -281,6 +301,17 @@ data class UnaryOperation(
 
             return UnaryOperation(id, operation, arguments[0])
         }
+    }
+
+    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
+        if(operation == Operation.EXP) {
+            TODO("calclulateUnits <exp>")
+        }
+        if(operation == Operation.LN) {
+            TODO("calclulateUnits <ln>")
+        }
+
+        return argument.calculateUnits(variableUnits, unitsMap)
     }
 }
 
@@ -298,6 +329,23 @@ data class BinaryOperation(
             return BinaryOperation(id, operation, arguments[0], arguments[1])
         }
     }
+
+    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
+        val leftUnits = left.calculateUnits(variableUnits, unitsMap)
+        val rightUnits = right.calculateUnits(variableUnits, unitsMap)
+
+        if(operation == Operation.POWER) {
+            TODO("calclulateUnits <power>")
+        }
+        if(operation == Operation.DIVIDE) {
+            return leftUnits.createMultiplication(rightUnits.createToPowerOf(-1.0))
+        }
+
+        if(!leftUnits.canMapTo(rightUnits))
+            throw Exception("Invalid number of arguments provided to <${operation.getIdentifier()}>")
+
+        return leftUnits
+    }
 }
 
 data class NAryOperation(
@@ -312,6 +360,36 @@ data class NAryOperation(
 
             return NAryOperation(id, operation, arguments)
         }
+    }
+
+    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
+        if(operation == Operation.TIMES) {
+            if(arguments.isNotEmpty()) {
+                var units: SimpleUnit = CompositeUnit()
+
+                for(argument in arguments) {
+                    units = units.createMultiplication(argument.calculateUnits(variableUnits, unitsMap))
+                }
+
+                return units
+            }
+
+            return CompositeUnit()
+        }
+
+        if(arguments.isNotEmpty()) {
+            val units = arguments[0].calculateUnits(variableUnits, unitsMap)
+
+            for(i in 1 until arguments.size) {
+                if(!units.canMapTo(arguments[i].calculateUnits(variableUnits, unitsMap))) {
+                    throw Exception("Arguments to <${operation.getIdentifier()}> are not of same units")
+                }
+            }
+
+            return units
+        }
+
+        return CompositeUnit()
     }
 }
 
@@ -339,7 +417,17 @@ data class Ci(
         val name: String
 ): MathValue() {
     override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
-        TODO()
+        if(!variableUnits.containsKey(name)) {
+            Logger.error("Unknown variable '$name' used in equation.")
+            throw Exception("Unknown Variable")
+        }
+
+        if(!unitsMap.containsKey(variableUnits[name])) {
+            Logger.error("Unknown units '${variableUnits[name]}' used.")
+            throw Exception("Unknown Units")
+        }
+
+        return unitsMap[variableUnits[name]]!!
     }
 
     override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
@@ -352,7 +440,8 @@ data class Bvar(
         val degree: Degree? = null
 ): MathItem() {
     override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>): SimpleUnit {
-        TODO()
+        //TODO: Include "degree"
+        return variable.calculateUnits(variableUnits, unitsMap)
     }
 
     override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
@@ -373,7 +462,7 @@ data class Degree(
     }
 
     override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
-        return order.generateString(mapOf())
+        return order.generateString()
     }
 }
 
