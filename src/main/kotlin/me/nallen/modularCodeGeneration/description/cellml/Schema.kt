@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
+import java.util.ArrayList
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -190,14 +191,84 @@ fun prefixToPowerOfTen(prefix: String): Int {
 open class SimpleUnit {
     fun canMapTo(other: SimpleUnit): Boolean {
         if(this is BaseUnit && other is BaseUnit) {
-            return true
+            return this.name == other.name
         }
         else if(this is CompositeUnit && other is CompositeUnit) {
+            if(this.baseUnits.size != other.baseUnits.size)
+                return false
+
+            for(unit in this.baseUnits) {
+                if(!other.baseUnits.any { it.baseUnit.name == unit.baseUnit.name && it.exponent == unit.exponent })
+                    return false
+            }
+
             return true
+        }
+        else if(this is CompositeUnit && other is BaseUnit) {
+            if(this.baseUnits.size != 1 || this.baseUnits[0].exponent != 1.0)
+                return false
+
+            return this.baseUnits[0].baseUnit.name == other.name
+        }
+        else if(this is BaseUnit && other is CompositeUnit) {
+            if(other.baseUnits.size != 1 || other.baseUnits[0].exponent != 1.0)
+                return false
+
+            return other.baseUnits[0].baseUnit.name == this.name
         }
         else {
             return false
         }
+    }
+
+    fun createToPowerOf(power: Double): SimpleUnit {
+        val unitList = ArrayList<BaseUnitInstance>()
+        var multiply = 1.0
+        var offset = 0.0
+
+        if(this is BaseUnit) {
+            unitList.add(BaseUnitInstance(this, 1.0 * power))
+        }
+        else if(this is CompositeUnit) {
+            for((baseUnit, exponent) in this.baseUnits) {
+                if(unitList.any { it.baseUnit.name == baseUnit.name }) {
+                    unitList.first { it.baseUnit.name == baseUnit.name }.exponent += exponent * power
+                }
+                else {
+                    unitList.add(BaseUnitInstance(baseUnit, exponent * power))
+                }
+            }
+
+            multiply = this.multiply
+            offset = this.offset
+        }
+
+        return CompositeUnit(unitList, multiply, offset)
+    }
+
+    fun createMultiplication(other: SimpleUnit): SimpleUnit {
+        val unitList = ArrayList<BaseUnitInstance>()
+        var multiply = 1.0
+        var offset = 0.0
+        for(units in listOf(this, other)) {
+            if(units is BaseUnit) {
+                unitList.add(BaseUnitInstance(units, 1.0))
+            }
+            else if(units is CompositeUnit) {
+                for((baseUnit, exponent) in units.baseUnits) {
+                    if(unitList.any { it.baseUnit.name == baseUnit.name }) {
+                        unitList.first { it.baseUnit.name == baseUnit.name }.exponent += exponent
+                    }
+                    else {
+                        unitList.add(BaseUnitInstance(baseUnit, exponent))
+                    }
+                }
+
+                multiply *= units.multiply
+            }
+        }
+
+        return CompositeUnit(unitList, multiply, offset)
     }
 }
 data class BaseUnit(val name: String): SimpleUnit()
