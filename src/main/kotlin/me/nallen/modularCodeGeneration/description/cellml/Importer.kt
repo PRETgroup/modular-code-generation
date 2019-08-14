@@ -127,9 +127,9 @@ private val standardUnitsMap = mapOf(
                 BaseUnitInstance(BaseUnit("ampere")))),
         "volt" to CompositeUnit(listOf(
                 BaseUnitInstance(BaseUnit("kilogram")),
-                BaseUnitInstance(BaseUnit("meter")),
-                BaseUnitInstance(BaseUnit("second")),
-                BaseUnitInstance(BaseUnit("ampere")))),
+                BaseUnitInstance(BaseUnit("meter"), 2.0),
+                BaseUnitInstance(BaseUnit("second"), -3.0),
+                BaseUnitInstance(BaseUnit("ampere"), -1.0))),
         "watt" to CompositeUnit(listOf(
                 BaseUnitInstance(BaseUnit("kilogram")),
                 BaseUnitInstance(BaseUnit("meter"), 2.0),
