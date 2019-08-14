@@ -265,7 +265,7 @@ private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>,
     if(item !is Apply)
         return null
 
-    /*if(item.operation != Operation.EQ)
+    if(item.operation != Operation.EQ || item !is NAryOperation)
         return null
 
     if(item.arguments.size != 2)
@@ -278,10 +278,9 @@ private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>,
     println(item.arguments[1].calculateUnits(variablesMap, unitsMap))
     println()
 
-    if(!item.arguments[0].calculateUnits(variablesMap, unitsMap).canMapTo(item.arguments[1].calculateUnits(variablesMap, unitsMap)))
-        return null
-
-    //println(item.arguments[1].generateString())*/
+    if(!item.arguments[0].calculateUnits(variablesMap, unitsMap).canMapTo(item.arguments[1].calculateUnits(variablesMap, unitsMap))) {
+        throw Exception("Unable to map units")
+    }
 
     return Triple("x", ParseTreeItem.generate("y"), true)
 }

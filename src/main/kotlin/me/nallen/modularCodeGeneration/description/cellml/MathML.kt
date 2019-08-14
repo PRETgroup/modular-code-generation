@@ -281,8 +281,9 @@ data class Minus(
         if(argument2 != null) {
             val secondUnits = argument2.calculateUnits(variableUnits, unitsMap)
 
-            if(!firstUnits.canMapTo(secondUnits))
-                throw Exception("Invalid number of arguments provided to <${operation.getIdentifier()}>")
+            if(!firstUnits.canMapTo(secondUnits)) {
+                throw Exception("Arguments to <${operation.getIdentifier()}> are not of same units")
+            }
         }
 
         return firstUnits
@@ -308,7 +309,11 @@ data class UnaryOperation(
             TODO("calclulateUnits <exp>")
         }
         if(operation == Operation.LN) {
-            TODO("calclulateUnits <ln>")
+            if(!CompositeUnit().canMapTo(argument.calculateUnits(variableUnits, unitsMap))) {
+                Logger.warn("Argument to <${operation.getIdentifier()}> are expected to be dimensionless")
+            }
+
+            return CompositeUnit()
         }
 
         return argument.calculateUnits(variableUnits, unitsMap)
@@ -342,7 +347,7 @@ data class BinaryOperation(
         }
 
         if(!leftUnits.canMapTo(rightUnits))
-            throw Exception("Invalid number of arguments provided to <${operation.getIdentifier()}>")
+            throw Exception("Arguments to <${operation.getIdentifier()}> are not of same units")
 
         return leftUnits
     }
