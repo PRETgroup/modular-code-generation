@@ -194,10 +194,10 @@ open class SimpleUnit {
             return this.name == other.name
         }
         else if(this is CompositeUnit && other is CompositeUnit) {
-            if(this.baseUnits.size != other.baseUnits.size)
+            if(this.baseUnits.count { it.exponent != 0.0 } != other.baseUnits.count { it.exponent != 0.0 })
                 return false
 
-            for(unit in this.baseUnits) {
+            for(unit in this.baseUnits.filter { it.exponent != 0.0 }) {
                 if(!other.baseUnits.any { it.baseUnit.name == unit.baseUnit.name && it.exponent == unit.exponent })
                     return false
             }
@@ -205,13 +205,13 @@ open class SimpleUnit {
             return true
         }
         else if(this is CompositeUnit && other is BaseUnit) {
-            if(this.baseUnits.size != 1 || this.baseUnits[0].exponent != 1.0)
+            if(this.baseUnits.count { it.exponent != 0.0 } != 1 || this.baseUnits.first { it.exponent != 0.0 }.exponent != 1.0)
                 return false
 
             return this.baseUnits[0].baseUnit.name == other.name
         }
         else if(this is BaseUnit && other is CompositeUnit) {
-            if(other.baseUnits.size != 1 || other.baseUnits[0].exponent != 1.0)
+            if(other.baseUnits.count { it.exponent != 0.0 } != 1 || other.baseUnits.first { it.exponent != 0.0 }.exponent != 1.0)
                 return false
 
             return other.baseUnits[0].baseUnit.name == this.name
@@ -256,11 +256,13 @@ open class SimpleUnit {
             }
             else if(units is CompositeUnit) {
                 for((baseUnit, exponent) in units.baseUnits) {
-                    if(unitList.any { it.baseUnit.name == baseUnit.name }) {
-                        unitList.first { it.baseUnit.name == baseUnit.name }.exponent += exponent
-                    }
-                    else {
-                        unitList.add(BaseUnitInstance(baseUnit, exponent))
+                    if(exponent != 0.0) {
+                        if(unitList.any { it.baseUnit.name == baseUnit.name }) {
+                            unitList.first { it.baseUnit.name == baseUnit.name }.exponent += exponent
+                        }
+                        else {
+                            unitList.add(BaseUnitInstance(baseUnit, exponent))
+                        }
                     }
                 }
 
