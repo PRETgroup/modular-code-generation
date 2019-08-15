@@ -193,6 +193,9 @@ open class SimpleUnit {
         if(this is BaseUnit && other is BaseUnit) {
             return this.name == other.name
         }
+        else if(this is BooleanUnit && other is BooleanUnit) {
+            return true
+        }
         else if(this is CompositeUnit && other is CompositeUnit) {
             if(this.baseUnits.count { it.exponent != 0.0 } != other.baseUnits.count { it.exponent != 0.0 })
                 return false
@@ -273,6 +276,7 @@ open class SimpleUnit {
         return CompositeUnit(unitList, multiply, offset)
     }
 }
+class BooleanUnit(): SimpleUnit()
 data class BaseUnit(val name: String): SimpleUnit()
 data class BaseUnitInstance(val baseUnit: BaseUnit, var exponent: Double = 1.0)
 data class CompositeUnit(val baseUnits: List<BaseUnitInstance> = listOf(), val multiply: Double = 1.0, val offset: Double = 0.0): SimpleUnit()

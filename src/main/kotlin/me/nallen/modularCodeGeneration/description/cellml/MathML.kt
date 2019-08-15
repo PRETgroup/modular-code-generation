@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
+import me.nallen.modularcodegeneration.description.cellml.mathml.*
 import me.nallen.modularcodegeneration.logging.Logger
 import java.util.*
 
@@ -130,30 +131,32 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
         if(operation == null)
             throw Exception("No operator found for <apply> element")
 
+        println(operation.getIdentifier())
+        
         return when(operation) {
-            Operation.EQ -> NAryOperation.create(id, operation, arguments)
-            Operation.NEQ -> BinaryOperation.create(id, operation, arguments)
-            Operation.GT -> NAryOperation.create(id, operation, arguments)
-            Operation.LT -> NAryOperation.create(id, operation, arguments)
-            Operation.GEQ -> NAryOperation.create(id, operation, arguments)
-            Operation.LEQ -> NAryOperation.create(id, operation, arguments)
-            Operation.PLUS -> NAryOperation.create(id, operation, arguments)
+            Operation.EQ -> NAryOperation.create<Eq>(id, operation, arguments)
+            Operation.NEQ -> BinaryOperation.create<Neq>(id, operation, arguments)
+            Operation.GT -> NAryOperation.create<Gt>(id, operation, arguments)
+            Operation.LT -> NAryOperation.create<Lt>(id, operation, arguments)
+            Operation.GEQ -> NAryOperation.create<Geq>(id, operation, arguments)
+            Operation.LEQ -> NAryOperation.create<Leq>(id, operation, arguments)
+            Operation.PLUS -> NAryOperation.create<Plus>(id, operation, arguments)
             Operation.MINUS -> Minus.create(id, arguments)
-            Operation.TIMES -> NAryOperation.create(id, operation, arguments)
-            Operation.DIVIDE -> BinaryOperation.create(id, operation, arguments)
-            Operation.POWER -> BinaryOperation.create(id, operation, arguments)
+            Operation.TIMES -> NAryOperation.create<Times>(id, operation, arguments)
+            Operation.DIVIDE -> BinaryOperation.create<Divide>(id, operation, arguments)
+            Operation.POWER -> BinaryOperation.create<Power>(id, operation, arguments)
             Operation.ROOT -> TODO("ROOT")
-            Operation.ABS -> UnaryOperation.create(id, operation, arguments)
-            Operation.EXP -> UnaryOperation.create(id, operation, arguments)
-            Operation.LN -> UnaryOperation.create(id, operation, arguments)
+            Operation.ABS -> UnaryOperation.create<Abs>(id, operation, arguments)
+            Operation.EXP -> UnaryOperation.create<Exp>(id, operation, arguments)
+            Operation.LN -> UnaryOperation.create<Ln>(id, operation, arguments)
             Operation.LOG -> TODO("LOG")
-            Operation.FLOOR -> UnaryOperation.create(id, operation, arguments)
-            Operation.CEILING -> UnaryOperation.create(id, operation, arguments)
-            Operation.FACTORIAL -> UnaryOperation.create(id, operation, arguments)
-            Operation.AND -> NAryOperation.create(id, operation, arguments)
-            Operation.OR -> NAryOperation.create(id, operation, arguments)
-            Operation.XOR -> NAryOperation.create(id, operation, arguments)
-            Operation.NOT -> UnaryOperation.create(id, operation, arguments)
+            Operation.FLOOR -> UnaryOperation.create<Floor>(id, operation, arguments)
+            Operation.CEILING -> UnaryOperation.create<Ceiling>(id, operation, arguments)
+            Operation.FACTORIAL -> UnaryOperation.create<Factorial>(id, operation, arguments)
+            Operation.AND -> NAryOperation.create<And>(id, operation, arguments)
+            Operation.OR -> NAryOperation.create<Or>(id, operation, arguments)
+            Operation.XOR -> NAryOperation.create<Xor>(id, operation, arguments)
+            Operation.NOT -> UnaryOperation.create<Not>(id, operation, arguments)
             Operation.DIFF -> Diff.create(id, arguments)
         }
     }
@@ -219,358 +222,4 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
     }
 }
 
-sealed class MathItem {
-    abstract fun generateString(variableUnits: Map<String, SimpleUnit> = mapOf()): String
-    abstract fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double> = mapOf()): SimpleUnit
-    abstract fun evaluate(variableValues: Map<String, Double>): Double
-}
 
-sealed class Apply(
-        open val id: String?,
-        val operation: Operation
-): MathItem() {
-    override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
-        TODO("generateString <${operation.getIdentifier()}")
-    }
-
-    override fun evaluate(variableValues: Map<String, Double>): Double {
-        TODO("evaluate <${operation.getIdentifier()}")
-    }
-}
-
-data class Diff(
-        override val id: String?,
-        val bvar: Bvar,
-        val argument: MathItem
-): Apply(id, Operation.DIFF) {
-    companion object Factory {
-        fun create(id: String?, arguments: List<MathItem>): Apply {
-            if(arguments.size != 2)
-                throw Exception("Invalid number of arguments provided to <diff>")
-
-            if(arguments[0] !is Bvar)
-                throw Exception("Invalid argument provided to <diff>")
-
-            return Diff(id, arguments[0] as Bvar, arguments[1])
-        }
-    }
-
-    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
-        val bvarUnits = bvar.calculateUnits(variableUnits, unitsMap, constantValues).createToPowerOf(-1.0) //unitsMap[variableUnits["time"]]!!.createToPowerOf(-1.0)//
-        val argumentUnits = argument.calculateUnits(variableUnits, unitsMap, constantValues)
-
-        return argumentUnits.createMultiplication(bvarUnits)
-    }
-}
-
-data class Minus(
-        override val id: String?,
-        val argument1: MathItem,
-        val argument2: MathItem?
-): Apply(id, Operation.MINUS) {
-    companion object Factory {
-        fun create(id: String?, arguments: List<MathItem>): Apply {
-            if(arguments.isEmpty() || arguments.size > 2)
-                throw Exception("Invalid number of arguments provided to <minus>")
-
-            return Minus(id, arguments[0], arguments.getOrNull(1))
-        }
-    }
-
-    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
-        val firstUnits = argument1.calculateUnits(variableUnits, unitsMap, constantValues)
-        if(argument2 != null) {
-            val secondUnits = argument2.calculateUnits(variableUnits, unitsMap, constantValues)
-
-            if(!firstUnits.canMapTo(secondUnits)) {
-                throw Exception("Arguments to <${operation.getIdentifier()}> are not of same units")
-            }
-        }
-
-        return firstUnits
-    }
-}
-
-data class UnaryOperation(
-        override val id: String?,
-        val operation2: Operation,
-        val argument: MathItem
-): Apply(id, operation2) {
-    companion object Factory {
-        fun create(id: String?, operation: Operation, arguments: List<MathItem>): UnaryOperation {
-            if(arguments.size != 1)
-                throw Exception("Invalid number of arguments provided to <${operation.getIdentifier()}>")
-
-            return UnaryOperation(id, operation, arguments[0])
-        }
-    }
-
-    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
-        if(operation == Operation.EXP) {
-            if(!CompositeUnit().canMapTo(argument.calculateUnits(variableUnits, unitsMap, constantValues))) {
-                Logger.warn("Argument to <${operation.getIdentifier()}> is expected to be dimensionless")
-            }
-
-            return CompositeUnit()
-        }
-        if(operation == Operation.LN) {
-            if(!CompositeUnit().canMapTo(argument.calculateUnits(variableUnits, unitsMap, constantValues))) {
-                Logger.warn("Argument to <${operation.getIdentifier()}> is expected to be dimensionless")
-            }
-
-            return CompositeUnit()
-        }
-
-        return argument.calculateUnits(variableUnits, unitsMap, constantValues)
-    }
-}
-
-data class BinaryOperation(
-        override val id: String?,
-        val operation2: Operation,
-        val left: MathItem,
-        val right: MathItem
-): Apply(id, operation2) {
-    companion object Factory {
-        fun create(id: String?, operation: Operation, arguments: List<MathItem>): BinaryOperation {
-            if(arguments.size != 2)
-                throw Exception("Invalid number of arguments provided to <${operation.getIdentifier()}>")
-
-            return BinaryOperation(id, operation, arguments[0], arguments[1])
-        }
-    }
-
-    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
-        val leftUnits = left.calculateUnits(variableUnits, unitsMap, constantValues)
-        val rightUnits = right.calculateUnits(variableUnits, unitsMap, constantValues)
-
-        if(operation == Operation.POWER) {
-            if(!CompositeUnit().canMapTo(rightUnits)) {
-                Logger.warn("Argument 2 to <${operation.getIdentifier()}> is expected to be dimensionless")
-            }
-
-            return leftUnits.createToPowerOf(right.evaluate(constantValues))
-        }
-        if(operation == Operation.DIVIDE) {
-            return leftUnits.createMultiplication(rightUnits.createToPowerOf(-1.0))
-        }
-
-        if(!leftUnits.canMapTo(rightUnits))
-            throw Exception("Arguments to <${operation.getIdentifier()}> are not of same units")
-
-        return leftUnits
-    }
-}
-
-data class NAryOperation(
-        override val id: String?,
-        val operation2: Operation,
-        val arguments: List<MathItem>
-): Apply(id, operation2) {
-    companion object Factory {
-        fun create(id: String?, operation: Operation, arguments: List<MathItem>): NAryOperation {
-            if(arguments.size < 0)
-                throw Exception("Invalid number of arguments provided to <${operation.getIdentifier()}>")
-
-            return NAryOperation(id, operation, arguments)
-        }
-    }
-
-    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
-        if(operation == Operation.TIMES) {
-            if(arguments.isNotEmpty()) {
-                var units: SimpleUnit = CompositeUnit()
-
-                for(argument in arguments) {
-                    units = units.createMultiplication(argument.calculateUnits(variableUnits, unitsMap, constantValues))
-                }
-
-                return units
-            }
-
-            return CompositeUnit()
-        }
-
-        if(arguments.isNotEmpty()) {
-            val units = arguments[0].calculateUnits(variableUnits, unitsMap, constantValues)
-
-            for(i in 1 until arguments.size) {
-                if(!units.canMapTo(arguments[i].calculateUnits(variableUnits, unitsMap, constantValues))) {
-                    throw Exception("Arguments to <${operation.getIdentifier()}> are not of same units")
-                }
-            }
-
-            return units
-        }
-
-        return CompositeUnit()
-    }
-}
-
-
-
-sealed class MathValue : MathItem()
-
-data class Cn(
-        val units: String,
-        val value: Double
-): MathValue() {
-    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
-        if(!unitsMap.containsKey(units))
-            throw Exception("Unknown units provided: $units")
-
-        return unitsMap[units]!!
-    }
-
-    override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
-        return value.toString()
-    }
-
-    override fun evaluate(variableValues: Map<String, Double>): Double {
-        return value
-    }
-}
-
-data class Ci(
-        val name: String
-): MathValue() {
-    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
-        if(!variableUnits.containsKey(name)) {
-            throw Exception("Unknown variable '$name' used in equation.")
-        }
-
-        if(!unitsMap.containsKey(variableUnits[name])) {
-            throw Exception("Unknown units '${variableUnits[name]}' used")
-        }
-
-        return unitsMap[variableUnits[name]]!!
-    }
-
-    override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
-        return name
-    }
-
-    override fun evaluate(variableValues: Map<String, Double>): Double {
-        if(!variableValues.containsKey(name)) {
-            throw Exception("Unknown variable '$name' used in equation")
-        }
-
-        return variableValues[name]!!
-    }
-}
-
-data class Bvar(
-        val variable: Ci,
-        val degree: Degree? = null
-): MathItem() {
-    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
-        if(degree != null) {
-            return variable.calculateUnits(variableUnits, unitsMap, constantValues).createToPowerOf(degree.evaluate(constantValues))
-        }
-
-        return variable.calculateUnits(variableUnits, unitsMap, constantValues)
-    }
-
-    override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
-        TODO("generateString <bvar>")
-    }
-
-    override fun evaluate(variableValues: Map<String, Double>): Double {
-        TODO("evaluate <bvar>")
-    }
-}
-
-data class Degree(
-        val order: MathValue
-): MathItem() {
-    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
-        val orderUnits = order.calculateUnits(variableUnits, unitsMap, constantValues)
-
-        if(orderUnits !is CompositeUnit || orderUnits.baseUnits.isNotEmpty())
-            throw Exception("<degree> requires child to be dimensionless")
-
-        return orderUnits
-    }
-
-    override fun generateString(variableUnits: Map<String, SimpleUnit>): String {
-        return order.generateString()
-    }
-
-    override fun evaluate(variableValues: Map<String, Double>): Double {
-        return order.evaluate(variableValues)
-    }
-}
-
-enum class Operation {
-    EQ, NEQ, GT, LT, GEQ, LEQ,
-    PLUS, MINUS, TIMES, DIVIDE, POWER, ROOT, ABS, EXP, LN, LOG, FLOOR, CEILING, FACTORIAL,
-    AND, OR, XOR, NOT,
-    DIFF;
-    /*SIN, COS, TAN, SEC, CSC, COT, SINH, COSH, TANH, SECH, CSCH, COTH,
-    ARCSIN, ARCCOS, ARCTAN, ARCCOSH, ARCCOT, ARCCOTH, ARCCSC, ARCCSCH, ARCSEC, ARCSECH, ARCSINH, ARCTANH;*/
-
-    companion object Factory {
-        fun getForIdentifier(name: String): Operation? {
-            return when(name) {
-                "eq" -> EQ
-                "neq" -> NEQ
-                "gt" -> GT
-                "lt" -> LT
-                "geq" -> GEQ
-                "leq" -> LEQ
-                "plus" -> PLUS
-                "minus" -> MINUS
-                "times" -> TIMES
-                "divide" -> DIVIDE
-                "power" -> POWER
-                "root" -> ROOT
-                "abs" -> ABS
-                "exp" -> EXP
-                "ln" -> LN
-                "log" -> LOG
-                "floor" -> FLOOR
-                "ceiling" -> CEILING
-                "factorial" -> FACTORIAL
-                "and" -> AND
-                "or" -> OR
-                "xor" -> XOR
-                "not" -> NOT
-                "diff" -> DIFF
-                else -> null
-            }
-        }
-
-        fun isValidIdentifier(name: String): Boolean {
-            return getForIdentifier(name) != null
-        }
-    }
-
-    fun getIdentifier(): String {
-        return when(this) {
-            Operation.EQ -> "eq"
-            Operation.NEQ -> "neq"
-            Operation.GT -> "gt"
-            Operation.LT -> "lt"
-            Operation.GEQ -> "geq"
-            Operation.LEQ -> "leq"
-            Operation.PLUS -> "plus"
-            Operation.MINUS -> "minus"
-            Operation.TIMES -> "times"
-            Operation.DIVIDE -> "divide"
-            Operation.POWER -> "power"
-            Operation.ROOT -> "root"
-            Operation.ABS -> "abs"
-            Operation.EXP -> "exp"
-            Operation.LN -> "ln"
-            Operation.LOG -> "log"
-            Operation.FLOOR -> "floor"
-            Operation.CEILING -> "ceiling"
-            Operation.FACTORIAL -> "factorial"
-            Operation.AND -> "and"
-            Operation.OR -> "or"
-            Operation.XOR -> "xor"
-            Operation.NOT -> "not"
-            Operation.DIFF -> "diff"
-        }
-    }
-}
