@@ -23,6 +23,9 @@ int main(void) {
 
     unsigned int i = 0;
     for(i=1; i <= (SIMULATION_TIME / STEP_SIZE); i++) {
+{%- if config.hasCLoopAnnotations %}
+        {{ item.loopAnnotation }}
+{%- endif %}
         {{ item.runFunction }}(&{{item.variable}});
 
         /* Logging */

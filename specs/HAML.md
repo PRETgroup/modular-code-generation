@@ -481,6 +481,7 @@ A set of options that determine how the generate code will look and behave.
 | parametrisationMethod | [Parametrisation Method](#parametrisation-method) | The method to use for parametrisation when code is generated.<br/><br/> **Default:** `COMPILE_TIME` |
 | maximumInterTransitions | Int | The maximum number of inter-location transitions that can be taken within each "step". In Hybrid Automata semantics these transitions should be instantaneous and this aims to replicate that to some degree.<br/><br/> **Default:** `1` |
 | requireOneIntraTransitionPerTick | Boolean | Whether or not to require an intra-location transition (i.e. ODEs) within each "step". The evolution of ODEs is the only aspect of Hybrid Automata that should take any time.<br/><br/> **Default:** `false` |
+| cLoopAnnotation | String | In C code generation, all loops will be annotated with this string for declaring bounds, replacing `{bound}` with the actual loop bounds.<br/><br/> **Default:** `NULL` |
 
 #### Example
 
@@ -494,6 +495,7 @@ logging:
 parametrisationMethod: COMPILE_TIME
 maximumInterTransitions: 1
 requireOneIntraTransitionPerTick: false
+cLoopAnnotation: ANNOT_MAXITER({bound});
 ```
 
 

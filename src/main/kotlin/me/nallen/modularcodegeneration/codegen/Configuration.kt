@@ -22,7 +22,11 @@ data class Configuration(
 
         // Whether or not to require an intra-location transition (i.e. ODEs) within each "step". The evolution of ODEs
         // is the only aspect of Hybrid Automata that should take any time
-        val requireOneIntraTransitionPerTick: Boolean = false
+        val requireOneIntraTransitionPerTick: Boolean = false,
+
+        // If annotations are desired around loops in C code generation then this field should be set to the value to be
+        // used with {bound} for the bound e.g. `ANNOT_MAXITER({bound});`.
+        val cLoopAnnotation: String? = null
 ) {
     /**
      * Returns a string that represents the indent according to the configuration settings
@@ -44,6 +48,12 @@ data class Configuration(
 
     val runTimeParametrisation: Boolean = parametrisationMethod == ParametrisationMethod.RUN_TIME
     val compileTimeParametrisation: Boolean = parametrisationMethod == ParametrisationMethod.COMPILE_TIME
+
+    val hasCLoopAnnotations: Boolean = cLoopAnnotation != null
+
+    fun getCLoopAnnotation(bound: Any): String? {
+        return cLoopAnnotation?.replace("{bound}", bound.toString())
+    }
 }
 
 /**
