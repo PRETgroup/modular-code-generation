@@ -6,6 +6,12 @@
 #include <stdio.h>
 #include <math.h>
 
+{%- if config.ccodeSettings.additionalHeaders|count > 0 %}
+{% for additionalHeader in config.ccodeSettings.additionalHeaders %}
+#include <{{ additionalHeader }}>
+{%- endfor %}
+{%- endif %}
+
 {%- if item.children|count > 0 %}
 {% for child in item.children %}
     {%- ifchanged child.include %}

@@ -22,7 +22,7 @@ object RunnableGenerator {
         val rootItem = CodeItem("", Utils.createTypeName(item.name), Utils.createVariableName(item.name, "data"),
                 Utils.createFunctionName(item.name, "Run"), Utils.createFunctionName(item.name, "Init"),
                 Utils.createFunctionName(item.name, "Parametrise"),
-                config.getCLoopAnnotation("SIMULATION_TIME / STEP_SIZE") ?: "")
+                config.ccodeSettings.getLoopAnnotation("SIMULATION_TIME / STEP_SIZE") ?: "")
 
         // And add it's include path
         rootItem.include = if(item is HybridNetwork)

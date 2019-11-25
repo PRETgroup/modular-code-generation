@@ -363,8 +363,8 @@ object CFileGenerator {
             // We want to make sure we only ever do that many at maximum through a while loop
             result.appendln("${config.getIndent(1)}unsigned int remaining_transitions = ${config.maximumInterTransitions};")
             result.appendln("${config.getIndent(1)}while(remaining_transitions > 0) {")
-            if(config.hasCLoopAnnotations) {
-                result.appendln("${config.getIndent(2)}${config.getCLoopAnnotation(config.maximumInterTransitions)}")
+            if(config.ccodeSettings.hasLoopAnnotations) {
+                result.appendln("${config.getIndent(2)}${config.ccodeSettings.getLoopAnnotation(config.maximumInterTransitions)}")
             }
             // As soon as we start the loop, we decrease the counter by one
             result.appendln("${config.getIndent(2)}// Decrement the remaining transitions available")

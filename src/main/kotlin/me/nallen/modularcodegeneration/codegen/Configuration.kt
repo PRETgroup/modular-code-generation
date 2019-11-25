@@ -24,9 +24,8 @@ data class Configuration(
         // is the only aspect of Hybrid Automata that should take any time
         val requireOneIntraTransitionPerTick: Boolean = false,
 
-        // If annotations are desired around loops in C code generation then this field should be set to the value to be
-        // used with {bound} for the bound e.g. `ANNOT_MAXITER({bound});`.
-        val cLoopAnnotation: String? = null
+        // Additional settings that are used in C code generation
+        val ccodeSettings: CSettings = CSettings()
 ) {
     /**
      * Returns a string that represents the indent according to the configuration settings
@@ -48,12 +47,6 @@ data class Configuration(
 
     val runTimeParametrisation: Boolean = parametrisationMethod == ParametrisationMethod.RUN_TIME
     val compileTimeParametrisation: Boolean = parametrisationMethod == ParametrisationMethod.COMPILE_TIME
-
-    val hasCLoopAnnotations: Boolean = cLoopAnnotation != null
-
-    fun getCLoopAnnotation(bound: Any): String? {
-        return cLoopAnnotation?.replace("{bound}", bound.toString())
-    }
 }
 
 /**
@@ -90,4 +83,22 @@ data class Logging(
  */
 enum class ParametrisationMethod {
     RUN_TIME, COMPILE_TIME
+}
+
+/**
+ * A set of options for C code generation
+ */
+data class CSettings(
+        // Additional header libraries that should be included in each file
+        val additionalHeaders: List<String>? = null,
+
+        // If annotations are desired around loops in C code generation then this field should be set to the value to be
+        // used with {bound} for the bound e.g. `ANNOT_MAXITER({bound});`.
+        val loopAnnotation: String? = null
+) {
+    val hasLoopAnnotations: Boolean = loopAnnotation != null
+
+    fun getLoopAnnotation(bound: Any): String? {
+        return loopAnnotation?.replace("{bound}", bound.toString())
+    }
 }

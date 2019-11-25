@@ -4,6 +4,12 @@
 #include <string.h>
 #include "config.h"
 
+{%- if config.ccodeSettings.additionalHeaders|count > 0 %}
+{% for additionalHeader in config.ccodeSettings.additionalHeaders %}
+#include <{{ additionalHeader }}>
+{%- endfor %}
+{%- endif %}
+
 #include "{{ item.include }}"
 
 {{ item.type }} {{ item.variable }};
