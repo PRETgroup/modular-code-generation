@@ -426,35 +426,8 @@ object CFileGenerator {
             // Generate the case that matches this state
             result.appendln("${config.getIndent(defaultIndent+1)}case ${Utils.createMacroName(automata.name, location.name)}: // Logic for state ${location.name}")
 
-            // Check if we should include intra-location transitions in this machine
-            var atLeastOneIf = false
-            if(!config.requireOneIntraTransitionPerTick) {
-                // Yes we should include them!
-                // So let's start off with checking the invariant of the location
-                result.appendln("${config.getIndent(defaultIndent+2)}if(${Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
-
-                // And add the code for the intra-transition, which will include both flow and updates
-                result.append(generateCodeForIntraLogic(location, automata, defaultIndent+3))
-
-                // For an intra-location, the state won't change, so we can set it to itself
-                result.appendln("${config.getIndent(defaultIndent+3)}// Remain in this state")
-                result.appendln("${config.getIndent(defaultIndent+3)}state_u = ${Utils.createMacroName(automata.name, location.name)};")
-
-                // We then also need to check if we're counting transitions
-                if(countTransitions) {
-                    // Performing an intra-location transition stops execution in this tick, so we need to do that
-                    result.appendln()
-                    result.appendln("${config.getIndent(defaultIndent+3)}// Taking an intra-location transition stops execution")
-                    result.appendln("${config.getIndent(defaultIndent+3)}remaining_transitions = 0;")
-                }
-
-                // Close the invariant check
-                result.appendln("${config.getIndent(defaultIndent+2)}}")
-
-                atLeastOneIf = true
-            }
-
             // For each transition that leaves this location, we need to check if it can be taken
+            var atLeastOneIf = false
             for((_, toLocation, guard, update) in automata.edges.filter{it.fromLocation == location.name }) {
                 // Check if the guard of the transition is satisfied
                 result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
@@ -472,6 +445,33 @@ object CFileGenerator {
                 result.appendln("${config.getIndent(defaultIndent+3)}state_u = ${Utils.createMacroName(automata.name, toLocation)};")
 
                 // Close the check for the guard
+                result.appendln("${config.getIndent(defaultIndent+2)}}")
+
+                atLeastOneIf = true
+            }
+
+            // Check if we should include intra-location transitions in this machine
+            if(!config.requireOneIntraTransitionPerTick) {
+                // Yes we should include them!
+                // So let's start off with checking the invariant of the location
+                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
+
+                // And add the code for the intra-transition, which will include both flow and updates
+                result.append(generateCodeForIntraLogic(location, automata, defaultIndent+3))
+
+                // For an intra-location, the state won't change, so we can set it to itself
+                result.appendln("${config.getIndent(defaultIndent+3)}// Remain in this state")
+                result.appendln("${config.getIndent(defaultIndent+3)}state_u = ${Utils.createMacroName(automata.name, location.name)};")
+
+                // We then also need to check if we're counting transitions
+                if(countTransitions) {
+                    // Performing an intra-location transition stops execution in this tick, so we need to do that
+                    result.appendln()
+                    result.appendln("${config.getIndent(defaultIndent+3)}// Taking an intra-location transition stops execution")
+                    result.appendln("${config.getIndent(defaultIndent+3)}remaining_transitions = 0;")
+                }
+
+                // Close the invariant check
                 result.appendln("${config.getIndent(defaultIndent+2)}}")
 
                 atLeastOneIf = true
