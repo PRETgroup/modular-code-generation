@@ -8,6 +8,8 @@ import me.nallen.modularcodegeneration.description.cellml.mathml.*
 import me.nallen.modularcodegeneration.hybridautomata.*
 import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
+import me.nallen.modularcodegeneration.parsetree.Program
+import me.nallen.modularcodegeneration.parsetree.VariableDeclaration
 import me.nallen.modularcodegeneration.parsetree.VariableType
 import java.io.File
 import java.lang.Math
@@ -245,11 +247,23 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
                 val result = parseMathEquation(mathItem, variablesMap, unitsMap)
 
                 if(result != null) {
-                    val (variable, expression, flow) = result
-                    if(flow)
-                        location.flow.put(variable, expression)
+                    if(result.isFlow)
+                        location.flow.put(result.variable, result.equation)
                     else
-                        location.update.put(variable, expression)
+                        location.update.put(result.variable, result.equation)
+
+                    for((name, program) in result.functions) {
+                        val inputs = ArrayList<VariableDeclaration>()
+                        for(input in program.second) {
+                            inputs.add(VariableDeclaration(input, VariableType.REAL, me.nallen.modularcodegeneration.parsetree.Locality.EXTERNAL_INPUT))
+                        }
+
+                        program.first.collectVariables(inputs)
+
+                        val functionDef = FunctionDefinition(name, program.first, inputs)
+                        functionDef.returnType = program.first.getReturnType()
+                        item.functions.add(functionDef)
+                    }
                 }
             }
         }
@@ -294,7 +308,14 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
     return item
 }
 
-private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>, unitsMap: Map<String, SimpleUnit>): Triple<String, ParseTreeItem, Boolean>? {
+data class MathParse(
+        val variable: String,
+        val equation: ParseTreeItem,
+        val isFlow: Boolean,
+        val functions: Map<String, Pair<Program, List<String>>> = mapOf()
+)
+
+private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>, unitsMap: Map<String, SimpleUnit>): MathParse? {
     if(item !is Apply)
         return null
 
@@ -311,14 +332,24 @@ private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>,
     }
 
     if(arg0 is Ci) {
-        return Triple(arg0.name, ParseTreeItem.generate(item.arguments[1].generateOffsetString(arg0, variablesMap, unitsMap)), false)
+        val functions = HashMap<String, Pair<Program, List<String>>>()
+        for((name, piecewise) in item.arguments[1].extractAllPiecewise(variablesMap, unitsMap, name =arg0.name)) {
+            functions.put(name, Pair(Program.generate(piecewise.first), piecewise.second))
+        }
+
+        return MathParse(arg0.name, ParseTreeItem.generate(item.arguments[1].generateOffsetString(arg0, variablesMap, unitsMap, name=arg0.name)), false, functions)
     }
 
     if(arg0 is Diff) {
         try {
             if (arg0.bvar.variable.name == "time" && (arg0.bvar.degree == null || arg0.bvar.degree.evaluate() == 1.0)) {
                 if(arg0.argument is Ci) {
-                    return Triple(arg0.argument.name, ParseTreeItem.generate(item.arguments[1].generateOffsetString(arg0, variablesMap, unitsMap)), true)
+                    val functions = HashMap<String, Pair<Program, List<String>>>()
+                    for((name, piecewise) in item.arguments[1].extractAllPiecewise(variablesMap, unitsMap, name =arg0.argument.name)) {
+                        functions.put(name, Pair(Program.generate(piecewise.first), piecewise.second))
+                    }
+
+                    return MathParse(arg0.argument.name, ParseTreeItem.generate(item.arguments[1].generateOffsetString(arg0, variablesMap, unitsMap, name=arg0.argument.name)), true, functions)
                 }
 
             }

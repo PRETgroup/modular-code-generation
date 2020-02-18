@@ -104,6 +104,7 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
             "ci" -> createCi(node.value)
             "cn" -> createCn(node.value)
             "bvar" -> createBvar(node.value)
+            "piecewise" -> createPiecewise(node.value)
             "id" -> null
             else -> throw Exception("Unknown tag <" + node.tag + "> in math")
         }
@@ -222,6 +223,65 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
         }
 
         throw Exception("Invalid <bvar> argument provided")
+    }
+
+    private fun createPiecewise(value: Any?): Piecewise {
+        if(value is List<Any?>) {
+            if(!value.any { it is Node && it.tag == "piece" })
+                throw Exception("Invalid <piecewise> provided - missing any 'piece' fields")
+
+            val pieces = ArrayList<Piece>()
+            for(item in value.filter { it is Node && it.tag == "piece" }) {
+                pieces.add(createPiece((item as Node).value))
+            }
+
+            val otherwise = if(value.any { it is Node && it.tag == "otherwise" && it.value is List<Any?> }) {
+                val otherwiseValue = (value.first{ it is Node && it.tag == "otherwise" && it.value is List<Any?> } as Node).value as List<Any?>
+
+                val parts = ArrayList<MathItem>()
+                for(item in otherwiseValue.filter { it is Node }) {
+                    try {
+                        val mathItem = createMathItem(item as Node)
+                        if(mathItem != null)
+                            parts.add(mathItem)
+                    }
+                    catch(e: Exception) {}
+                }
+
+                if(parts.size != 1)
+                    throw Exception("Invalid <otherwise> provided - expected one field")
+
+                parts[0]
+            }
+            else {
+                null
+            }
+
+            return Piecewise(pieces, otherwise)
+        }
+
+        throw Exception("Invalid <piecewise> argument provided")
+    }
+
+    private fun createPiece(value: Any?): Piece {
+        if(value is List<Any?>) {
+            val parts = ArrayList<MathItem>()
+            for(item in value.filter { it is Node }) {
+                try {
+                    val mathItem = createMathItem(item as Node)
+                    if(mathItem != null)
+                        parts.add(mathItem)
+                }
+                catch(e: Exception) {}
+            }
+
+            if(parts.size != 2)
+                throw Exception("Invalid <piece> provided - expected two fields")
+
+            return Piece(parts[0], parts[1])
+        }
+
+        throw Exception("Invalid <piece> argument provided")
     }
 }
 
