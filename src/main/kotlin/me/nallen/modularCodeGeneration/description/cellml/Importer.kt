@@ -255,6 +255,38 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
         }
     }
 
+    if(item.variables.any { it.name == "time" && (it.locality == Locality.INTERNAL || it.locality == Locality.EXTERNAL_OUTPUT) }) {
+        val variable = item.variables.first { it.name == "time" && (it.locality == Locality.INTERNAL || it.locality == Locality.EXTERNAL_OUTPUT) }
+        if(!location.flow.containsKey(variable.name) && !location.update.containsKey(variable.name)) {
+            location.flow.put(variable.name, ParseTreeItem.generate(1))
+
+            val existingUnit = component.variables?.firstOrNull { it.name == variable.name }?.units
+            if(existingUnit != null) {
+                val unit = Units(
+                        name="time_rate",
+                        subunits=listOf(
+                                Unit(
+                                        units=existingUnit
+                                ),
+                                Unit(
+                                        units="second",
+                                        exponent=-1.0
+                                )
+                        )
+                )
+
+                val timeMap = extractSimpleUnits(listOf(unit), unitsMap)
+
+                if(timeMap.containsKey("time_rate")) {
+                    val timeUnit = timeMap["time_rate"]
+                    if(timeUnit is CompositeUnit) {
+                        location.flow.put(variable.name, ParseTreeItem.generate(1 / timeUnit.multiply))
+                    }
+                }
+            }
+        }
+    }
+
     item.init.state = "q0"
 
     item.locations.add(location)
@@ -273,6 +305,7 @@ private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>,
         return null
 
     val arg0 = item.arguments[0]
+
     if(!arg0.calculateUnits(variablesMap, unitsMap).canMapTo(item.arguments[1].calculateUnits(variablesMap, unitsMap))) {
         throw Exception("Unable to map units")
     }
