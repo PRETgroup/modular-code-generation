@@ -348,6 +348,7 @@ object Utils {
                     "-" + padOperand(item, item.operandA, prefixData)
                 }
             }
+            is Power -> throw NotImplementedError("Power function is currently not supported in VHDL Generation")
             is Multiply -> "FP_MULT(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
             is Divide -> "FP_DIV(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
             is SquareRoot -> throw NotImplementedError("Square Root is currently not supported in VHDL Generation")

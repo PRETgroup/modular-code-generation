@@ -17,7 +17,7 @@ internal enum class Operand {
     OPEN_BRACKET, CLOSE_BRACKET,
     FUNCTION_CALL, FUNCTION_SEPARATOR,
     PLUS, MINUS, MULTIPLY, DIVIDE, NEGATIVE,
-    SQUARE_ROOT, EXPONENTIAL,
+    POWER, SQUARE_ROOT, EXPONENTIAL,
     SINE, COSINE, TANGENT,
     SCIENTIFIC_NOTATION_NEGATIVE, SCIENTIFIC_NOTATION_POSITIVE
 }
@@ -50,12 +50,13 @@ internal fun getOperator(operand: Operand): Operator {
         Operand.NOT_EQUAL -> Operator("!=", 2, Associativity.LEFT, 7, true)
         Operand.OPEN_BRACKET -> Operator("(", 0, Associativity.RIGHT, 1, true)
         Operand.CLOSE_BRACKET -> Operator(")", 0, Associativity.LEFT, 1, true)
-        Operand.FUNCTION_SEPARATOR -> Operator(",", 0, Associativity.NONE, 1, true)
+        Operand.FUNCTION_SEPARATOR -> Operator(",", 0, Associativity.NONE, 20, true)
         Operand.PLUS -> Operator("+", 2, Associativity.LEFT, 4, true)
         Operand.MINUS -> Operator("-", 2, Associativity.LEFT, 4, false)
         Operand.NEGATIVE -> Operator("`", 1, Associativity.RIGHT, 2, true)
         Operand.MULTIPLY -> Operator("*", 2, Associativity.LEFT, 3, true)
         Operand.DIVIDE -> Operator("/", 2, Associativity.LEFT, 3, false)
+        Operand.POWER -> Operator("pow", 2, Associativity.RIGHT, 3, false)
         Operand.SQUARE_ROOT -> Operator("sqrt", 1, Associativity.RIGHT, 3, true)
         Operand.EXPONENTIAL -> Operator("exp", 1, Associativity.RIGHT, 3, true)
         Operand.SCIENTIFIC_NOTATION_NEGATIVE -> Operator("E-", 2, Associativity.LEFT, 2, false)

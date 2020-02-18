@@ -62,6 +62,7 @@ data class Multiply(var operandA: ParseTreeItem, var operandB: ParseTreeItem): P
 data class Divide(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("divide")
 data class Negative(var operandA: ParseTreeItem): ParseTreeItem("negative")
 
+data class Power(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("power")
 data class SquareRoot(var operandA: ParseTreeItem): ParseTreeItem("squareRoot")
 data class Exponential(var operandA: ParseTreeItem): ParseTreeItem("exponential")
 
@@ -172,6 +173,7 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
                     Operand.PLUS -> Plus(stack[stack.size-2], stack[stack.size-1])
                     Operand.MINUS -> Minus(stack[stack.size-2], stack[stack.size-1])
                     Operand.NEGATIVE -> Negative(stack[stack.size-1])
+                    Operand.POWER -> Power(stack[stack.size-2], stack[stack.size-1])
                     Operand.MULTIPLY -> Multiply(stack[stack.size-2], stack[stack.size-1])
                     Operand.DIVIDE -> Divide(stack[stack.size-2], stack[stack.size-1])
                     Operand.SQUARE_ROOT -> SquareRoot(stack[stack.size-1])
@@ -296,6 +298,7 @@ fun ParseTreeItem.getPrecedence(): Int {
         is Plus -> Operand.PLUS
         is Minus -> Operand.MINUS
         is Negative -> Operand.NEGATIVE
+        is Power -> Operand.POWER
         is Multiply -> Operand.MULTIPLY
         is Divide -> Operand.DIVIDE
         is SquareRoot -> Operand.SQUARE_ROOT
@@ -331,6 +334,7 @@ fun ParseTreeItem.getCommutative(): Boolean {
         is Plus -> Operand.PLUS
         is Minus -> Operand.MINUS
         is Negative -> Operand.NEGATIVE
+        is Power -> Operand.POWER
         is Multiply -> Operand.MULTIPLY
         is Divide -> Operand.DIVIDE
         is SquareRoot -> Operand.SQUARE_ROOT
@@ -379,6 +383,7 @@ fun ParseTreeItem.generateString(): String {
         is Plus -> return this.padOperand(operandA) + " + " + this.padOperand(operandB)
         is Minus -> return this.padOperand(operandA) + " - " + this.padOperand(operandB)
         is Negative -> return "-" + this.padOperand(operandA)
+        is Power -> return "pow(" + operandA.generateString() + ", " + operandB.generateString() + ")"
         is Multiply -> return this.padOperand(operandA) + " * " + this.padOperand(operandB)
         is Divide -> return this.padOperand(operandA) + " / " + this.padOperand(operandB)
         is SquareRoot -> return "sqrt(" + operandA.generateString() + ")"
@@ -411,6 +416,7 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
         is Plus -> arrayOf(operandA, operandB)
         is Minus -> arrayOf(operandA, operandB)
         is Negative -> arrayOf(operandA)
+        is Power -> arrayOf(operandA, operandB)
         is Multiply -> arrayOf(operandA, operandB)
         is Divide -> arrayOf(operandA, operandB)
         is SquareRoot -> arrayOf(operandA)
@@ -453,6 +459,7 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         }
         is Plus -> VariableType.REAL
         is Minus -> VariableType.REAL
+        is Power -> VariableType.REAL
         is Multiply -> VariableType.REAL
         is Divide -> VariableType.REAL
         is Negative -> VariableType.REAL
@@ -714,6 +721,7 @@ fun ParseTreeItem.getExpectedTypes(functionArguments: Map<String, List<VariableT
         }
         is Plus -> arrayOf(VariableType.REAL, VariableType.REAL)
         is Minus -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Power -> arrayOf(VariableType.REAL, VariableType.REAL)
         is Multiply -> arrayOf(VariableType.REAL, VariableType.REAL)
         is Divide -> arrayOf(VariableType.REAL, VariableType.REAL)
         is Negative -> arrayOf(VariableType.REAL)
