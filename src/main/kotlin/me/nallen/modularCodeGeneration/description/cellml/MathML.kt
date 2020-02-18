@@ -25,7 +25,9 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
             val parsedObject = parseObject(p)
 
             for(item in parsedObject) {
-                mathObject.items.add(createMathItem(item))
+                val mathItem = createMathItem(item)
+                if(mathItem != null)
+                    mathObject.items.add(mathItem)
             }
 
             return mathObject
@@ -96,12 +98,13 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
         }
     }
 
-    private fun createMathItem(node: Node): MathItem {
+    private fun createMathItem(node: Node): MathItem? {
         return when(node.tag) {
             "apply" -> createApply(node.value as List<Any?>)
             "ci" -> createCi(node.value)
             "cn" -> createCn(node.value)
             "bvar" -> createBvar(node.value)
+            "id" -> null
             else -> throw Exception("Unknown tag <" + node.tag + "> in math")
         }
     }
@@ -123,7 +126,9 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
                     operation = Operation.getForIdentifier(item.tag)
                 }
                 else {
-                    arguments.add(createMathItem(item))
+                    val mathItem = createMathItem(item)
+                    if(mathItem != null)
+                        arguments.add(mathItem)
                 }
             }
         }
