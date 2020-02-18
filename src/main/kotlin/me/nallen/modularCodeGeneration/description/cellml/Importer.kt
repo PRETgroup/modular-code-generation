@@ -186,7 +186,7 @@ private fun extractSimpleUnits(units: List<Units>?, existingUnitsMap: Map<String
                                 }
                             }
 
-                            multiply *= baseUnits.multiply
+                            multiply *= Math.pow(baseUnits.multiply, subunit.exponent)
                         }
 
                         multiply *= subunit.multiplier * Math.pow(Math.pow(10.0, subunit.prefix.toDouble()), subunit.exponent)
@@ -272,18 +272,31 @@ private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>,
     if(item.arguments.size != 2)
         return null
 
-    println(item.arguments[0])
-    println(item.arguments[0].calculateUnits(variablesMap, unitsMap))
-
-    println(item.arguments[1])
-    println(item.arguments[1].calculateUnits(variablesMap, unitsMap))
-    println()
-
-    if(!item.arguments[0].calculateUnits(variablesMap, unitsMap).canMapTo(item.arguments[1].calculateUnits(variablesMap, unitsMap))) {
+    val arg0 = item.arguments[0]
+    if(!arg0.calculateUnits(variablesMap, unitsMap).canMapTo(item.arguments[1].calculateUnits(variablesMap, unitsMap))) {
         throw Exception("Unable to map units")
     }
 
-    return Triple("x", ParseTreeItem.generate("y"), true)
+    if(arg0 is Ci) {
+        return Triple(arg0.name, ParseTreeItem.generate(item.arguments[1].generateOffsetString(arg0, variablesMap, unitsMap)), false)
+    }
+
+    if(arg0 is Diff) {
+        try {
+            if (arg0.bvar.variable.name == "time" && (arg0.bvar.degree == null || arg0.bvar.degree.evaluate() == 1.0)) {
+                if(arg0.argument is Ci) {
+                    return Triple(arg0.argument.name, ParseTreeItem.generate(item.arguments[1].generateOffsetString(arg0, variablesMap, unitsMap)), true)
+                }
+
+            }
+        }
+        catch(e: Exception) {}
+
+        throw Exception("Only able to map flow constraints which are with respect to first order time")
+    }
+
+
+    return null
 }
 
 private fun HybridItem.parseVariables(variables: List<Variable>) {

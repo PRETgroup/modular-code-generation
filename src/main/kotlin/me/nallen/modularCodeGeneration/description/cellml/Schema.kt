@@ -7,6 +7,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.ArrayList
+import kotlin.math.pow
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -224,6 +225,16 @@ open class SimpleUnit {
         }
     }
 
+    fun getDifferenceTo(other: SimpleUnit): Pair<Double, Double>? {
+        if(!this.canMapTo(other))
+            return null
+
+        if(this !is CompositeUnit || other !is CompositeUnit)
+            return Pair(1.0, 0.0)
+
+        return Pair(other.multiply / this.multiply, other.offset - this.offset)
+    }
+
     fun createToPowerOf(power: Double): SimpleUnit {
         val unitList = ArrayList<BaseUnitInstance>()
         var multiply = 1.0
@@ -242,7 +253,7 @@ open class SimpleUnit {
                 }
             }
 
-            multiply = this.multiply
+            multiply = this.multiply?.pow(power)
             offset = this.offset
         }
 

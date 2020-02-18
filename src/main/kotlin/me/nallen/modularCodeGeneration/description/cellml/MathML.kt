@@ -130,8 +130,6 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
 
         if(operation == null)
             throw Exception("No operator found for <apply> element")
-
-        println(operation.getIdentifier())
         
         return when(operation) {
             Operation.EQ -> NAryOperation.create<Eq>(id, operation, arguments)
