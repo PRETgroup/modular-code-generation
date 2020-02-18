@@ -481,6 +481,7 @@ A set of options that determine how the generate code will look and behave.
 | parametrisationMethod | [Parametrisation Method](#parametrisation-method) | The method to use for parametrisation when code is generated.<br/><br/> **Default:** `COMPILE_TIME` |
 | maximumInterTransitions | Int | The maximum number of inter-location transitions that can be taken within each "step". In Hybrid Automata semantics these transitions should be instantaneous and this aims to replicate that to some degree.<br/><br/> **Default:** `1` |
 | requireOneIntraTransitionPerTick | Boolean | Whether or not to require an intra-location transition (i.e. ODEs) within each "step". The evolution of ODEs is the only aspect of Hybrid Automata that should take any time.<br/><br/> **Default:** `false` |
+| ccodeSettings | [C Code Settings](#c-code-settings) | Settings specific to C code generation.<br/><br/> **Default:** A default instance of [C Settings](#c-settings). |
 
 #### Example
 
@@ -494,6 +495,11 @@ logging:
 parametrisationMethod: COMPILE_TIME
 maximumInterTransitions: 1
 requireOneIntraTransitionPerTick: false
+ccodeSettings:
+  additionalHeaders:
+    - math.h
+    - annot.h
+  loopAnnotation: ANNOT_MAXITER({bound});
 ```
 
 
@@ -557,6 +563,28 @@ An **enum** that represents the method used for parametrising the Hybrid Automat
 |---|---|
 | `COMPILE_TIME` | Parameters will be set at the point of code generation. A file will be created for each [Instance](#instance) which results in a larger code size, but potentially faster execution. |
 | `RUN_TIME` | Parameters will be set dynamically when the generated code is executed. Only one file will be created for each [Automata](#automata) and [Network](#network) which results in smaller code size, but likely slower execution. |
+
+
+
+### C Code Settings
+
+A set of options that are specific to C code generation.
+
+#### Fields
+
+| Name | Type | Description |
+|---|---|---|
+| additionalHeaders | String[] | A list of libraries that should also be included in generated files, may be used by custom functions or loop annotations.<br/><br/>**Default:** Empty |
+| loopAnnotation | String | In C code generation, all loops will be annotated with this string for declaring bounds, replacing `{bound}` with the actual loop bounds.<br/><br/> **Default:** `NULL` |
+
+#### Example
+
+```yaml
+additionalHeaders:
+  - math.h
+  - annot.h
+loopAnnotation: ANNOT_MAXITER({bound});
+```
 
 
 ## Example documents

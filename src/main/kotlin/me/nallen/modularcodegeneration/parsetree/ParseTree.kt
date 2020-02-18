@@ -159,7 +159,7 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
                                 // Create the ParseTreeItem that represents a Function Call
                                 FunctionCall(match.groupValues[1], functionArguments)
                             }
-                            catch(ex: IndexOutOfBoundsException) {
+                            catch(ex: Exception) {
                                 // This can happen if, for example, an empty argument is given to a function
                                 throw IllegalArgumentException("Unable to correctly parse function ${match.groupValues[1]} in $input")
                             }
@@ -197,6 +197,11 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
                     // Now add the current item onto the stack to be used by any subsequent operations
                     stack.add(item)
                 }
+            }
+            catch(ex: IndexOutOfBoundsException) {
+                // If this exception happens, it means that there weren't enough literals or variables in the formula
+                // and not every operator could be created
+                throw IllegalArgumentException("Incorrect number of arguments provided to ${operand.name}: $input. ")
             }
             catch(ex: IndexOutOfBoundsException) {
                 // If this exception happens, it means that there weren't enough literals or variables in the formula

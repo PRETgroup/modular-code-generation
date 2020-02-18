@@ -4,6 +4,12 @@
 #include <string.h>
 #include "config.h"
 
+{%- if config.ccodeSettings.additionalHeaders|count > 0 %}
+{% for additionalHeader in config.ccodeSettings.additionalHeaders %}
+#include <{{ additionalHeader }}>
+{%- endfor %}
+{%- endif %}
+
 #include "{{ item.include }}"
 
 {{ item.type }} {{ item.variable }};
@@ -23,6 +29,9 @@ int main(void) {
 
     unsigned int i = 0;
     for(i=1; i <= (SIMULATION_TIME / STEP_SIZE); i++) {
+{%- if config.ccodeSettings.hasLoopAnnotations %}
+        {{ item.loopAnnotation }}
+{%- endif %}
         {{ item.runFunction }}(&{{item.variable}});
 
         /* Logging */

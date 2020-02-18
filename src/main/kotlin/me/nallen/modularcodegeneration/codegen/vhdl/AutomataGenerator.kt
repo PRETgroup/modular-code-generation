@@ -144,42 +144,11 @@ object AutomataGenerator {
         // Iterate over every location that we have
         for(location in item.locations) {
             // Now to sort out all the transitions
-
-            // First, we start with the self-transition which uses the invariant for the guard
-            val transitionList = arrayListOf(
-                    TransitionObject(
-                            Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("", signalNameMap, functionParams)),
-                            ArrayList(),
-                            ArrayList(),
-                            location.name,
-                            Utils.createMacroName(item.name, location.name)
-                    )
-            )
-
-            // We want to keep track of signals that have been updated via flow so that we can use those signals when
-            // doing updates later
-            val updatedFlowMap = HashMap(signalNameMap)
-
-            // Each flow constraint will also be included in the self-transition, so let's add each of those
-            for((variable, ode) in location.flow) {
-                // Forward Euler is used to solve each ODE, so create the solution
-                val eulerSolution = Plus(Variable(variable), Multiply(ode, Variable("step_size")))
-                // And add it to the transition
-                transitionList.first().flow.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("", signalNameMap, functionParams))))
-
-                // Also keeping track of the updated signal
-                updatedFlowMap[variable] = Utils.createVariableName(variable, "update")
-            }
-
-            // Now we can add each update of the location to the self transition
-            for((variable, equation) in location.update) {
-                // Here, we use the updatedFlowMap from before to replace signal names if possible
-                transitionList.first().update.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("", updatedFlowMap, functionParams))))
-            }
+            val transitionList = ArrayList<TransitionObject>()
 
             //TODO: Saturation
 
-            // Now we can add all other transitions, so iterate over each of them
+            // First we can add all other transitions, so iterate over each of them
             for((_, toLocation, guard, update) in item.edges.filter{it.fromLocation == location.name }) {
                 // Create the transition
                 val transitionObject = TransitionObject(
@@ -197,6 +166,39 @@ object AutomataGenerator {
 
                 transitionList.add(transitionObject)
             }
+
+            // Now we want to add the self-transition which uses the invariant for the guard
+            val transitionObject = TransitionObject(
+                    Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("", signalNameMap, functionParams)),
+                    ArrayList(),
+                    ArrayList(),
+                    location.name,
+                    Utils.createMacroName(item.name, location.name)
+            )
+
+            // We want to keep track of signals that have been updated via flow so that we can use those signals when
+            // doing updates later
+            val updatedFlowMap = HashMap(signalNameMap)
+
+            // Each flow constraint will also be included in the self-transition, so let's add each of those
+            for((variable, ode) in location.flow) {
+                // Forward Euler is used to solve each ODE, so create the solution
+                val eulerSolution = Plus(Variable(variable), Multiply(ode, Variable("step_size")))
+                // And add it to the transition
+                transitionObject.flow.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("", signalNameMap, functionParams))))
+
+                // Also keeping track of the updated signal
+                updatedFlowMap[variable] = Utils.createVariableName(variable, "update")
+            }
+
+            // Now we can add each update of the location to the self transition
+            for((variable, equation) in location.update) {
+                // Here, we use the updatedFlowMap from before to replace signal names if possible
+                transitionObject.update.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("", updatedFlowMap, functionParams))))
+            }
+
+            // Add it to the list
+            transitionList.add(transitionObject)
 
             // Create an entry for it
             val locationObject = LocationObject(

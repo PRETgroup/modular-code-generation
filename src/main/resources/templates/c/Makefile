@@ -1,6 +1,6 @@
 TARGET = {{ target }}
 CC ?= gcc
-BASEDIR ?= $(shell pwd)
+BASEDIR ?= $(shell (pwd | sed 's/ /\\ /g'))
 CFLAGS ?= -c -O2 -Wall -I$(BASEDIR)
 LDFLAGS ?= -g -Wall
 LDLIBS ?= -lm
