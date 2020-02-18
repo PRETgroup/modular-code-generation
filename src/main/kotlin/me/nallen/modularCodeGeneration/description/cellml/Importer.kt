@@ -117,7 +117,7 @@ private val standardUnitsMap = mapOf(
                 BaseUnitInstance(BaseUnit("kilogram"), -1.0),
                 BaseUnitInstance(BaseUnit("meter"), -2.0),
                 BaseUnitInstance(BaseUnit("second"), 3.0),
-                BaseUnitInstance(BaseUnit("ampere"), -2.0))),
+                BaseUnitInstance(BaseUnit("ampere"), 2.0))),
         "sievert" to CompositeUnit(listOf(
                 BaseUnitInstance(BaseUnit("meter"), 2.0),
                 BaseUnitInstance(BaseUnit("second"), -2.0))),
