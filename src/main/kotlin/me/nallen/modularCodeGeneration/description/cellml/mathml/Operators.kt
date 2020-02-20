@@ -432,7 +432,7 @@ data class Minus(
 
     override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, variableMap: Map<String, String>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         if(argument2 == null) {
-            return argument1.generateString(variableUnits, unitsMap, variableMap, constantValues, name, withUnits)
+            return "-(${argument1.generateString(variableUnits, unitsMap, variableMap, constantValues, name, withUnits)})"
         }
 
         return "(${argument1.generateString(variableUnits, unitsMap, variableMap, constantValues, name, withUnits)}) - (${argument2.generateOffsetString(argument1, variableUnits, unitsMap, variableMap, constantValues, name, withUnits)})"
