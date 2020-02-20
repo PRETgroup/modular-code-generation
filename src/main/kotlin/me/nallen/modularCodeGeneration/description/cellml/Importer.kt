@@ -242,6 +242,7 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
     item.name = component.name
 
     variableMap[item.name] = HashMap()
+    val privateVariables = ArrayList<String>()
 
     val unitsMap = extractSimpleUnits(component.units, existingUnitsMap)
 
@@ -257,7 +258,7 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
             variablesMap.put(variable.name, variable.units)
         }
 
-        item.parseVariables(component.variables)
+        privateVariables.addAll(item.parseVariables(component.variables))
     }
 
     if(component.maths != null) {
@@ -314,6 +315,19 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
                         location.flow.put(variable.name, ParseTreeItem.generate(1 / timeUnit.multiply))
                     }
                 }
+            }
+        }
+    }
+
+    for(variable in privateVariables) {
+        val itemVariable = item.variables.firstOrNull { it.name == "${variable}_private" }
+        if(itemVariable != null) {
+            if(itemVariable.locality == Locality.EXTERNAL_INPUT) {
+                location.update[variable] = ParseTreeItem.generate("${variable}_private")
+            }
+            else if(itemVariable.locality == Locality.EXTERNAL_OUTPUT) {
+                location.update["${variable}_private"] = ParseTreeItem.generate(variable)
+
             }
         }
     }
@@ -384,27 +398,57 @@ private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>,
     return null
 }
 
-private fun HybridItem.parseVariables(variables: List<Variable>) {
+private fun HybridItem.parseVariables(variables: List<Variable>): List<String> {
+    val privateVariables = ArrayList<String>()
     for(variable in variables) {
         val name = variable.name
-
-        val locality = when(variable.publicInterface) {
-            InterfaceType.IN -> Locality.EXTERNAL_INPUT
-            InterfaceType.OUT -> Locality.EXTERNAL_OUTPUT
-            InterfaceType.NONE -> Locality.INTERNAL
-        }
 
         variableMap[this.name]!![name] = name
         if(this.variables.any { it.name.toLowerCase() == name.toLowerCase() }) {
             val count = this.variables.count { it.name.toLowerCase().startsWith(name.toLowerCase()) }
             variableMap[this.name]!![name] = "${name}${count}"
-
         }
+
+        val locality = getLocalityForInterfaceType(variable.publicInterface)
         this.variables.add(HybridVariable(variableMap[this.name]!![name]!!, VariableType.REAL, locality))
+
+        var hasPrivate = false
+        if(variable.publicInterface == InterfaceType.NONE && variable.privateInterface != InterfaceType.NONE) {
+            val privateLocality = getLocalityForInterfaceType(variable.privateInterface)
+            this.variables.add(HybridVariable("${variableMap[this.name]!![name]!!}_private", VariableType.REAL, privateLocality))
+
+            hasPrivate = true
+        }
+        else if(variable.publicInterface == InterfaceType.IN && variable.privateInterface == InterfaceType.OUT) {
+            val privateLocality = getLocalityForInterfaceType(variable.privateInterface)
+            this.variables.add(HybridVariable("${variableMap[this.name]!![name]!!}_private", VariableType.REAL, privateLocality))
+
+            hasPrivate = true
+        }
+        else if(variable.publicInterface == InterfaceType.OUT && variable.privateInterface == InterfaceType.IN) {
+            val privateLocality = getLocalityForInterfaceType(variable.privateInterface)
+            this.variables.add(HybridVariable("${variableMap[this.name]!![name]!!}_private", VariableType.REAL, privateLocality))
+
+            hasPrivate = true
+        }
+
+        if(hasPrivate) {
+            privateVariables.add(variableMap[this.name]!![name]!!)
+        }
 
         if(this is HybridAutomata)
             if(locality == Locality.EXTERNAL_OUTPUT || locality == Locality.INTERNAL)
                 this.init.valuations[variableMap[this.name]!![name]!!] = ParseTreeItem.generate(variable.initialValue)
+    }
+
+    return privateVariables
+}
+
+private fun getLocalityForInterfaceType(interfaceType: InterfaceType): Locality {
+    return when(interfaceType) {
+        InterfaceType.IN -> Locality.EXTERNAL_INPUT
+        InterfaceType.OUT -> Locality.EXTERNAL_OUTPUT
+        InterfaceType.NONE -> Locality.INTERNAL
     }
 }
 
@@ -423,26 +467,32 @@ private fun HybridNetwork.importConnections(connections: List<Connection>, compo
                     val encapsulation2 = encapsulationData[component2.name]
 
                     if(encapsulation1 != null && encapsulation2 != null) {
-                        val interface1 = if(component2.name == encapsulation1.parent || encapsulation1.siblingSet.contains(component2.name))
-                            variable1.publicInterface
+                        val (interface1, private1) = if(component2.name == encapsulation1.parent || encapsulation1.siblingSet.contains(component2.name))
+                            Pair(variable1.publicInterface, false)
                         else if(encapsulation1.encapsulationSet.contains(component2.name) && variable1.privateInterface != InterfaceType.NONE)
-                            variable1.privateInterface
+                            Pair(variable1.privateInterface, true)
                         else if(encapsulation1.encapsulationSet.contains(component2.name))
-                            variable1.publicInterface
+                            Pair(variable1.publicInterface, false)
                         else
-                            InterfaceType.NONE
+                            Pair(InterfaceType.NONE, false)
 
-                        val interface2 = if(component1.name == encapsulation2.parent || encapsulation2.siblingSet.contains(component1.name))
-                            variable2.publicInterface
+                        val (interface2, private2) = if(component1.name == encapsulation2.parent || encapsulation2.siblingSet.contains(component1.name))
+                            Pair(variable2.publicInterface, false)
                         else if(encapsulation2.encapsulationSet.contains(component1.name) && variable2.privateInterface != InterfaceType.NONE)
-                            variable2.privateInterface
+                            Pair(variable2.privateInterface, true)
                         else if(encapsulation2.encapsulationSet.contains(component1.name))
-                            variable2.publicInterface
+                            Pair(variable2.publicInterface, false)
                         else
-                            InterfaceType.NONE
+                            Pair(InterfaceType.NONE, false)
 
-                        val variable1corrected = variableMap[component1.name]?.get(variable1.name) ?:variable1.name
-                        val variable2corrected = variableMap[component2.name]?.get(variable2.name) ?:variable2.name
+                        var variable1corrected = variableMap[component1.name]?.get(variable1.name) ?:variable1.name
+                        var variable2corrected = variableMap[component2.name]?.get(variable2.name) ?:variable2.name
+
+                        if(private1)
+                            variable1corrected += "_private"
+
+                        if(private2)
+                            variable1corrected += "_private"
 
                         if(interface1 == InterfaceType.OUT && interface2 == InterfaceType.IN) {
                             val to = AutomataVariablePair(component2.name, variable2corrected)
