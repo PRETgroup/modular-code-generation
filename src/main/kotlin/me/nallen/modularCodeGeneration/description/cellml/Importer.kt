@@ -176,7 +176,12 @@ private fun extractSimpleUnits(units: List<Units>?, existingUnitsMap: Map<String
                         val baseUnits = subunit.getBaseUnits(unitsMap)
 
                         if(baseUnits is BaseUnit) {
-                            unitList.add(BaseUnitInstance(baseUnits, subunit.exponent))
+                            if(unitList.any { it.baseUnit.name == baseUnits.name }) {
+                                unitList.first { it.baseUnit.name == baseUnits.name }.exponent += subunit.exponent
+                            }
+                            else {
+                                unitList.add(BaseUnitInstance(baseUnits, subunit.exponent))
+                            }
                         }
                         else if(baseUnits is CompositeUnit) {
                             for((baseUnit, exponent) in baseUnits.baseUnits) {
