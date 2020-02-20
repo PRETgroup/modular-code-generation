@@ -70,6 +70,9 @@ data class Sine(var operandA: ParseTreeItem): ParseTreeItem("sine")
 data class Cosine(var operandA: ParseTreeItem): ParseTreeItem("cosine")
 data class Tangent(var operandA: ParseTreeItem): ParseTreeItem("tangent")
 
+data class Floor(var operandA: ParseTreeItem): ParseTreeItem("floor")
+data class Ceil(var operandA: ParseTreeItem): ParseTreeItem("ceil")
+
 // Also supported are variables, literals and constants
 data class Variable(var name: String, var value: ParseTreeItem? = null): ParseTreeItem("variable")
 data class Literal(var value: String): ParseTreeItem("literal")
@@ -183,6 +186,8 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
                     Operand.SINE -> Sine(stack[stack.size-1])
                     Operand.COSINE -> Cosine(stack[stack.size-1])
                     Operand.TANGENT -> Tangent(stack[stack.size-1])
+                    Operand.FLOOR -> Floor(stack[stack.size-1])
+                    Operand.CEIL -> Ceil(stack[stack.size-1])
                 }
 
                 // If we were able to extract an operator (i.e. it wasn't a bracket or function separator)
@@ -306,6 +311,8 @@ fun ParseTreeItem.getPrecedence(): Int {
         is Sine -> Operand.SINE
         is Cosine -> Operand.COSINE
         is Tangent -> Operand.TANGENT
+        is Floor -> Operand.FLOOR
+        is Ceil -> Operand.CEIL
     }
 
     // And now the precedence that corresponds to that operator
@@ -342,6 +349,8 @@ fun ParseTreeItem.getCommutative(): Boolean {
         is Sine -> Operand.SINE
         is Cosine -> Operand.COSINE
         is Tangent -> Operand.TANGENT
+        is Floor -> Operand.FLOOR
+        is Ceil -> Operand.CEIL
     }
 
     // And now whether or not that operator is commutative
@@ -391,6 +400,8 @@ fun ParseTreeItem.generateString(): String {
         is Sine -> return "sin(" + operandA.generateString() + ")"
         is Cosine -> return "cos(" + operandA.generateString() + ")"
         is Tangent -> return "tan(" + operandA.generateString() + ")"
+        is Floor -> return "floor(" + operandA.generateString() + ")"
+        is Ceil -> return "ceil(" + operandA.generateString() + ")"
     }
 }
 
@@ -424,6 +435,8 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
         is Sine -> arrayOf(operandA)
         is Cosine -> arrayOf(operandA)
         is Tangent -> arrayOf(operandA)
+        is Floor -> arrayOf(operandA)
+        is Ceil -> arrayOf(operandA)
     }
 }
 
@@ -471,6 +484,8 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         is Sine -> VariableType.REAL
         is Cosine -> VariableType.REAL
         is Tangent -> VariableType.REAL
+        is Floor -> VariableType.REAL
+        is Ceil -> VariableType.REAL
     }
 }
 
@@ -733,6 +748,8 @@ fun ParseTreeItem.getExpectedTypes(functionArguments: Map<String, List<VariableT
         is Sine -> arrayOf(VariableType.REAL)
         is Cosine -> arrayOf(VariableType.REAL)
         is Tangent -> arrayOf(VariableType.REAL)
+        is Floor -> arrayOf(VariableType.REAL)
+        is Ceil -> arrayOf(VariableType.REAL)
     }
 }
 

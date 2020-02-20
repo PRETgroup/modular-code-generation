@@ -19,6 +19,7 @@ internal enum class Operand {
     PLUS, MINUS, MULTIPLY, DIVIDE, NEGATIVE,
     POWER, SQUARE_ROOT, EXPONENTIAL,
     SINE, COSINE, TANGENT,
+    FLOOR, CEIL,
     SCIENTIFIC_NOTATION_NEGATIVE, SCIENTIFIC_NOTATION_POSITIVE
 }
 
@@ -65,6 +66,8 @@ internal fun getOperator(operand: Operand): Operator {
         Operand.SINE -> Operator("sin", 1, Associativity.RIGHT, 3, true)
         Operand.COSINE -> Operator("cos", 1, Associativity.RIGHT, 3, true)
         Operand.TANGENT -> Operator("tan", 1, Associativity.RIGHT, 3, true)
+        Operand.FLOOR -> Operator("floor", 1, Associativity.RIGHT, 3, true)
+        Operand.CEIL -> Operator("floor", 1, Associativity.RIGHT, 3, true)
     }
 }
 

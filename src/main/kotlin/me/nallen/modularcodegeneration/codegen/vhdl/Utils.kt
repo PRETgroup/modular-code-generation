@@ -356,6 +356,8 @@ object Utils {
             is Sine -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
             is Cosine -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
             is Tangent -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
+            is Floor -> throw NotImplementedError("Floor function is currently not supported in VHDL Generation")
+            is Ceil -> throw NotImplementedError("Ceil function is currently not supported in VHDL Generation")
         }
     }
 
