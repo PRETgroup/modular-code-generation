@@ -65,6 +65,7 @@ data class Negative(var operandA: ParseTreeItem): ParseTreeItem("negative")
 data class Power(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("power")
 data class SquareRoot(var operandA: ParseTreeItem): ParseTreeItem("squareRoot")
 data class Exponential(var operandA: ParseTreeItem): ParseTreeItem("exponential")
+data class Ln(var operandA: ParseTreeItem): ParseTreeItem("naturalLog")
 
 data class Sine(var operandA: ParseTreeItem): ParseTreeItem("sine")
 data class Cosine(var operandA: ParseTreeItem): ParseTreeItem("cosine")
@@ -181,6 +182,7 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
                     Operand.DIVIDE -> Divide(stack[stack.size-2], stack[stack.size-1])
                     Operand.SQUARE_ROOT -> SquareRoot(stack[stack.size-1])
                     Operand.EXPONENTIAL -> Exponential(stack[stack.size-1])
+                    Operand.LN -> Ln(stack[stack.size-1])
                     Operand.SCIENTIFIC_NOTATION_NEGATIVE -> Literal(String.format("%sE-%s", stack[stack.size-2].getString(), stack[stack.size-1].getString()))
                     Operand.SCIENTIFIC_NOTATION_POSITIVE -> Literal(String.format("%sE+%s", stack[stack.size-2].getString(), stack[stack.size-1].getString()))
                     Operand.SINE -> Sine(stack[stack.size-1])
@@ -308,6 +310,7 @@ fun ParseTreeItem.getPrecedence(): Int {
         is Divide -> Operand.DIVIDE
         is SquareRoot -> Operand.SQUARE_ROOT
         is Exponential -> Operand.EXPONENTIAL
+        is Ln -> Operand.LN
         is Sine -> Operand.SINE
         is Cosine -> Operand.COSINE
         is Tangent -> Operand.TANGENT
@@ -346,6 +349,7 @@ fun ParseTreeItem.getCommutative(): Boolean {
         is Divide -> Operand.DIVIDE
         is SquareRoot -> Operand.SQUARE_ROOT
         is Exponential -> Operand.EXPONENTIAL
+        is Ln -> Operand.LN
         is Sine -> Operand.SINE
         is Cosine -> Operand.COSINE
         is Tangent -> Operand.TANGENT
@@ -397,6 +401,7 @@ fun ParseTreeItem.generateString(): String {
         is Divide -> return this.padOperand(operandA) + " / " + this.padOperand(operandB)
         is SquareRoot -> return "sqrt(" + operandA.generateString() + ")"
         is Exponential -> return "exp(" + operandA.generateString() + ")"
+        is Ln -> return "ln(" + operandA.generateString() + ")"
         is Sine -> return "sin(" + operandA.generateString() + ")"
         is Cosine -> return "cos(" + operandA.generateString() + ")"
         is Tangent -> return "tan(" + operandA.generateString() + ")"
@@ -432,6 +437,7 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
         is Divide -> arrayOf(operandA, operandB)
         is SquareRoot -> arrayOf(operandA)
         is Exponential -> arrayOf(operandA)
+        is Ln -> arrayOf(operandA)
         is Sine -> arrayOf(operandA)
         is Cosine -> arrayOf(operandA)
         is Tangent -> arrayOf(operandA)
@@ -478,6 +484,7 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         is Negative -> VariableType.REAL
         is SquareRoot -> VariableType.REAL
         is Exponential -> VariableType.REAL
+        is Ln -> VariableType.REAL
         is Variable -> knownVariables[name] ?: VariableType.ANY // If we know it, otherwise ANY
         is Literal -> getTypeFromLiteral(value) ?: VariableType.ANY // We try to get the type from the value
         is Constant -> name.getType()
@@ -560,6 +567,7 @@ fun ParseTreeItem.evaluateReal(var_map: Map<String, Literal> = HashMap()): Doubl
         is Negative -> -1 * operandA.evaluateReal(var_map)
         is SquareRoot -> Math.sqrt(operandA.evaluateReal(var_map))
         is Exponential -> Math.exp(operandA.evaluateReal(var_map))
+        is Ln -> Math.log(operandA.evaluateReal(var_map))
         is Sine -> Math.sin(operandA.evaluateReal(var_map))
         is Cosine -> Math.cos(operandA.evaluateReal(var_map))
         is Tangent -> Math.tan(operandA.evaluateReal(var_map))
@@ -742,6 +750,7 @@ fun ParseTreeItem.getExpectedTypes(functionArguments: Map<String, List<VariableT
         is Negative -> arrayOf(VariableType.REAL)
         is SquareRoot -> arrayOf(VariableType.REAL)
         is Exponential -> arrayOf(VariableType.REAL)
+        is Ln -> arrayOf(VariableType.REAL)
         is Variable -> arrayOf()
         is Literal -> arrayOf()
         is Constant -> arrayOf()

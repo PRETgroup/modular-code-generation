@@ -262,6 +262,7 @@ object Utils {
             is Divide -> padOperand(item, item.operandA, prefixData) + " / " + padOperand(item, item.operandB, prefixData)
             is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Exponential -> "exp(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+            is Ln -> "log(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Sine -> "sin(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Cosine -> "cos(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Tangent -> "tan(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"

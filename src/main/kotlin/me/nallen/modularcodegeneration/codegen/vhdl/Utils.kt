@@ -353,6 +353,7 @@ object Utils {
             is Divide -> "FP_DIV(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
             is SquareRoot -> throw NotImplementedError("Square Root is currently not supported in VHDL Generation")
             is Exponential -> throw NotImplementedError("Exponential is currently not supported in VHDL Generation")
+            is Ln -> throw NotImplementedError("Ln is currently not supported in VHDL Generation")
             is Sine -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
             is Cosine -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
             is Tangent -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
