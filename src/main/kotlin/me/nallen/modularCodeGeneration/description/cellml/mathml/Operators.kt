@@ -533,7 +533,10 @@ data class Power(
             throw Exception("Argument 2 of <${operation.getIdentifier()}> is expected to be dimensionless")
         }
 
-        return leftUnits.createToPowerOf(right.evaluate(constantValues))
+        if(!CompositeUnit().canMapTo(leftUnits))
+            return leftUnits.createToPowerOf(right.evaluate(constantValues))
+
+        return CompositeUnit()
     }
 }
 
