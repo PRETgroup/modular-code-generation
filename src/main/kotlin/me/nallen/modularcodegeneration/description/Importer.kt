@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import me.nallen.modularcodegeneration.codegen.Configuration
 import me.nallen.modularcodegeneration.hybridautomata.*
 import java.io.File
@@ -46,9 +48,9 @@ class Importer {
             }
 
             // Otherwise, let's try it as a CellML file
-            val xmlMapper = XmlMapper()
-            xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES,false);
-            val cellMLTree = xmlMapper.registerModule(KotlinModule()).readValue(file, CellMLModel::class.java)
+            val xmlMapper = XmlMapper().registerModule(KotlinModule())
+            xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES, false)
+            val cellMLTree = xmlMapper.readValue(file, CellMLModel::class.java)
 
             // Check if we could actually import it as an XML file
             if(cellMLTree != null) {

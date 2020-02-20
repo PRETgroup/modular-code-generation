@@ -1,50 +1,65 @@
 package me.nallen.modularcodegeneration.description.cellml
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonMerge
 import com.fasterxml.jackson.annotation.JsonProperty
-import java.util.ArrayList
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
+import java.util.*
 import kotlin.math.pow
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "model")
-data class Model(
+class Model constructor(
         @JacksonXmlProperty(isAttribute = true)
-        val name: String,
+        val name: String
+) {
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @JacksonXmlProperty
+    @JsonMerge
+    val units: List<Units>? = null
 
-        @JacksonXmlElementWrapper(useWrapping = false)
-        val units: List<Units>?,
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @JacksonXmlProperty(localName = "component")
+    @JsonMerge
+    val components: List<Component>? = null
 
-        @JacksonXmlElementWrapper(useWrapping = false)
-        @JacksonXmlProperty(localName = "component")
-        val components: List<Component>?,
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @JacksonXmlProperty(localName = "connection")
+    @JsonMerge
+    val connections: List<Connection>? = null
 
-        @JacksonXmlElementWrapper(useWrapping = false)
-        @JacksonXmlProperty(localName = "connection")
-        val connections: List<Connection>?
-)
+    override fun toString(): String {
+        return "Model(name='$name', units=$units, components=$components, connections=$connections)"
+    }
+
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "units")
-data class Units(
+class Units constructor(
         @JacksonXmlProperty(isAttribute = true)
         val name: String,
 
         @JacksonXmlProperty(isAttribute = true, localName = "base_units")
-        val baseUnits: String = "no",
+        val baseUnits: String = "no"
+) {
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @JacksonXmlProperty(localName = "unit")
+    @JsonMerge
+    var subunits: List<Unit>? = null
 
-        @JacksonXmlElementWrapper(useWrapping = false)
-        @JacksonXmlProperty(localName = "unit")
-        val subunits: List<Unit>?
-)
+    override fun toString(): String {
+        return "Units(name='$name', baseUnits='$baseUnits', subunits=$subunits)"
+    }
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "unit")
-data class Unit(
+class Unit constructor(
         @JacksonXmlProperty(isAttribute = true)
         val units: String,
 
@@ -74,33 +89,45 @@ data class Unit(
             }
         }
     }
+
+    override fun toString(): String {
+        return "Unit(units='$units', offset=$offset, prefix=$prefix, exponent=$exponent, multiplier=$multiplier)"
+    }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "component")
-data class Component(
+class Component constructor(
         @JacksonXmlProperty(isAttribute = true)
-        val name: String,
+        val name: String
+) {
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @JsonMerge
+    val units: List<Units>? = null
 
-        @JacksonXmlElementWrapper(useWrapping = false)
-        val units: List<Units>?,
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @JacksonXmlProperty(localName = "variable")
+    @JsonMerge
+    val variables: List<Variable>? = null
 
-        @JacksonXmlElementWrapper(useWrapping = false)
-        @JacksonXmlProperty(localName = "variable")
-        val variables: List<Variable>?,
+    /*@JacksonXmlElementWrapper(useWrapping = false)
+    @JacksonXmlProperty(localName = "reaction")
+    @JsonMerge
+    var reactions: List<Reaction>?*/
 
-        /*@JacksonXmlElementWrapper(useWrapping = false)
-        @JacksonXmlProperty(localName = "reaction")
-        var reactions: List<Reaction>?*/
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @JacksonXmlProperty(namespace = "http://www.w3.org/1998/Math/MathML", localName = "math")
+    @JsonMerge
+    val maths: List<Math>? = null
 
-        @JacksonXmlElementWrapper(useWrapping = false)
-        @JacksonXmlProperty(namespace = "http://www.w3.org/1998/Math/MathML", localName = "math")
-        val maths: List<Math>?
-)
+    override fun toString(): String {
+        return "Component(name='$name', units=$units, variables=$variables, maths=$maths)"
+    }
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "variable")
-data class Variable(
+class Variable constructor(
         @JacksonXmlProperty(isAttribute = true)
         val name: String,
 
@@ -115,38 +142,55 @@ data class Variable(
 
         @JacksonXmlProperty(isAttribute = true, localName = "private_interface")
         val privateInterface: InterfaceType = InterfaceType.NONE
-)
+) {
+    override fun toString(): String {
+        return "Variable(name='$name', units='$units', initialValue=$initialValue, publicInterface=$publicInterface, privateInterface=$privateInterface)"
+    }
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "connection")
-data class Connection(
+class Connection constructor(
         @JacksonXmlProperty(localName = "map_components")
         val components: MapComponents,
 
         @JacksonXmlElementWrapper(useWrapping = false)
         @JacksonXmlProperty(localName = "map_variables")
+        @JsonMerge
         val variables: List<MapVariables>
-)
+) {
+    override fun toString(): String {
+        return "Connection(components=$components, variables=$variables)"
+    }
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "map_components")
-data class MapComponents(
+class MapComponents constructor(
         @JacksonXmlProperty(isAttribute = true, localName = "component_1")
         val component1: String,
 
         @JacksonXmlProperty(isAttribute = true, localName = "component_2")
         val component2: String
-)
+) {
+    override fun toString(): String {
+        return "MapComponents(component1='$component1', component2='$component2')"
+    }
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "map_variables")
-data class MapVariables(
+class MapVariables constructor(
         @JacksonXmlProperty(isAttribute = true, localName = "variable_1")
         val variable1: String,
 
         @JacksonXmlProperty(isAttribute = true, localName = "variable_2")
         val variable2: String
-)
+) {
+    override fun toString(): String {
+        return "MapVariables(variable1='$variable1', variable2='$variable2')"
+    }
+}
 
 
 

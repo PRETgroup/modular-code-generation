@@ -34,9 +34,9 @@ class Importer {
             if(!file.exists() || !file.isFile)
                 throw Exception("Whoops")
 
-            val xmlMapper = XmlMapper()
-            xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES,false);
-            val cellMLTree: Model? = xmlMapper.registerModule(KotlinModule()).readValue(file, Model::class.java)
+            val xmlMapper = XmlMapper().registerModule(KotlinModule())
+            xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES, false)
+            val cellMLTree: Model? = xmlMapper.readValue(file, Model::class.java)
 
             // Check if we could actually import it as an XML file
             if(cellMLTree == null) {
@@ -172,7 +172,7 @@ private fun extractSimpleUnits(units: List<Units>?, existingUnitsMap: Map<String
                     val unitList = ArrayList<BaseUnitInstance>()
                     var multiply = 1.0
                     var offset = 0.0
-                    for(subunit in unit.subunits) {
+                    for(subunit in unit.subunits!!) {
                         val baseUnits = subunit.getBaseUnits(unitsMap)
 
                         if(baseUnits is BaseUnit) {
@@ -276,16 +276,14 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
 
             val existingUnit = component.variables?.firstOrNull { it.name == variable.name }?.units
             if(existingUnit != null) {
-                val unit = Units(
-                        name="time_rate",
-                        subunits=listOf(
-                                Unit(
-                                        units=existingUnit
-                                ),
-                                Unit(
-                                        units="second",
-                                        exponent=-1.0
-                                )
+                val unit = Units("time_rate")
+                unit.subunits=listOf(
+                        Unit(
+                                units=existingUnit
+                        ),
+                        Unit(
+                                units="second",
+                                exponent=-1.0
                         )
                 )
 
