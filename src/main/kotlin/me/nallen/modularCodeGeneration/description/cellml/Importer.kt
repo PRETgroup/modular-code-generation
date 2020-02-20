@@ -446,11 +446,11 @@ private fun HybridNetwork.importConnections(connections: List<Connection>, compo
 
                         if(interface1 == InterfaceType.OUT && interface2 == InterfaceType.IN) {
                             val to = AutomataVariablePair(component2.name, variable2corrected)
-                            val from = component2.name + "." + variable1corrected
+                            val from = component1.name + "." + variable1corrected
                             this.ioMapping[to] = ParseTreeItem.generate(from)
                         }
                         else if(interface1 == InterfaceType.IN && interface2 == InterfaceType.OUT) {
-                            val to = AutomataVariablePair(component2.name, variable1corrected)
+                            val to = AutomataVariablePair(component1.name, variable1corrected)
                             val from = component2.name + "." + variable2corrected
                             this.ioMapping[to] = ParseTreeItem.generate(from)
                         }
