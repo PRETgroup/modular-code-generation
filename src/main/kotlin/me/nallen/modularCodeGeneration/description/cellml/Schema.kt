@@ -370,7 +370,12 @@ open class SimpleUnit {
         var offset = 0.0
         for(units in listOf(this, other)) {
             if(units is BaseUnit) {
-                unitList.add(BaseUnitInstance(units, 1.0))
+                if(unitList.any { it.baseUnit.name == units.name }) {
+                    unitList.first { it.baseUnit.name == units.name }.exponent += 1.0
+                }
+                else {
+                    unitList.add(BaseUnitInstance(units, 1.0))
+                }
             }
             else if(units is CompositeUnit) {
                 for((baseUnit, exponent) in units.baseUnits) {
