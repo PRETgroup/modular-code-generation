@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
@@ -36,8 +37,8 @@ class Importer {
                 throw FileNotFoundException("Unable to find the requested file at $path")
 
             // Now we want to try read the file as a YAML file...
-            val yamlMapper = ObjectMapper(YAMLFactory())
-            val yamlTree = yamlMapper.registerModule(KotlinModule()).readTree(file)
+            val yamlMapper = YAMLMapper().registerModule(KotlinModule())
+            val yamlTree = yamlMapper.readTree(file)
 
             // Check if we could actually import it as a YAML file
             if(yamlTree != null) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.description.cellml.Importer.Factory.variableMap
 import me.nallen.modularcodegeneration.description.cellml.mathml.*
 import me.nallen.modularcodegeneration.hybridautomata.*
 import me.nallen.modularcodegeneration.logging.Logger
@@ -43,10 +44,13 @@ class Importer {
                 throw Exception("Invalid CellML file provided")
             }
 
+            variableMap = HashMap()
             val network = createHybridNetwork(cellMLTree, standardUnitsMap)
 
             return Pair(network, Configuration())
         }
+
+        var variableMap = HashMap<String, HashMap<String, String>>()
     }
 }
 
@@ -237,6 +241,8 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
 
     item.name = component.name
 
+    variableMap[item.name] = HashMap()
+
     val unitsMap = extractSimpleUnits(component.units, existingUnitsMap)
 
     val location = Location("q0")
@@ -257,7 +263,7 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
     if(component.maths != null) {
         for(math in component.maths) {
             for(mathItem in math.items) {
-                val result = parseMathEquation(mathItem, variablesMap, unitsMap)
+                val result = parseMathEquation(mathItem, variablesMap, unitsMap, variableMap[item.name]!!)
 
                 if(result != null) {
                     if(result.isFlow)
@@ -326,7 +332,7 @@ data class MathParse(
         val functions: Map<String, Pair<Program, List<String>>> = mapOf()
 )
 
-private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>, unitsMap: Map<String, SimpleUnit>): MathParse? {
+private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>, unitsMap: Map<String, SimpleUnit>, variableMap: HashMap<String, String>): MathParse? {
     if(item !is Apply)
         return null
 
@@ -343,24 +349,28 @@ private fun parseMathEquation(item: MathItem, variablesMap: Map<String, String>,
     }
 
     if(arg0 is Ci) {
+        val variable = variableMap[arg0.name]?:arg0.name
+
         val functions = HashMap<String, Pair<Program, List<String>>>()
-        for((name, piecewise) in item.arguments[1].extractAllPiecewise(variablesMap, unitsMap, name =arg0.name)) {
+        for((name, piecewise) in item.arguments[1].extractAllPiecewise(variablesMap, unitsMap, variableMap, name=variable)) {
             functions.put(name, Pair(Program.generate(piecewise.first), piecewise.second))
         }
 
-        return MathParse(arg0.name, ParseTreeItem.generate(item.arguments[1].generateOffsetString(arg0, variablesMap, unitsMap, name=arg0.name)), false, functions)
+        return MathParse(variable, ParseTreeItem.generate(item.arguments[1].generateOffsetString(arg0, variablesMap, unitsMap, variableMap, name=variable)), false, functions)
     }
 
     if(arg0 is Diff) {
         try {
             if (arg0.bvar.variable.name == "time" && (arg0.bvar.degree == null || arg0.bvar.degree.evaluate() == 1.0)) {
                 if(arg0.argument is Ci) {
+                    val variable = variableMap[arg0.argument.name]?:arg0.argument.name
+
                     val functions = HashMap<String, Pair<Program, List<String>>>()
-                    for((name, piecewise) in item.arguments[1].extractAllPiecewise(variablesMap, unitsMap, name =arg0.argument.name)) {
+                    for((name, piecewise) in item.arguments[1].extractAllPiecewise(variablesMap, unitsMap, variableMap, name=variable)) {
                         functions.put(name, Pair(Program.generate(piecewise.first), piecewise.second))
                     }
 
-                    return MathParse(arg0.argument.name, ParseTreeItem.generate(item.arguments[1].generateOffsetString(arg0, variablesMap, unitsMap, name=arg0.argument.name)), true, functions)
+                    return MathParse(variable, ParseTreeItem.generate(item.arguments[1].generateOffsetString(arg0, variablesMap, unitsMap, variableMap, name=variable)), true, functions)
                 }
 
             }
@@ -384,11 +394,17 @@ private fun HybridItem.parseVariables(variables: List<Variable>) {
             InterfaceType.NONE -> Locality.INTERNAL
         }
 
-        this.variables.add(HybridVariable(name, VariableType.REAL, locality))
+        variableMap[this.name]!![name] = name
+        if(this.variables.any { it.name.toLowerCase() == name.toLowerCase() }) {
+            val count = this.variables.count { it.name.toLowerCase().startsWith(name.toLowerCase()) }
+            variableMap[this.name]!![name] = "${name}${count}"
+
+        }
+        this.variables.add(HybridVariable(variableMap[this.name]!![name]!!, VariableType.REAL, locality))
 
         if(this is HybridAutomata)
             if(locality == Locality.EXTERNAL_OUTPUT || locality == Locality.INTERNAL)
-                this.init.valuations[name] = ParseTreeItem.generate(variable.initialValue)
+                this.init.valuations[variableMap[this.name]!![name]!!] = ParseTreeItem.generate(variable.initialValue)
     }
 }
 
@@ -425,27 +441,30 @@ private fun HybridNetwork.importConnections(connections: List<Connection>, compo
                         else
                             InterfaceType.NONE
 
+                        val variable1corrected = variableMap[component1.name]?.get(variable1.name) ?:variable1.name
+                        val variable2corrected = variableMap[component2.name]?.get(variable2.name) ?:variable2.name
+
                         if(interface1 == InterfaceType.OUT && interface2 == InterfaceType.IN) {
-                            val to = AutomataVariablePair(connection.components.component2, mapping.variable2)
-                            val from = connection.components.component1 + "." + mapping.variable1
+                            val to = AutomataVariablePair(component2.name, variable2corrected)
+                            val from = component2.name + "." + variable1corrected
                             this.ioMapping[to] = ParseTreeItem.generate(from)
                         }
                         else if(interface1 == InterfaceType.IN && interface2 == InterfaceType.OUT) {
-                            val to = AutomataVariablePair(connection.components.component1, mapping.variable1)
-                            val from = connection.components.component2 + "." + mapping.variable2
+                            val to = AutomataVariablePair(component2.name, variable1corrected)
+                            val from = component2.name + "." + variable2corrected
                             this.ioMapping[to] = ParseTreeItem.generate(from)
                         }
                         else {
-                            Logger.error("Unable to map variables '${connection.components.component1}.${mapping.variable1}' to '${connection.components.component2}.${mapping.variable2}'")
+                            Logger.error("Unable to map variables '${component1.name}.${variable1.name}' to '${component2.name}.${variable2.name}'")
                         }
                     }
                 }
                 else {
                     if(variable1 == null)
-                        Logger.error("Unable to find variable ${mapping.variable1} in ${connection.components.component1}")
+                        Logger.error("Unable to find variable ${mapping.variable1} in ${component1.name}")
 
                     if(variable2 == null)
-                        Logger.error("Unable to find variable ${mapping.variable2} in ${connection.components.component2}")
+                        Logger.error("Unable to find variable ${mapping.variable2} in ${component2.name}")
                 }
             }
             else {
