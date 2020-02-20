@@ -9,6 +9,7 @@ import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.Literal
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
 import me.nallen.modularcodegeneration.parsetree.VariableDeclaration
+import me.nallen.modularcodegeneration.parsetree.getOperationResultType
 import me.nallen.modularcodegeneration.utils.getRelativePath
 import java.io.File
 import java.io.FileNotFoundException
@@ -295,6 +296,15 @@ private fun HybridAutomata.loadInitialisation(init: Initialisation?) {
 
         // And load all the initial valuations
         this.init.valuations.loadParseTreeItems(init.valuations)
+
+        val variableTypes = variables.map { Pair(it.name, it.type) }.toMap()
+        val functionTypes = functions.map { Pair(it.name, it.returnType) }.toMap()
+
+        // Check for any variables that we could estimate type from initialisation
+        for(variable in this.variables.filter { it.type == me.nallen.modularcodegeneration.parsetree.VariableType.ANY && this.init.valuations.containsKey(it.name) }) {
+            val valuation = this.init.valuations[variable.name]!!
+            variable.type = valuation.getOperationResultType(variableTypes, functionTypes)
+        }
     }
 }
 
