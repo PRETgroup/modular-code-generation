@@ -265,8 +265,8 @@ object Utils {
             is Sine -> "sin(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Cosine -> "cos(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Tangent -> "tan(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
-            is Floor -> throw NotImplementedError("Floor function is currently not supported in C Generation")
-            is Ceil -> throw NotImplementedError("Ceil function is currently not supported in C Generation")
+            is Floor -> "floor(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+            is Ceil -> "ceil(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
         }
     }
 
