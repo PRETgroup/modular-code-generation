@@ -79,26 +79,27 @@ enum class Operation {
 }
 
 sealed class MathItem {
-    abstract fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double> = mapOf(), name: String? = null): String
+    abstract fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double> = mapOf(), name: String? = null, withUnits: Boolean = true): String
     abstract fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double> = mapOf()): SimpleUnit
     abstract fun evaluate(variableValues: Map<String, Double> = mapOf()): Double
 
-    fun generateOffsetString(base: MathItem, variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double> = mapOf(), name: String? = null): String {
-        val (mult, offset) = base.calculateUnits(variableUnits, unitsMap, constantValues).getDifferenceTo(this.calculateUnits(variableUnits, unitsMap, constantValues))
-                ?: throw Exception("Unable to get mapping between arguments for <???>")
+    fun generateOffsetString(base: MathItem, variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double> = mapOf(), name: String? = null, withUnits: Boolean = true): String {
+        if(withUnits) {
+            val (mult, offset) = base.calculateUnits(variableUnits, unitsMap, constantValues).getDifferenceTo(this.calculateUnits(variableUnits, unitsMap, constantValues))
+                    ?: throw Exception("Unable to get mapping between arguments for <???>")
 
-        if(mult != 1.0 && offset != 0.0) {
-            return "(${this.generateString(variableUnits, unitsMap, constantValues, name)}) * $mult + $offset"
+            if(mult != 1.0 && offset != 0.0) {
+                return "(${this.generateString(variableUnits, unitsMap, constantValues, name, withUnits)}) * $mult + $offset"
+            }
+            else if(mult != 1.0) {
+                return "(${this.generateString(variableUnits, unitsMap, constantValues, name, withUnits)}) * $mult"
+            }
+            else if(offset != 0.0) {
+                return "(${this.generateString(variableUnits, unitsMap, constantValues, name, withUnits)}) + $offset"
+            }
         }
-        else if(mult != 1.0) {
-            return "(${this.generateString(variableUnits, unitsMap, constantValues, name)}) * $mult"
-        }
-        else if(offset != 0.0) {
-            return "(${this.generateString(variableUnits, unitsMap, constantValues, name)}) + $offset"
-        }
-        else {
-            return this.generateString(variableUnits, unitsMap, constantValues, name)
-        }
+
+        return this.generateString(variableUnits, unitsMap, constantValues, name, withUnits)
     }
 
     abstract fun extractAllVariables(): List<String>
@@ -110,7 +111,7 @@ sealed class Apply(
         open val id: String?,
         open val operation: Operation
 ): MathItem() {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         TODO("generateString <${operation.getIdentifier()}>")
     }
 
@@ -251,16 +252,16 @@ data class Gt(
         override val id: String?,
         override val arguments: List<MathItem>
 ): NAryOperation(id, Operation.GT, arguments) {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         if(arguments.isEmpty())
             return ""
 
         if(arguments.size != 2)
             throw Exception("Unable to generate string for <${operation.getIdentifier()}> with ${arguments.size} arguments")
 
-        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name)})"
+        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
         for(i in 1 until arguments.size) {
-            str += " > (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name)})"
+            str += " > (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name, withUnits)})"
         }
 
         return str
@@ -284,16 +285,16 @@ data class Lt(
         override val id: String?,
         override val arguments: List<MathItem>
 ): NAryOperation(id, Operation.LT, arguments) {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         if(arguments.isEmpty())
             return ""
 
         if(arguments.size != 2)
             throw Exception("Unable to generate string for <${operation.getIdentifier()}> with ${arguments.size} arguments")
 
-        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name)})"
+        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
         for(i in 1 until arguments.size) {
-            str += " < (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name)})"
+            str += " < (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name, withUnits)})"
         }
 
         return str
@@ -318,16 +319,16 @@ data class Geq(
         override val id: String?,
         override val arguments: List<MathItem>
 ): NAryOperation(id, Operation.GEQ, arguments) {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         if(arguments.isEmpty())
             return ""
 
         if(arguments.size != 2)
             throw Exception("Unable to generate string for <${operation.getIdentifier()}> with ${arguments.size} arguments")
 
-        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name)})"
+        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
         for(i in 1 until arguments.size) {
-            str += " >= (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name)})"
+            str += " >= (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name, withUnits)})"
         }
 
         return str
@@ -352,16 +353,16 @@ data class Leq(
         override val id: String?,
         override val arguments: List<MathItem>
 ): NAryOperation(id, Operation.LEQ, arguments) {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         if(arguments.isEmpty())
             return ""
 
         if(arguments.size != 2)
             throw Exception("Unable to generate string for <${operation.getIdentifier()}> with ${arguments.size} arguments")
 
-        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name)})"
+        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
         for(i in 1 until arguments.size) {
-            str += " <= (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name)})"
+            str += " <= (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name, withUnits)})"
         }
 
         return str
@@ -386,13 +387,13 @@ data class Plus(
         override val id: String?,
         override val arguments: List<MathItem>
 ): NAryOperation(id, Operation.PLUS, arguments) {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         if(arguments.isEmpty())
             return ""
 
-        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name)})"
+        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
         for(i in 1 until arguments.size) {
-            str += " + (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name)})"
+            str += " + (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name, withUnits)})"
         }
 
         return str
@@ -429,12 +430,12 @@ data class Minus(
         }
     }
 
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         if(argument2 == null) {
-            return argument1.generateString(variableUnits, unitsMap, constantValues, name)
+            return argument1.generateString(variableUnits, unitsMap, constantValues, name, withUnits)
         }
 
-        return "(${argument1.generateString(variableUnits, unitsMap, constantValues, name)}) - (${argument2.generateOffsetString(argument1, variableUnits, unitsMap, constantValues, name)})"
+        return "(${argument1.generateString(variableUnits, unitsMap, constantValues, name, withUnits)}) - (${argument2.generateOffsetString(argument1, variableUnits, unitsMap, constantValues, name, withUnits)})"
     }
 
     override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
@@ -471,13 +472,13 @@ data class Times(
         override val id: String?,
         override val arguments: List<MathItem>
 ): NAryOperation(id, Operation.TIMES, arguments) {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         if(arguments.isEmpty())
             return ""
 
-        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name)})"
+        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
         for(i in 1 until arguments.size) {
-            str += " * (${arguments[i].generateString(variableUnits, unitsMap, constantValues, name)})"
+            str += " * (${arguments[i].generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
         }
 
         return str
@@ -503,8 +504,8 @@ data class Divide(
         override val left: MathItem,
         override val right: MathItem
 ): BinaryOperation(id, Operation.DIVIDE, left, right) {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
-        return "(${left.generateString(variableUnits, unitsMap, constantValues, name)}) / (${right.generateString(variableUnits, unitsMap, constantValues, name)})"
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
+        return "(${left.generateString(variableUnits, unitsMap, constantValues, name, withUnits)}) / (${right.generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
     }
 
     override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
@@ -520,8 +521,8 @@ data class Power(
         override val left: MathItem,
         override val right: MathItem
 ): BinaryOperation(id, Operation.POWER, left, right) {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
-        return "pow(${left.generateString(variableUnits, unitsMap, constantValues, name)}, ${right.generateString(variableUnits, unitsMap, constantValues, name)})"
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
+        return "pow(${left.generateString(variableUnits, unitsMap, constantValues, name, withUnits)}, ${right.generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
     }
 
     override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
@@ -533,6 +534,67 @@ data class Power(
         }
 
         return leftUnits.createToPowerOf(right.evaluate(constantValues))
+    }
+}
+
+data class Root(
+        override val id: String?,
+        val inner: MathItem,
+        val degree: Degree? = null
+): Apply(id, Operation.ROOT) {
+    companion object Factory {
+        fun create(id: String?, arguments: List<MathItem>): Root {
+            if(arguments.isEmpty() || arguments.size > 2)
+                throw Exception("Invalid number of arguments provided to <root>")
+
+            return if(arguments.size == 1) {
+                Root(id, arguments[0], null)
+            } else {
+                if(arguments[0] !is Degree)
+                    throw Exception("Expected first argument to <root> to be of type <degree>")
+                Root(id, arguments[1], arguments[0] as Degree)
+            }
+        }
+    }
+
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
+        if(degree != null && degree.evaluate(constantValues) != 2.0) {
+            throw Exception("Only <${operation.getIdentifier()}> with a <degree> of 2.0 are currently supported")
+        }
+
+        return "sqrt(${inner.generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
+    }
+
+    override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
+        val innerUnits = inner.calculateUnits(variableUnits, unitsMap, constantValues)
+
+        var power = 2.0
+        if(degree != null) {
+            val degreeUnits = degree.calculateUnits(variableUnits, unitsMap, constantValues)
+            if(!CompositeUnit().canMapTo(degreeUnits)) {
+                throw Exception("<degree> argument of <${operation.getIdentifier()}> is expected to be dimensionless")
+            }
+
+            power = degree.evaluate(constantValues)
+        }
+
+        return innerUnits.createToPowerOf(1 / power)
+    }
+
+    override fun extractAllVariables(): List<String> {
+        val variables = ArrayList<String>()
+        variables.addAll(inner.extractAllVariables())
+        if(degree != null)
+            variables.addAll(degree.extractAllVariables())
+        return variables.distinct()
+    }
+
+    override fun extractAllPiecewise(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): Map<String, Pair<String, List<String>>> {
+        val piecewises = HashMap<String, Pair<String, List<String>>>()
+        piecewises.putAll(inner.extractAllPiecewise(variableUnits, unitsMap, constantValues, name))
+        if(degree != null)
+            piecewises.putAll(degree.extractAllPiecewise(variableUnits, unitsMap, constantValues, name))
+        return piecewises
     }
 }
 
@@ -549,8 +611,8 @@ data class Exp(
         override val id: String?,
         override val argument: MathItem
 ): UnaryOperation(id, Operation.EXP, argument) {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
-        return argument.generateString(variableUnits, unitsMap, constantValues, name)
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
+        return "exp(${argument.generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
     }
 
     override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
@@ -568,8 +630,8 @@ data class Ln(
         override val id: String?,
         override val argument: MathItem
 ): UnaryOperation(id, Operation.LN, argument) {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
-        return argument.generateString(variableUnits, unitsMap, constantValues, name)
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
+        return "ln(${argument.generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
     }
 
     override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
@@ -587,6 +649,10 @@ data class Floor(
         override val id: String?,
         override val argument: MathItem
 ): UnaryOperation(id, Operation.FLOOR, argument) {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
+        return "floor(${argument.generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
+    }
+
     override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
         return argument.calculateUnits(variableUnits, unitsMap, constantValues)
     }
@@ -596,6 +662,10 @@ data class Ceiling(
         override val id: String?,
         override val argument: MathItem
 ): UnaryOperation(id, Operation.CEILING, argument) {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
+        return "ceil(${argument.generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
+    }
+
     override fun calculateUnits(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>): SimpleUnit {
         return argument.calculateUnits(variableUnits, unitsMap, constantValues)
     }
@@ -620,13 +690,13 @@ data class And(
         override val id: String?,
         override val arguments: List<MathItem>
 ): NAryOperation(id, Operation.AND, arguments) {
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         if(arguments.isEmpty())
             return ""
 
-        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name)})"
+        var str = "(${arguments[0].generateString(variableUnits, unitsMap, constantValues, name, withUnits)})"
         for(i in 1 until arguments.size) {
-            str += " && (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name)})"
+            str += " && (${arguments[i].generateOffsetString(arguments[0], variableUnits, unitsMap, constantValues, name, withUnits)})"
         }
 
         return str
@@ -732,7 +802,7 @@ data class Cn(
         return unitsMap[units]!!
     }
 
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         return value.toString()
     }
 
@@ -764,7 +834,7 @@ data class Ci(
         return unitsMap[variableUnits[name]]!!
     }
 
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         return this.name
     }
 
@@ -797,7 +867,7 @@ data class Bvar(
         return variable.calculateUnits(variableUnits, unitsMap, constantValues)
     }
 
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         TODO("generateString <bvar>")
     }
 
@@ -826,8 +896,8 @@ data class Degree(
         return CompositeUnit()
     }
 
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
-        return order.generateString(variableUnits, unitsMap, constantValues, name)
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
+        return order.generateString(variableUnits, unitsMap, constantValues, name, withUnits)
     }
 
     override fun evaluate(variableValues: Map<String, Double>): Double {
@@ -869,7 +939,7 @@ data class Piecewise(
         return CompositeUnit()
     }
 
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         return "${name}_pw(${this.extractAllVariables().joinToString(", ")})"
     }
 
@@ -899,8 +969,8 @@ data class Piecewise(
             if(atLeastOneIf) {
                 functionString += "else "
             }
-            functionString += "if(${piece.condition.generateString(variableUnits, unitsMap, constantValues, name)}) {\n"
-            functionString += "  return ${piece.value.generateString(variableUnits, unitsMap, constantValues, name)}\n"
+            functionString += "if(${piece.condition.generateString(variableUnits, unitsMap, constantValues, name, true)}) {\n"
+            functionString += "  return ${piece.value.generateString(variableUnits, unitsMap, constantValues, name, true)}\n"
             functionString += "}\n"
 
             atLeastOneIf = true
@@ -909,7 +979,7 @@ data class Piecewise(
             if(atLeastOneIf) {
                 functionString += "else {\n"
             }
-            functionString += "  return ${otherwise.generateString(variableUnits, unitsMap, constantValues, name)}\n"
+            functionString += "  return ${otherwise.generateString(variableUnits, unitsMap, constantValues, name, true)}\n"
             if(atLeastOneIf) {
                 functionString += "}\n"
             }
@@ -935,7 +1005,7 @@ data class Piece(
         return value.calculateUnits(variableUnits, unitsMap, constantValues)
     }
 
-    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?): String {
+    override fun generateString(variableUnits: Map<String, String>, unitsMap: Map<String, SimpleUnit>, constantValues: Map<String, Double>, name: String?, withUnits: Boolean): String {
         TODO("generateString <piece>")
     }
 

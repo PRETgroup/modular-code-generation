@@ -149,7 +149,7 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
             Operation.TIMES -> NAryOperation.create<Times>(id, operation, arguments)
             Operation.DIVIDE -> BinaryOperation.create<Divide>(id, operation, arguments)
             Operation.POWER -> BinaryOperation.create<Power>(id, operation, arguments)
-            Operation.ROOT -> TODO("ROOT")
+            Operation.ROOT -> Root.create(id, arguments)
             Operation.ABS -> UnaryOperation.create<Abs>(id, operation, arguments)
             Operation.EXP -> UnaryOperation.create<Exp>(id, operation, arguments)
             Operation.LN -> UnaryOperation.create<Ln>(id, operation, arguments)
@@ -267,12 +267,9 @@ class MathDeserializer(vc: Class<*>? = null) : StdDeserializer<Math>(vc) {
         if(value is List<Any?>) {
             val parts = ArrayList<MathItem>()
             for(item in value.filter { it is Node }) {
-                try {
-                    val mathItem = createMathItem(item as Node)
-                    if(mathItem != null)
-                        parts.add(mathItem)
-                }
-                catch(e: Exception) {}
+                val mathItem = createMathItem(item as Node)
+                if(mathItem != null)
+                    parts.add(mathItem)
             }
 
             if(parts.size != 2)
