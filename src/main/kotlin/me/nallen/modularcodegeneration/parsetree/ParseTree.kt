@@ -562,6 +562,7 @@ fun ParseTreeItem.evaluateReal(var_map: Map<String, Literal> = HashMap()): Doubl
     return when(this) {
         is Plus -> operandA.evaluateReal(var_map) + operandB.evaluateReal(var_map)
         is Minus -> operandA.evaluateReal(var_map) - operandB.evaluateReal(var_map)
+        is Power -> Math.pow(operandA.evaluateReal(var_map), operandB.evaluateReal(var_map))
         is Multiply -> operandA.evaluateReal(var_map) * operandB.evaluateReal(var_map)
         is Divide -> operandA.evaluateReal(var_map) / operandB.evaluateReal(var_map)
         is Negative -> -1 * operandA.evaluateReal(var_map)
@@ -571,6 +572,8 @@ fun ParseTreeItem.evaluateReal(var_map: Map<String, Literal> = HashMap()): Doubl
         is Sine -> Math.sin(operandA.evaluateReal(var_map))
         is Cosine -> Math.cos(operandA.evaluateReal(var_map))
         is Tangent -> Math.tan(operandA.evaluateReal(var_map))
+        is Floor -> Math.floor(operandA.evaluateReal(var_map))
+        is Ceil -> Math.ceil(operandA.evaluateReal(var_map))
 
         is Variable -> var_map.getValue(name).evaluateReal(var_map) // Variables that we know about
         is Literal -> when (value) { // For Literals, Boolean values represent 1 or 0
