@@ -32,8 +32,13 @@ class Model constructor(
     @JsonMerge
     val connections: List<Connection>? = null
 
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @JacksonXmlProperty(localName = "group")
+    @JsonMerge
+    val groups: List<Group>? = null
+
     override fun toString(): String {
-        return "Model(name='$name', units=$units, components=$components, connections=$connections)"
+        return "Model(name='$name', units=$units, components=$components, connections=$connections, groups=$groups)"
     }
 
 }
@@ -192,6 +197,53 @@ class MapVariables constructor(
     }
 }
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "group")
+class Group constructor(
+        @JacksonXmlElementWrapper(useWrapping = false)
+        @JacksonXmlProperty(localName = "relationship_ref")
+        @JsonMerge
+        val relationships: List<RelationshipRef>,
+
+        @JacksonXmlElementWrapper(useWrapping = false)
+        @JacksonXmlProperty(localName = "component_ref")
+        @JsonMerge
+        val components: List<ComponentRef>
+) {
+    override fun toString(): String {
+        return "Group(relationships=$relationships, components=$components)"
+    }
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "relationship_ref")
+class RelationshipRef constructor(
+        @JacksonXmlProperty(isAttribute = true, localName = "name")
+        val name: String?,
+
+        @JacksonXmlProperty(isAttribute = true, localName = "relationship")
+        val relationship: RelationshipType?
+) {
+    override fun toString(): String {
+        return "RelationshipRef(name=$name, relationship=$relationship)"
+    }
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JacksonXmlRootElement(namespace = "http://www.cellml.org/cellml/1.0", localName = "component_ref")
+class ComponentRef constructor(
+        @JacksonXmlProperty(isAttribute = true, localName = "component")
+        val component: String
+) {
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @JacksonXmlProperty(localName = "component_ref")
+    @JsonMerge
+    val components: List<ComponentRef>? = null
+
+    override fun toString(): String {
+        return "ComponentRef(component='$component', components=$components)"
+    }
+}
 
 
 
@@ -204,6 +256,14 @@ enum class InterfaceType {
 
     @JsonProperty("out")
     OUT
+}
+
+enum class RelationshipType {
+    @JsonProperty("containment")
+    CONTAINMENT,
+
+    @JsonProperty("encapsulation")
+    ENCAPSULATION
 }
 
 fun prefixToPowerOfTen(prefix: String): Int {

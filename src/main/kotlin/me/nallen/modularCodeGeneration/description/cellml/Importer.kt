@@ -151,11 +151,15 @@ private fun createHybridNetwork(model: Model, existingUnitsMap: Map<String, Simp
 
     val unitsMap = extractSimpleUnits(model.units, existingUnitsMap)
 
-    if(model.components != null)
+    val components = if(model.components != null)
         network.importComponents(model.components, unitsMap)
+    else
+        listOf()
+
+    val encapsulationData = parseGroups(model.groups, components)
 
     if(model.connections != null)
-        network.importConnections(model.connections)
+        network.importConnections(model.connections, model.components?:listOf(), encapsulationData)
 
     return network
 }
@@ -214,14 +218,18 @@ private fun Unit.getBaseUnits(baseUnits: Map<String, SimpleUnit>): SimpleUnit {
     return baseUnits[this.units]!!
 }
 
-private fun HybridNetwork.importComponents(components: List<Component>, existingUnitsMap: Map<String, SimpleUnit> = mapOf()) {
+private fun HybridNetwork.importComponents(components: List<Component>, existingUnitsMap: Map<String, SimpleUnit> = mapOf()): List<String> {
+    val componentNames = arrayListOf<String>()
     for(component in components) {
         val definitionId = UUID.randomUUID()
         val instantiateId = UUID.randomUUID()
         this.definitions.put(definitionId, createHybridAutomata(component, existingUnitsMap))
         this.instances.put(component.name, AutomataInstance(instantiateId))
         this.instantiates.put(instantiateId, AutomataInstantiate(definitionId, component.name))
+        componentNames.add(component.name)
     }
+
+    return componentNames
 }
 
 private fun createHybridAutomata(component: Component, existingUnitsMap: Map<String, SimpleUnit> = mapOf()): HybridAutomata {
@@ -384,55 +392,68 @@ private fun HybridItem.parseVariables(variables: List<Variable>) {
     }
 }
 
-private fun HybridNetwork.importConnections(connections: List<Connection>) {
+private fun HybridNetwork.importConnections(connections: List<Connection>, components: List<Component>, encapsulationData: Map<String, EncapsulationData>) {
     for(connection in connections) {
         for(mapping in connection.variables) {
-            val instance1 = this.instances[connection.components.component1]
-            val instance2 = this.instances[connection.components.component2]
+            val component1 = components.firstOrNull { it.name == connection.components.component1 }
+            val component2 = components.firstOrNull { it.name == connection.components.component2 }
 
-            if(instance1 != null && instance2 != null) {
-                val instantiate1 = this.instantiates[instance1.instantiate]
-                val instantiate2 = this.instantiates[instance2.instantiate]
+            if(component1 != null && component2 != null) {
+                val variable1 = component1.variables?.firstOrNull { it.name == mapping.variable1 }
+                val variable2 = component2.variables?.firstOrNull { it.name == mapping.variable2 }
 
-                if(instantiate1 != null && instantiate2 != null) {
-                    val definition1 = this.definitions[instantiate1.definition]
-                    val definition2 = this.definitions[instantiate2.definition]
+                if(variable1 != null && variable2 != null) {
+                    val encapsulation1 = encapsulationData[component1.name]
+                    val encapsulation2 = encapsulationData[component2.name]
 
-                    if(definition1 != null && definition2 != null) {
-                        val variable1 = definition1.variables.find { it.name == mapping.variable1 }
-                        val variable2 = definition2.variables.find { it.name == mapping.variable2 }
+                    if(encapsulation1 != null && encapsulation2 != null) {
+                        val interface1 = if(component2.name == encapsulation1.parent || encapsulation1.siblingSet.contains(component2.name))
+                            variable1.publicInterface
+                        else if(encapsulation1.encapsulationSet.contains(component2.name) && variable1.privateInterface != InterfaceType.NONE)
+                            variable1.privateInterface
+                        else if(encapsulation1.encapsulationSet.contains(component2.name))
+                            variable1.publicInterface
+                        else
+                            InterfaceType.NONE
 
-                        if(variable1 != null && variable2 != null) {
-                            if(variable1.locality == Locality.EXTERNAL_OUTPUT && variable2.locality == Locality.EXTERNAL_INPUT) {
-                                val to = AutomataVariablePair(connection.components.component2, mapping.variable2)
-                                val from = connection.components.component1 + "." + mapping.variable1
-                                this.ioMapping[to] = ParseTreeItem.generate(from)
-                            }
-                            else if(variable1.locality == Locality.EXTERNAL_INPUT && variable2.locality == Locality.EXTERNAL_OUTPUT) {
-                                val to = AutomataVariablePair(connection.components.component1, mapping.variable1)
-                                val from = connection.components.component2 + "." + mapping.variable2
-                                this.ioMapping[to] = ParseTreeItem.generate(from)
-                            }
-                            else {
-                                Logger.error("Unable to map variables '${connection.components.component1}.${mapping.variable1}' to '${connection.components.component2}.${mapping.variable2}'")
-                            }
+                        val interface2 = if(component1.name == encapsulation2.parent || encapsulation2.siblingSet.contains(component1.name))
+                            variable2.publicInterface
+                        else if(encapsulation2.encapsulationSet.contains(component1.name) && variable2.privateInterface != InterfaceType.NONE)
+                            variable2.privateInterface
+                        else if(encapsulation2.encapsulationSet.contains(component1.name))
+                            variable2.publicInterface
+                        else
+                            InterfaceType.NONE
+
+                        if(interface1 == InterfaceType.OUT && interface2 == InterfaceType.IN) {
+                            val to = AutomataVariablePair(connection.components.component2, mapping.variable2)
+                            val from = connection.components.component1 + "." + mapping.variable1
+                            this.ioMapping[to] = ParseTreeItem.generate(from)
+                        }
+                        else if(interface1 == InterfaceType.IN && interface2 == InterfaceType.OUT) {
+                            val to = AutomataVariablePair(connection.components.component1, mapping.variable1)
+                            val from = connection.components.component2 + "." + mapping.variable2
+                            this.ioMapping[to] = ParseTreeItem.generate(from)
                         }
                         else {
-                            if(variable1 == null)
-                                Logger.error("Unable to find variable ${mapping.variable1} in ${connection.components.component1}")
-
-                            if(variable2 == null)
-                                Logger.error("Unable to find variable ${mapping.variable2} in ${connection.components.component2}")
+                            Logger.error("Unable to map variables '${connection.components.component1}.${mapping.variable1}' to '${connection.components.component2}.${mapping.variable2}'")
                         }
                     }
                 }
+                else {
+                    if(variable1 == null)
+                        Logger.error("Unable to find variable ${mapping.variable1} in ${connection.components.component1}")
+
+                    if(variable2 == null)
+                        Logger.error("Unable to find variable ${mapping.variable2} in ${connection.components.component2}")
+                }
             }
             else {
-                if(instance1 == null)
-                    Logger.error("Unable to find instance ${connection.components.component1}")
+                if(component1 == null)
+                    Logger.error("Unable to find component ${connection.components.component1}")
 
-                if(instance2 == null)
-                    Logger.error("Unable to find instance ${connection.components.component2}")
+                if(component2 == null)
+                    Logger.error("Unable to find component ${connection.components.component2}")
             }
         }
     }
@@ -441,3 +462,68 @@ private fun HybridNetwork.importConnections(connections: List<Connection>) {
     this.ioMapping.clear()
     this.ioMapping.putAll(sortedMappings)
 }
+
+private fun parseGroups(groups: List<Group>?, components: List<String>): Map<String, EncapsulationData> {
+    val encapsulationData = HashMap<String, EncapsulationData>()
+
+    for(component in components) {
+        encapsulationData.put(component, EncapsulationData())
+    }
+
+    if(groups != null) {
+        for(group in groups) {
+            if(group.relationships.any { it.relationship == RelationshipType.ENCAPSULATION }) {
+                for(component in group.components) {
+                    parseEncapsulationData(component, encapsulationData)
+                }
+            }
+        }
+    }
+
+    for((comp, data) in encapsulationData.filter { it.value.parent == null }) {
+        data.siblingSet.addAll(encapsulationData.filter { it.value.parent == null && it.key != comp }.keys)
+    }
+
+    for((comp, data) in encapsulationData) {
+        data.hiddenSet.addAll(components.filter { it != comp && it != data.parent && !data.siblingSet.contains(it) && !data.encapsulationSet.contains(it) })
+    }
+
+    return encapsulationData
+}
+
+private fun parseEncapsulationData(component: ComponentRef, encapsulationData: HashMap<String, EncapsulationData>) {
+    if(!encapsulationData.containsKey(component.component))
+        throw Exception("Unknown component '${component.component}' in <group>")
+
+    val parentData = encapsulationData[component.component]!!
+
+    if(parentData.encapsulationSet.isNotEmpty())
+        throw Exception("Multiple definitions for component '${component.component}' in <group>")
+
+    if(component.components != null) {
+        for(child in component.components) {
+            if(!encapsulationData.containsKey(child.component))
+                throw Exception("Unknown component '${child.component}' in <group>")
+
+            val childData = encapsulationData[child.component]!!
+
+            if(childData.parent != null)
+                throw Exception("Multiple definitions for component '${child.component}' in <group>")
+
+            childData.parent = component.component
+            childData.siblingSet.clear()
+            childData.siblingSet.addAll(component.components.map { it.component }.filter { it != child.component })
+
+            parentData.encapsulationSet.add(child.component)
+
+            parseEncapsulationData(child, encapsulationData)
+        }
+    }
+}
+
+data class EncapsulationData(
+        val encapsulationSet: ArrayList<String> = arrayListOf(),
+        var parent: String? = null,
+        val siblingSet: ArrayList<String> = arrayListOf(),
+        val hiddenSet: ArrayList<String> = arrayListOf()
+)
