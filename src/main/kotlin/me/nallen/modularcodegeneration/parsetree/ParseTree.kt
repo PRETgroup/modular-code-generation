@@ -128,7 +128,7 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
             continue
 
         // Try and see if the current argument is an operator
-        val operand = getOperandForSequence(argument)
+        val operand = getOperandForSequence(argument, true)
 
         if(operand != null) {
             // It is an operator!
