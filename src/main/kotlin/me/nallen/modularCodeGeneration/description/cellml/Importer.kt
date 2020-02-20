@@ -469,7 +469,7 @@ private fun HybridNetwork.importConnections(connections: List<Connection>, compo
                     if(encapsulation1 != null && encapsulation2 != null) {
                         val (interface1, private1) = if(component2.name == encapsulation1.parent || encapsulation1.siblingSet.contains(component2.name))
                             Pair(variable1.publicInterface, false)
-                        else if(encapsulation1.encapsulationSet.contains(component2.name) && variable1.privateInterface != InterfaceType.NONE)
+                        else if(encapsulation1.encapsulationSet.contains(component2.name) && variable1.privateInterface != InterfaceType.NONE && variable1.privateInterface != variable1.publicInterface)
                             Pair(variable1.privateInterface, true)
                         else if(encapsulation1.encapsulationSet.contains(component2.name))
                             Pair(variable1.publicInterface, false)
@@ -478,7 +478,7 @@ private fun HybridNetwork.importConnections(connections: List<Connection>, compo
 
                         val (interface2, private2) = if(component1.name == encapsulation2.parent || encapsulation2.siblingSet.contains(component1.name))
                             Pair(variable2.publicInterface, false)
-                        else if(encapsulation2.encapsulationSet.contains(component1.name) && variable2.privateInterface != InterfaceType.NONE)
+                        else if(encapsulation2.encapsulationSet.contains(component1.name) && variable2.privateInterface != InterfaceType.NONE && variable2.privateInterface != variable2.publicInterface)
                             Pair(variable2.privateInterface, true)
                         else if(encapsulation2.encapsulationSet.contains(component1.name))
                             Pair(variable2.publicInterface, false)
@@ -492,7 +492,7 @@ private fun HybridNetwork.importConnections(connections: List<Connection>, compo
                             variable1corrected += "_private"
 
                         if(private2)
-                            variable1corrected += "_private"
+                            variable2corrected += "_private"
 
                         if(interface1 == InterfaceType.OUT && interface2 == InterfaceType.IN) {
                             val to = AutomataVariablePair(component2.name, variable2corrected)
