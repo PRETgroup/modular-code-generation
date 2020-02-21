@@ -87,13 +87,13 @@ package body lib is
             return signed is
     begin
         return FP_MULT(CREATE_FP(0.69314718055995), SHIFT_LEFT(ILOG2(x), x'length/2)) - CREATE_FP(11.090354888959);
-    end ILOG2;
+    end FP_LOG;
 
     function FP_FLOOR(x: signed)
             return signed is
     begin
         return SHIFT_LEFT(SHIFT_RIGHT(x, x'length/2), x'length/2);
-    end FP_DIV;
+    end FP_FLOOR;
 
     function FP_CEIL(x: signed)
             return signed is
@@ -103,7 +103,7 @@ package body lib is
         end if;
 
         return x;
-    end FP_DIV;
+    end FP_CEIL;
 
 --    function FP_DIV(x: signed; y: signed)
 --            return signed is
