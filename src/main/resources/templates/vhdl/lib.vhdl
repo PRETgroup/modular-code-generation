@@ -123,6 +123,37 @@ package body lib is
         return x;
     end FP_CEIL;
 
+    function ISQRT(x: signed)
+            return signed is
+        variable num : signed(x'length downto 0) := (others => '0');
+        variable res : signed(x'length downto 0) := (others => '0');
+        variable bit : signed(x'length downto 0) := (others => '0');
+    begin
+        num := a;
+        res := 0;
+
+        for n in 0 to (x'length-2)/2 loop
+            bit := SHIFT_LEFT(to_signed(1, x'length), x'length-2-2*n);
+
+            if bit <= x then
+                if num >= (res + bit) then
+                    num = num - (res + bit);
+                    res = SHIFT_RIGHT(res, 1) + bit;
+                else
+                    res = SHIFT_RIGHT(res, 1);
+                end if;
+            end if;
+        end loop;
+
+        return SHIFT_RIGHT(res, 1);
+    end ISQRT;
+
+    function FP_SQRT(x: signed)
+            return signed is
+    begin
+        return FP_MULT(ISQRT(x), CREATE_FP(256));
+    end FP_SQRT;
+
 --    function FP_DIV(x: signed; y: signed)
 --            return signed is
 --    begin
