@@ -89,12 +89,6 @@ package body lib is
         return FP_MULT(CREATE_FP(0.69314718055995), SHIFT_LEFT(ILOG2(x), x'length/2)) - CREATE_FP(11.090354888959);
     end FP_LOG;
 
-    function FP_LOG(x: signed)
-            return signed is
-    begin
-        return FP_MULT(CREATE_FP(0.69314718055995), SHIFT_LEFT(ILOG2(x), x'length/2)) - CREATE_FP(11.090354888959);
-    end FP_LOG;
-
     function FP_FLOOR(x: signed)
             return signed is
     begin
