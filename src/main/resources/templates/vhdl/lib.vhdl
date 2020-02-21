@@ -20,6 +20,22 @@ package lib is
     function FP_DIV(x: signed; y: signed)
             return signed;
 
+    -- A function to perform Integer base-2 log of a number
+    function ILOG2(x: signed)
+            return signed;
+
+    -- A function to perform Fixed Point Natural Log of a number
+    function FP_LOG(x: signed)
+            return signed;
+
+    -- A function to perform Fixed Point Floor
+    function FP_FLOOR(x: signed)
+            return signed;
+
+    -- A function to perform Fixed Point Ceil
+    function FP_CEIL(x: signed)
+            return signed;
+
 end package lib;
 
 package body lib is
@@ -52,6 +68,41 @@ package body lib is
         xresize(x'length + x'length/2 - 1 downto x'length/2) := x;
 
         return RESIZE(xresize / y, x'length);
+    end FP_DIV;
+
+    function ILOG2(x: signed)
+            return signed is
+        variable xlog : signed(x'length downto 0) := (others => '0');
+    begin
+        for n in 0 to x'length loop
+            if x >= SHIFT_LEFT(to_signed(1, x'length), n) then
+                xlog := n;
+            end if;
+        end loop
+
+        return xlog;
+    end ILOG2;
+
+    function FP_LOG(x: signed)
+            return signed is
+    begin
+        return FP_MULT(CREATE_FP(0.69314718055995), SHIFT_LEFT(ILOG2(x), x'length/2)) - CREATE_FP(11.090354888959)
+    end ILOG2;
+
+    function FP_FLOOR(x: signed)
+            return signed is
+    begin
+        return SHIFT_LEFT(SHIFT_RIGHT(x, x'length/2), x'length/2);
+    end FP_DIV;
+
+    function FP_CEIL(x: signed)
+            return signed is
+    begin
+        if SHIFT_LEFT(x, x'length/2) > 0 then
+            return SHIFT_LEFT(SHIFT_RIGHT(x, x'length/2) + 1, x'length/2);
+        end if;
+
+        return x;
     end FP_DIV;
 
 --    function FP_DIV(x: signed; y: signed)
