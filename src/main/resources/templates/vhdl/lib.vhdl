@@ -78,7 +78,7 @@ package body lib is
             if x >= SHIFT_LEFT(to_signed(1, x'length), n) then
                 xlog := n;
             end if;
-        end loop
+        end loop;
 
         return xlog;
     end ILOG2;
@@ -86,7 +86,7 @@ package body lib is
     function FP_LOG(x: signed)
             return signed is
     begin
-        return FP_MULT(CREATE_FP(0.69314718055995), SHIFT_LEFT(ILOG2(x), x'length/2)) - CREATE_FP(11.090354888959)
+        return FP_MULT(CREATE_FP(0.69314718055995), SHIFT_LEFT(ILOG2(x), x'length/2)) - CREATE_FP(11.090354888959);
     end ILOG2;
 
     function FP_FLOOR(x: signed)
