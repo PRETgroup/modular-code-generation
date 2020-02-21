@@ -101,7 +101,7 @@ package body lib is
     begin
         new_power := FP_DIV(x, CREATE_FP(0.69314718055995));
 
-        integer := SHIFT_LEFT(x'length/2 + SHIFT_RIGHT(new_power, x'length/2);
+        integer(x'length - 1 downto x'length/2) := new_power(x'length - 1 downto x'length/2);
         fractional(x'length/2 - 1 downto 0) := new_power(x'length/2 - 1 downto 0);
 
         return integer + FP_MULT(integer, fractional);
