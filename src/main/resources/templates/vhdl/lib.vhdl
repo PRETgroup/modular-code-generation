@@ -28,6 +28,10 @@ package lib is
     function FP_LOG(x: signed)
             return signed;
 
+    -- A function to perform Fixed Point Exponential of a number
+    function FP_EXP(x: signed)
+            return signed;
+
     -- A function to perform Fixed Point Floor
     function FP_FLOOR(x: signed)
             return signed;
@@ -88,6 +92,20 @@ package body lib is
     begin
         return FP_MULT(CREATE_FP(0.69314718055995), SHIFT_LEFT(ILOG2(x), x'length/2)) - CREATE_FP(11.090354888959);
     end FP_LOG;
+
+    function FP_EXP(x: signed)
+            return signed is
+        variable new_power : signed(x'length downto 0) := (others => '0');
+        variable integer : signed(x'length downto 0) := (others => '0');
+        variable fractional : signed(x'length downto 0) := (others => '0');
+    begin
+        new_power := FP_DIV(x, CREATE_FP(0.69314718055995));
+
+        integer := SHIFT_LEFT(x'length/2 + SHIFT_RIGHT(new_power, x'length/2);
+        fractional(x'length/2 - 1 downto 0) := new_power(x'length/2 - 1 downto 0);
+
+        return integer + FP_MULT(integer, fractional);
+    end FP_EXP;
 
     function FP_FLOOR(x: signed)
             return signed is
