@@ -137,10 +137,10 @@ package body lib is
 
             if bit <= x then
                 if num >= (res + bit) then
-                    num = num - (res + bit);
-                    res = SHIFT_RIGHT(res, 1) + bit;
+                    num := num - (res + bit);
+                    res := SHIFT_RIGHT(res, 1) + bit;
                 else
-                    res = SHIFT_RIGHT(res, 1);
+                    res := SHIFT_RIGHT(res, 1);
                 end if;
             end if;
         end loop;
