@@ -129,8 +129,8 @@ package body lib is
         variable res : signed(x'length downto 0) := (others => '0');
         variable bit : signed(x'length downto 0) := (others => '0');
     begin
-        num := a;
-        res := 0;
+        num := x;
+        res := to_signed(0, x'length);
 
         for n in 0 to (x'length-2)/2 loop
             bit := SHIFT_LEFT(to_signed(1, x'length), x'length-2-2*n);
