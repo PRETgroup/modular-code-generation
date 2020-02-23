@@ -40,6 +40,10 @@ package lib is
     function FP_CEIL(x: signed)
             return signed;
 
+    -- A function to perform Fixed Point Square Root
+    function FP_SQRT(x: signed)
+            return signed;
+
     -- A function to perform Fixed Point Power
     function FP_POWER(x: signed; y: signed)
             return signed;
