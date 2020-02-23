@@ -154,6 +154,12 @@ package body lib is
         return FP_MULT(ISQRT(x), CREATE_FP(256));
     end FP_SQRT;
 
+    function FP_POWER(x: signed; y: signed)
+            return signed is
+    begin
+        return FP_EXP(FP_MULT(y, FP_LOG(x)));
+    end FP_POWER;
+
 --    function FP_DIV(x: signed; y: signed)
 --            return signed is
 --    begin
