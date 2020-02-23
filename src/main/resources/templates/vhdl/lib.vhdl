@@ -40,6 +40,10 @@ package lib is
     function FP_CEIL(x: signed)
             return signed;
 
+    -- A function to perform Fixed Point Power
+    function FP_POWER(x: signed; y: signed)
+            return signed;
+
 end package lib;
 
 package body lib is
@@ -76,7 +80,7 @@ package body lib is
 
     function ILOG2(x: signed)
             return signed is
-        variable xlog : signed(x'length downto 0) := (others => '0');
+        variable xlog : signed(x'length - 1 downto 0) := (others => '0');
     begin
         for n in 0 to x'length loop
             if x >= SHIFT_LEFT(to_signed(1, x'length), n) then
@@ -95,9 +99,9 @@ package body lib is
 
     function FP_EXP(x: signed)
             return signed is
-        variable new_power : signed(x'length downto 0) := (others => '0');
-        variable integer : signed(x'length downto 0) := (others => '0');
-        variable fractional : signed(x'length downto 0) := (others => '0');
+        variable new_power : signed(x'length - 1 downto 0) := (others => '0');
+        variable integer : signed(x'length - 1 downto 0) := (others => '0');
+        variable fractional : signed(x'length - 1 downto 0) := (others => '0');
     begin
         new_power := FP_DIV(x, CREATE_FP(0.69314718055995));
 
@@ -125,9 +129,9 @@ package body lib is
 
     function ISQRT(x: signed)
             return signed is
-        variable num : signed(x'length downto 0) := (others => '0');
-        variable res : signed(x'length downto 0) := (others => '0');
-        variable bit : signed(x'length downto 0) := (others => '0');
+        variable num : signed(x'length - 1 downto 0) := (others => '0');
+        variable res : signed(x'length - 1 downto 0) := (others => '0');
+        variable bit : signed(x'length - 1 downto 0) := (others => '0');
     begin
         num := x;
         res := to_signed(0, x'length);
