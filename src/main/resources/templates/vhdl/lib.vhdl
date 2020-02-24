@@ -88,7 +88,7 @@ package body lib is
     begin
         for n in 0 to x'length loop
             if x >= SHIFT_LEFT(to_signed(1, x'length), n) then
-                xlog := to_signed(n, 32);
+                xlog := to_signed(n, x'length);
             end if;
         end loop;
 
