@@ -327,8 +327,13 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
             }
             else if(itemVariable.locality == Locality.EXTERNAL_OUTPUT) {
                 location.update["${variable}_private"] = ParseTreeItem.generate(variable)
-
             }
+        }
+    }
+
+    for(variable in item.variables.filter { it.locality == Locality.INTERNAL }) {
+        if(!location.update.containsKey(variable.name) && !location.flow.containsKey(variable.name)) {
+            variable.locality = Locality.PARAMETER
         }
     }
 
