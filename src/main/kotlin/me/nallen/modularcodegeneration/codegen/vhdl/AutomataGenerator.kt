@@ -38,7 +38,7 @@ object AutomataGenerator {
             // Depending on the parametrisation method, we'll do things slightly differently
             if(config.compileTimeParametrisation) {
                 // Create a variable object that matches the variable
-                val variableObject = VariableObject.create(variable)
+                val variableObject = VariableObject.create(variable, item.init.valuations)
 
                 // The signal name that we use depends on the type it is
                 if(variable.locality == Locality.EXTERNAL_INPUT)
@@ -71,7 +71,7 @@ object AutomataGenerator {
                     rootItem.variables.add(variableObjectIn)
 
                     // Now let's deal with the output
-                    val variableObjectOut = VariableObject.create(variable.copy(locality = Locality.EXTERNAL_OUTPUT), runtimeParametrisation = true)
+                    val variableObjectOut = VariableObject.create(variable.copy(locality = Locality.EXTERNAL_OUTPUT), item.init.valuations, runtimeParametrisation = true)
 
                     // And name it correctly
                     variableObjectOut.locality = variable.locality.getTextualName()
