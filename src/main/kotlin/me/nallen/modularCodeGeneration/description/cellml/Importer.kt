@@ -227,10 +227,17 @@ private fun HybridNetwork.importComponents(components: List<Component>, existing
     for(component in components) {
         val definitionId = UUID.randomUUID()
         val instantiateId = UUID.randomUUID()
-        this.definitions.put(definitionId, createHybridAutomata(component, existingUnitsMap))
+        val definition = createHybridAutomata(component, existingUnitsMap);
+        this.definitions.put(definitionId, definition)
         this.instances.put(component.name, AutomataInstance(instantiateId))
         this.instantiates.put(instantiateId, AutomataInstantiate(definitionId, component.name))
         componentNames.add(component.name)
+
+        for(output in definition.variables.filter { it.locality == Locality.EXTERNAL_OUTPUT }) {
+            val outputName = "${component.name}_${output.name}"
+            this.variables.add(HybridVariable(outputName, output.type, output.locality))
+            this.ioMapping.put(AutomataVariablePair("", outputName), ParseTreeItem.Factory.generate("${component.name}.${output.name}"))
+        }
     }
 
     return componentNames
@@ -334,6 +341,8 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
     for(variable in item.variables.filter { it.locality == Locality.INTERNAL }) {
         if(!location.update.containsKey(variable.name) && !location.flow.containsKey(variable.name)) {
             variable.locality = Locality.PARAMETER
+            variable.defaultValue = item.init.valuations[variable.name]
+            item.init.valuations.remove(variable.name)
         }
     }
 
