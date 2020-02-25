@@ -41,6 +41,11 @@ data class Program(
             if(default != null)
                 checkParseTreeForNewVariables(default, type)
         }
+        else {
+            if(variables.first { it.name == item }.type == VariableType.ANY && type != VariableType.ANY) {
+                variables.first { it.name == item }.type = type
+            }
+        }
 
         // Return the program for chaining
         return this
@@ -53,14 +58,6 @@ data class Program(
      * accurately captured
      */
     fun collectVariables(existing: List<VariableDeclaration> = ArrayList(), knownFunctionTypes: Map<String, VariableType?> = mapOf(), knownFunctionArguments: Map<String, List<VariableType>> = mapOf()): Map<String, VariableType> {
-        val knownVariables = LinkedHashMap<String, VariableType>()
-
-        // First, we need to record that we know all the external variables
-        // This has to be done first so that we don't mistakenly add them as internal variables while parsing
-        for(item in existing) {
-            knownVariables[item.name] = item.type
-        }
-
         // Now we can add each of the external variables to the program
         for(item in existing) {
             addVariable(item.name, item.type, Locality.EXTERNAL_INPUT, item.defaultValue)
@@ -75,14 +72,9 @@ data class Program(
             when(line) {
                 is Statement -> checkParseTreeForNewVariables(line.logic, VariableType.ANY, knownFunctionArguments)
                 is Assignment -> {
-                    // When we come across a variable assignment, we need to see if we know it, and if not then add it.
-                    // The type needs to be guessed from the logic that is assigned to it
-                    if(!knownVariables.containsKey(line.variableName.name)) {
-                        knownVariables[line.variableName.name] = line.variableValue.getOperationResultType(knownVariables, knownFunctionTypes)
-                        addVariable(line.variableName.name, knownVariables[line.variableName.name]!!, Locality.INTERNAL)
-                    }
+                    val type = line.variableValue.getOperationResultType(variables.map { Pair(it.name, it.type) }.toMap(), knownFunctionTypes)
 
-                    val type = knownVariables[line.variableName.name]!!
+                    addVariable(line.variableName.name, type, Locality.INTERNAL)
 
                     // The following line will actually add the variable to the Program
                     checkParseTreeForNewVariables(line.variableName, type, knownFunctionArguments)
@@ -93,38 +85,29 @@ data class Program(
                     checkParseTreeForNewVariables(line.condition, VariableType.ANY, knownFunctionArguments)
 
                     val innerVariables = line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments)
-                    knownVariables.putAll(innerVariables)
                     for((name, type) in innerVariables) {
-                        if(!variables.any { it.name == name }) {
-                            addVariable(name, type, Locality.INTERNAL)
-                        }
+                        addVariable(name, type, Locality.INTERNAL)
                     }
                 }
                 is ElseIfStatement -> {
                     checkParseTreeForNewVariables(line.condition, VariableType.ANY, knownFunctionArguments)
 
                     val innerVariables = line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments)
-                    knownVariables.putAll(innerVariables)
                     for((name, type) in innerVariables) {
-                        if(!variables.any { it.name == name }) {
-                            addVariable(name, type, Locality.INTERNAL)
-                        }
+                        addVariable(name, type, Locality.INTERNAL)
                     }
                 }
                 is ElseStatement -> {
                     val innerVariables = line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments)
-                    knownVariables.putAll(innerVariables)
                     for((name, type) in innerVariables) {
-                        if(!variables.any { it.name == name }) {
-                            addVariable(name, type, Locality.INTERNAL)
-                        }
+                        addVariable(name, type, Locality.INTERNAL)
                     }
                 }
             }
         }
 
         // Return the list of variables found
-        return knownVariables
+        return variables.map { Pair(it.name, it.type) }.toMap()
     }
 
     /**
