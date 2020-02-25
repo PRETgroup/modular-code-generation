@@ -6,11 +6,9 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import me.nallen.modularcodegeneration.codegen.Configuration
 import me.nallen.modularcodegeneration.description.Importer
 import me.nallen.modularcodegeneration.hybridautomata.*
+import me.nallen.modularcodegeneration.hybridautomata.Locality
 import me.nallen.modularcodegeneration.logging.Logger
-import me.nallen.modularcodegeneration.parsetree.Literal
-import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
-import me.nallen.modularcodegeneration.parsetree.VariableDeclaration
-import me.nallen.modularcodegeneration.parsetree.getOperationResultType
+import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.utils.getRelativePath
 import java.io.File
 import java.io.FileNotFoundException
@@ -339,12 +337,8 @@ private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
             // Next let's find any internal variables inside the function that we'll need to instantiate
             function.logic.collectVariables(inputs, existingFunctionTypes, existingFunctionArguments)
 
-            for(variable in function.logic.variables) {
-                if(variables.filter { it.locality == Locality.PARAMETER }.any { it.name == variable.name }) {
-                    variable.type = variables.filter { it.locality == Locality.PARAMETER }.first { it.name == variable.name }.type
-                    variable.locality = ParseTreeLocality.EXTERNAL_INPUT
-                }
-            }
+
+            function.logic.removeFunctionArguments(this.variables.filter { it.locality == Locality.PARAMETER }.map { it.name })
 
             // Now we create the FunctionDefinition
             val func = FunctionDefinition(name, function.logic, inputs)
