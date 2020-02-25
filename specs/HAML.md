@@ -449,10 +449,12 @@ The operations allowed in a Formula are as follows:
 | Less Than or Equal | `<=` | Less Than | `<` |
 | Equal | `==` | Not Equal | `!=` |
 | Plus | `+` | Minus / Negative | `-` |
-| Multiple | `*` | Divide | `/` |
-| Square Root | `sqrt` | Exponential | `exp` |
+| Multiply | `*` | Divide | `/` |
+| Power | `pow` | Square Root | `sqrt` |
+| Exponential | `exp` | Natural Log | `ln` |
 | Sine | `sin` | Cosine | `cos` |
-| Tangent | `tan` |
+| Tangent | `tan` | | |
+| Floor | `floor` | Ceil | `ceil` |
 
 Additionally, several constants are provided in the spec, namely:
 
@@ -703,6 +705,7 @@ codegenConfig:
 
 | Version | Date | Notes |
 |---|---|---|
+| 0.1.4 | 2020-02-25 | Added support for more functions: `Power`, `Natural Log`, `Floor`, `Ceil` |
 | 0.1.3 | 2019-04-26 | Added support for trigonometric functions and constants |
 | 0.1.2 | 2019-01-31 | Added support for `Integer` types of variables |
 | 0.1.1 | 2018-02-08 | Updated to support hierarchy of Networks |
