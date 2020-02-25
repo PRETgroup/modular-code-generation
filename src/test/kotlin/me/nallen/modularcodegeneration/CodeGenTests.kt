@@ -14,49 +14,47 @@ class CodeGenTests : StringSpec() {
     init {
         val canMake = "make".runCommand(File("build"), ProcessBuilder.Redirect.PIPE) != 127
 
-        File("examples").list().forEach {
-            val folder = File("examples", it)
-            if(folder.isDirectory) {
-                val main = File(folder, "main.yaml")
+        for(test in DescriptionTests.tests) {
+            try {
+                val imported = Importer.import(test.path)
 
-                if(main.exists() && main.isFile) {
-                    val imported = Importer.import(main.absolutePath)
+                val network = imported.first
+                var config = imported.second
 
-                    val network = imported.first
-                    var config = imported.second
-
-                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " Compile-Time C Code For $it") {
-                        config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
-                        CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
-                        if (canMake) {
-                            "make".runCommand(File("build/tmp/codegen")) shouldBe 0
-                        }
-                    }
-
-                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " Run-Time C Code For $it") {
-                        config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME, logging = Logging())
-                        CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
-                        if (canMake) {
-                            "make".runCommand(File("build/tmp/codegen")) shouldBe 0
-                        }
-                    }
-
-                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " full HA semantics C Code For $it") {
-                        config = config.copy(maximumInterTransitions = 4, requireOneIntraTransitionPerTick = true)
-                        CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
-                        if (canMake) {
-                            "make".runCommand(File("build/tmp/codegen")) shouldBe 0
-                        }
-                    }
-
-                    ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " partial HA semantics C Code For $it") {
-                        config = config.copy(maximumInterTransitions = 4, requireOneIntraTransitionPerTick = false)
-                        CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
-                        if(canMake) {
-                            "make".runCommand(File("build/tmp/codegen")) shouldBe 0
-                        }
+                ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " Compile-Time C Code For ${test.name} (${test.format})") {
+                    config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
+                    CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                    if (canMake) {
+                        "make".runCommand(File("build/tmp/codegen")) shouldBe 0
                     }
                 }
+
+                ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " Run-Time C Code For ${test.name} (${test.format})") {
+                    config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME, logging = Logging())
+                    CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                    if (canMake) {
+                        "make".runCommand(File("build/tmp/codegen")) shouldBe 0
+                    }
+                }
+
+                ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " full HA semantics C Code For ${test.name} (${test.format})") {
+                    config = config.copy(maximumInterTransitions = 4, requireOneIntraTransitionPerTick = true)
+                    CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                    if (canMake) {
+                        "make".runCommand(File("build/tmp/codegen")) shouldBe 0
+                    }
+                }
+
+                ("Can Generate" + if(canMake) { " and Compile" } else { "" } + " partial HA semantics C Code For ${test.name} (${test.format})") {
+                    config = config.copy(maximumInterTransitions = 4, requireOneIntraTransitionPerTick = false)
+                    CodeGenManager.generate(network, CodeGenLanguage.C, "build/tmp/codegen", config)
+                    if(canMake) {
+                        "make".runCommand(File("build/tmp/codegen")) shouldBe 0
+                    }
+                }
+            }
+            catch(e: Exception) {
+                "Can Generate C Code For ${test.name} (${test.format})" {}.config(enabled = false)
             }
         }
 
@@ -66,37 +64,33 @@ class CodeGenTests : StringSpec() {
 
         val canGhdl = "ghdl -v".runCommand(File("build"), ProcessBuilder.Redirect.PIPE) == 0
 
-        File("examples").list().forEach {
-            val folder = File("examples", it)
-            if(folder.isDirectory) {
-                val main = File(folder, "main.yaml")
+        for(test in DescriptionTests.tests) {
+            try {
+                val imported = Importer.import(test.path)
 
-                if(main.exists() && main.isFile) {
-                    if(it != "heart") {
-                        val imported = Importer.import(main.absolutePath)
+                val network = imported.first
+                var config = imported.second
 
-                        val network = imported.first
-                        var config = imported.second
+                val levels = if(network is HybridAutomata) { 1 } else { 2 }
 
-                        val levels = if(network is HybridAutomata) { 1 } else { 2 }
-
-                        ("Can Generate" + if(canGhdl) { " and Synthesise" } else { "" } + " Compile-Time VHDL Code For $it") {
-                            config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
-                            CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
-                            if (canGhdl) {
-                                makeGhdl(File("build/tmp/codegen"), levels) shouldBe 0
-                            }
-                        }
-
-                        ("Can Generate" + if(canGhdl) { " and Synthesise" } else { "" } + " Run-Time VHDL Code For $it") {
-                            config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
-                            CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
-                            if(canGhdl) {
-                                makeGhdl(File("build/tmp/codegen"), levels) shouldBe 0
-                            }
-                        }
+                ("Can Generate" + if(canGhdl) { " and Synthesise" } else { "" } + " Compile-Time VHDL Code For ${test.name} (${test.format})") {
+                    config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
+                    CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                    if (canGhdl) {
+                        makeGhdl(File("build/tmp/codegen"), levels) shouldBe 0
                     }
                 }
+
+                ("Can Generate" + if(canGhdl) { " and Synthesise" } else { "" } + " Run-Time VHDL Code For ${test.name} (${test.format})") {
+                    config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
+                    CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                    if(canGhdl) {
+                        makeGhdl(File("build/tmp/codegen"), levels) shouldBe 0
+                    }
+                }
+            }
+            catch(e: Exception) {
+                "Can Generate VHDL Code For ${test.name} (${test.format})" {}.config(enabled = false)
             }
         }
 

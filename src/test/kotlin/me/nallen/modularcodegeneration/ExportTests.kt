@@ -8,27 +8,26 @@ import java.io.File
 
 class ExportTests : StringSpec() {
     init {
-        File("examples").list().forEach {
-            val folder = File("examples", it)
-            if(folder.isDirectory) {
-                val main = File(folder, "main.yaml")
-                val output = File("build/tmp/export/main.yaml")
+        val output = File("build/tmp/export/main.yaml")
 
-                if(main.exists() && main.isFile) {
-                    val imported = Importer.import(main.absolutePath)
+        for(test in DescriptionTests.tests) {
+            try {
+                val imported = Importer.import(test.path)
 
-                    val item = imported.first
-                    val config = imported.second
+                val item = imported.first
+                val config = imported.second
 
-                    ("Can Export HAML File For $it") {
-                        Exporter.export(item, Exporter.ExportFormat.HAML,output.absolutePath, config)
+                ("Can Export HAML File For ${test.name} (${test.format})") {
+                    Exporter.export(item, Exporter.ExportFormat.HAML,output.absolutePath, config)
 
-                        val imported2 = Importer.import(output.absolutePath)
+                    val imported2 = Importer.import(output.absolutePath)
 
-                        imported.first shouldEqual imported2.first
-                        imported.second shouldEqual imported2.second
-                    }
+                    imported.first shouldEqual imported2.first
+                    imported.second shouldEqual imported2.second
                 }
+            }
+            catch(e: Exception) {
+                "Can Export HAML File For ${test.name} (${test.format})" {}.config(enabled = false)
             }
         }
     }

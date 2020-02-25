@@ -24,7 +24,7 @@ class Exporter {
                 throw IllegalArgumentException("Desired output file $file already exists and is not a file!")
 
             // Let's make the parent folder in case we need to
-            outputFile.parentFile.mkdirs();
+            outputFile.parentFile.mkdirs()
 
             // Depending on the format, we want to call a different generator.
             when(format) {
