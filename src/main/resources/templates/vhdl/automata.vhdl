@@ -48,23 +48,6 @@ architecture behavior of {{ item.name }} is
     );
 {%- endif %}
 
-{%- if config.compileTimeParametrisation %}
-    {%- if item.locations|length > 1 %}
-
-    -- Declare State
-    signal state : {{ item.enumName }} := {{ item.initialLocation }};
-    {%- endif %}
-
-{%- for variable in item.variables %}
-{%- if variable.locality != 'Inputs' %}
-    {% ifchanged variable.locality %}
-    -- Declare {{ variable.locality }}
-    {% endifchanged -%}
-    signal {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; {%- if variable.initialValueString %} -- {{ variable.initialValueString }} {%- endif %}
-{%- endif %}
-{%- endfor %}
-{%- endif %}
-
 {%- if item.customFunctions|length > 0 %}
 
     -- Declare Custom Functions
@@ -89,6 +72,22 @@ architecture behavior of {{ item.name }} is
     {%- endfor %}
 {%- endif %}
 
+{%- if config.compileTimeParametrisation %}
+    {%- if item.locations|length > 1 %}
+
+    -- Declare State
+    signal state : {{ item.enumName }} := {{ item.initialLocation }};
+    {%- endif %}
+
+{%- for variable in item.variables %}
+{%- if variable.locality != 'Inputs' %}
+    {% ifchanged variable.locality %}
+    -- Declare {{ variable.locality }}
+    {% endifchanged -%}
+    signal {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; {%- if variable.initialValueString %} -- {{ variable.initialValueString }} {%- endif %}
+{%- endif %}
+{%- endfor %}
+{%- endif %}
 begin
     process(clk)
 {%- if item.locations|length > 1 %}
