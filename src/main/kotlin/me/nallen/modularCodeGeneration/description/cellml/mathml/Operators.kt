@@ -1018,8 +1018,8 @@ data class Piece(
 
     override fun extractAllVariables(): List<String> {
         val variables = ArrayList<String>()
-        variables.addAll(value.extractAllVariables())
         variables.addAll(condition.extractAllVariables())
+        variables.addAll(value.extractAllVariables())
         return variables.distinct()
     }
 
