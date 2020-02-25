@@ -473,6 +473,8 @@ fun Program.removeFunctionArguments(list: List<String>): Program {
         variable.defaultValue?.removeFunctionArguments(list)
     }
 
+    this.variables.filter { list.contains(it.name) }.forEach { it.locality = Locality.EXTERNAL_INPUT }
+
     //Let's go through each line
     for(line in lines) {
         // For each line we need to call the method that sets the parameter value for any ParseTreeItem we find
