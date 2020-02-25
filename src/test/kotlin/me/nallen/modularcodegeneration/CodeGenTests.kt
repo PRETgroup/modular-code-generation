@@ -65,32 +65,45 @@ class CodeGenTests : StringSpec() {
         val canGhdl = "ghdl -v".runCommand(File("build"), ProcessBuilder.Redirect.PIPE) == 0
 
         for(test in DescriptionTests.tests) {
-            try {
-                val imported = Importer.import(test.path)
+            if(test.name != "heart") {
+                try {
+                    val imported = Importer.import(test.path)
 
-                val network = imported.first
-                var config = imported.second
+                    val network = imported.first
+                    var config = imported.second
 
-                val levels = if(network is HybridAutomata) { 1 } else { 2 }
-
-                ("Can Generate" + if(canGhdl) { " and Synthesise" } else { "" } + " Compile-Time VHDL Code For ${test.name} (${test.format})") {
-                    config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
-                    CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
-                    if (canGhdl) {
-                        makeGhdl(File("build/tmp/codegen"), levels) shouldBe 0
+                    val levels = if (network is HybridAutomata) {
+                        1
+                    } else {
+                        2
                     }
-                }
 
-                ("Can Generate" + if(canGhdl) { " and Synthesise" } else { "" } + " Run-Time VHDL Code For ${test.name} (${test.format})") {
-                    config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
-                    CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
-                    if(canGhdl) {
-                        makeGhdl(File("build/tmp/codegen"), levels) shouldBe 0
+                    ("Can Generate" + if (canGhdl) {
+                        " and Synthesise"
+                    } else {
+                        ""
+                    } + " Compile-Time VHDL Code For ${test.name} (${test.format})") {
+                        config = config.copy(parametrisationMethod = ParametrisationMethod.COMPILE_TIME)
+                        CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                        if (canGhdl) {
+                            makeGhdl(File("build/tmp/codegen"), levels) shouldBe 0
+                        }
                     }
+
+                    ("Can Generate" + if (canGhdl) {
+                        " and Synthesise"
+                    } else {
+                        ""
+                    } + " Run-Time VHDL Code For ${test.name} (${test.format})") {
+                        config = config.copy(parametrisationMethod = ParametrisationMethod.RUN_TIME)
+                        CodeGenManager.generate(network, CodeGenLanguage.VHDL, "build/tmp/codegen", config)
+                        if (canGhdl) {
+                            makeGhdl(File("build/tmp/codegen"), levels) shouldBe 0
+                        }
+                    }
+                } catch (e: Exception) {
+                    "Can Generate VHDL Code For ${test.name} (${test.format})" {}.config(enabled = false)
                 }
-            }
-            catch(e: Exception) {
-                "Can Generate VHDL Code For ${test.name} (${test.format})" {}.config(enabled = false)
             }
         }
 
