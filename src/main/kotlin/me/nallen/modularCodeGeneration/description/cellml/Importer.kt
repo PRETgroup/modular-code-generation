@@ -41,9 +41,11 @@ class Importer {
                 Logger.info("Reading remote file $path")
             }
 
+            val filteredContents = contents.replace(Regex("<documentation.*</documentation>", RegexOption.DOT_MATCHES_ALL), "")
+
             val xmlMapper = XmlMapper().registerModule(KotlinModule())
             xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES, false)
-            val cellMLTree: Model? = xmlMapper.readValue(contents, Model::class.java)
+            val cellMLTree: Model? = xmlMapper.readValue(filteredContents, Model::class.java)
 
             // Check if we could actually import it as an XML file
             if(cellMLTree == null) {
