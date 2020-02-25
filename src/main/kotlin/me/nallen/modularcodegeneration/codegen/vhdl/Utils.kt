@@ -300,7 +300,10 @@ object Utils {
                 }
 
                 // And then return the final function name
-                return "${createFunctionName(item.functionName)}($builder)"
+                return if(builder.isNotEmpty())
+                    "${createFunctionName(item.functionName)}($builder)"
+                else
+                    createFunctionName(item.functionName)
             }
             is Literal -> {
                 // If the literal can be a double, then we'll use our custom function to create a fixed-point number

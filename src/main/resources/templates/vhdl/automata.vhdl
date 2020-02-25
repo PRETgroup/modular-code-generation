@@ -69,12 +69,14 @@ architecture behavior of {{ item.name }} is
 
     -- Declare Custom Functions
     {%- for function in item.customFunctions %}
-    function {{ function.name }}(
+    function {{ function.name }}
+    {%- if function.inputs|length > 0 %}(
         {%- for input in function.inputs -%}
             {%- if not loop.first %}; {% endif -%}
             {{ input.signal }}: {{ input.type }}
         {%- endfor -%}
     )
+    {%- endif %}
             return {{ function.returnType }} is
         {%- for variable in function.variables %}
         variable {{ variable.signal }} : {{ variable.type }} := {{ variable.initialValue }}; {%- if variable.initialValueString %} -- {{ variable.initialValueString }} {%- endif %}
