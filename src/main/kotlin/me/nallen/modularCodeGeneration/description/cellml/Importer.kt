@@ -179,7 +179,7 @@ private fun createHybridNetwork(model: Model, existingUnitsMap: Map<String, Simp
 private fun extractSimpleUnits(units: List<Units>?, existingUnitsMap: Map<String, SimpleUnit> = mapOf()): Map<String, SimpleUnit> {
     val unitsMap = HashMap(existingUnitsMap)
     if(units != null) {
-        for(unit in units) {
+        for(unit in units.sortedBy { it.name.length }) {
             if(unit.baseUnits == "yes") {
                 unitsMap.put(unit.name, BaseUnit(unit.name))
             }
