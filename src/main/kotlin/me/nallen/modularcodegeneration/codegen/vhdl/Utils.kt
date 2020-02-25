@@ -351,13 +351,17 @@ object Utils {
                     "-" + padOperand(item, item.operandA, prefixData)
                 }
             }
+            is Power -> "FP_POWER(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
             is Multiply -> "FP_MULT(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
             is Divide -> "FP_DIV(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
-            is SquareRoot -> throw NotImplementedError("Square Root is currently not supported in VHDL Generation")
-            is Exponential -> throw NotImplementedError("Exponential is currently not supported in VHDL Generation")
+            is SquareRoot -> "FP_SQRT(" + padOperand(item, item.operandA, prefixData) + ")"
+            is Exponential -> "FP_EXP(" + padOperand(item, item.operandA, prefixData) + ")"
+            is Ln -> "FP_LOG(" + padOperand(item, item.operandA, prefixData) + ")"
             is Sine -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
             is Cosine -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
             is Tangent -> throw NotImplementedError("Trigonometric functions are currently not supported in VHDL Generation")
+            is Floor -> "FP_FLOOR(" + padOperand(item, item.operandA, prefixData) + ")"
+            is Ceil -> "FP_CEIL(" + padOperand(item, item.operandA, prefixData) + ")"
         }
     }
 

@@ -1,6 +1,6 @@
 # Hybrid Automata Modelling Language (HAML)
 
-#### Version: 0.1.2
+#### Version: 0.1.3
 
 ## Introduction
 
@@ -706,4 +706,4 @@ codegenConfig:
 | 0.1.3 | 2019-04-26 | Added support for trigonometric functions and constants |
 | 0.1.2 | 2019-01-31 | Added support for `Integer` types of variables |
 | 0.1.1 | 2018-02-08 | Updated to support hierarchy of Networks |
-| 0.1.0 | 2017-01-20 | Initial release |
+| 0.1.0 | 2018-01-20 | Initial release |

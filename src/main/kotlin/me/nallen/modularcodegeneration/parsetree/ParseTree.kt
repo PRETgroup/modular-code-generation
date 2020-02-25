@@ -62,12 +62,17 @@ data class Multiply(var operandA: ParseTreeItem, var operandB: ParseTreeItem): P
 data class Divide(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("divide")
 data class Negative(var operandA: ParseTreeItem): ParseTreeItem("negative")
 
+data class Power(var operandA: ParseTreeItem, var operandB: ParseTreeItem): ParseTreeItem("power")
 data class SquareRoot(var operandA: ParseTreeItem): ParseTreeItem("squareRoot")
 data class Exponential(var operandA: ParseTreeItem): ParseTreeItem("exponential")
+data class Ln(var operandA: ParseTreeItem): ParseTreeItem("naturalLog")
 
 data class Sine(var operandA: ParseTreeItem): ParseTreeItem("sine")
 data class Cosine(var operandA: ParseTreeItem): ParseTreeItem("cosine")
 data class Tangent(var operandA: ParseTreeItem): ParseTreeItem("tangent")
+
+data class Floor(var operandA: ParseTreeItem): ParseTreeItem("floor")
+data class Ceil(var operandA: ParseTreeItem): ParseTreeItem("ceil")
 
 // Also supported are variables, literals and constants
 data class Variable(var name: String, var value: ParseTreeItem? = null): ParseTreeItem("variable")
@@ -123,7 +128,7 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
             continue
 
         // Try and see if the current argument is an operator
-        val operand = getOperandForSequence(argument)
+        val operand = getOperandForSequence(argument, true)
 
         if(operand != null) {
             // It is an operator!
@@ -172,15 +177,19 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
                     Operand.PLUS -> Plus(stack[stack.size-2], stack[stack.size-1])
                     Operand.MINUS -> Minus(stack[stack.size-2], stack[stack.size-1])
                     Operand.NEGATIVE -> Negative(stack[stack.size-1])
+                    Operand.POWER -> Power(stack[stack.size-2], stack[stack.size-1])
                     Operand.MULTIPLY -> Multiply(stack[stack.size-2], stack[stack.size-1])
                     Operand.DIVIDE -> Divide(stack[stack.size-2], stack[stack.size-1])
                     Operand.SQUARE_ROOT -> SquareRoot(stack[stack.size-1])
                     Operand.EXPONENTIAL -> Exponential(stack[stack.size-1])
+                    Operand.LN -> Ln(stack[stack.size-1])
                     Operand.SCIENTIFIC_NOTATION_NEGATIVE -> Literal(String.format("%sE-%s", stack[stack.size-2].getString(), stack[stack.size-1].getString()))
                     Operand.SCIENTIFIC_NOTATION_POSITIVE -> Literal(String.format("%sE+%s", stack[stack.size-2].getString(), stack[stack.size-1].getString()))
                     Operand.SINE -> Sine(stack[stack.size-1])
                     Operand.COSINE -> Cosine(stack[stack.size-1])
                     Operand.TANGENT -> Tangent(stack[stack.size-1])
+                    Operand.FLOOR -> Floor(stack[stack.size-1])
+                    Operand.CEIL -> Ceil(stack[stack.size-1])
                 }
 
                 // If we were able to extract an operator (i.e. it wasn't a bracket or function separator)
@@ -198,7 +207,7 @@ fun generateParseTreeFromString(input: String): ParseTreeItem {
                     stack.add(item)
                 }
             }
-            catch(ex: ArrayIndexOutOfBoundsException) {
+            catch(ex: IndexOutOfBoundsException) {
                 // If this exception happens, it means that there weren't enough literals or variables in the formula
                 // and not every operator could be created
                 throw IllegalArgumentException("Incorrect number of arguments provided to ${operand.name}: $input. ")
@@ -296,13 +305,17 @@ fun ParseTreeItem.getPrecedence(): Int {
         is Plus -> Operand.PLUS
         is Minus -> Operand.MINUS
         is Negative -> Operand.NEGATIVE
+        is Power -> Operand.POWER
         is Multiply -> Operand.MULTIPLY
         is Divide -> Operand.DIVIDE
         is SquareRoot -> Operand.SQUARE_ROOT
         is Exponential -> Operand.EXPONENTIAL
+        is Ln -> Operand.LN
         is Sine -> Operand.SINE
         is Cosine -> Operand.COSINE
         is Tangent -> Operand.TANGENT
+        is Floor -> Operand.FLOOR
+        is Ceil -> Operand.CEIL
     }
 
     // And now the precedence that corresponds to that operator
@@ -331,13 +344,17 @@ fun ParseTreeItem.getCommutative(): Boolean {
         is Plus -> Operand.PLUS
         is Minus -> Operand.MINUS
         is Negative -> Operand.NEGATIVE
+        is Power -> Operand.POWER
         is Multiply -> Operand.MULTIPLY
         is Divide -> Operand.DIVIDE
         is SquareRoot -> Operand.SQUARE_ROOT
         is Exponential -> Operand.EXPONENTIAL
+        is Ln -> Operand.LN
         is Sine -> Operand.SINE
         is Cosine -> Operand.COSINE
         is Tangent -> Operand.TANGENT
+        is Floor -> Operand.FLOOR
+        is Ceil -> Operand.CEIL
     }
 
     // And now whether or not that operator is commutative
@@ -379,13 +396,17 @@ fun ParseTreeItem.generateString(): String {
         is Plus -> return this.padOperand(operandA) + " + " + this.padOperand(operandB)
         is Minus -> return this.padOperand(operandA) + " - " + this.padOperand(operandB)
         is Negative -> return "-" + this.padOperand(operandA)
+        is Power -> return "pow(" + operandA.generateString() + ", " + operandB.generateString() + ")"
         is Multiply -> return this.padOperand(operandA) + " * " + this.padOperand(operandB)
         is Divide -> return this.padOperand(operandA) + " / " + this.padOperand(operandB)
         is SquareRoot -> return "sqrt(" + operandA.generateString() + ")"
         is Exponential -> return "exp(" + operandA.generateString() + ")"
+        is Ln -> return "ln(" + operandA.generateString() + ")"
         is Sine -> return "sin(" + operandA.generateString() + ")"
         is Cosine -> return "cos(" + operandA.generateString() + ")"
         is Tangent -> return "tan(" + operandA.generateString() + ")"
+        is Floor -> return "floor(" + operandA.generateString() + ")"
+        is Ceil -> return "ceil(" + operandA.generateString() + ")"
     }
 }
 
@@ -411,13 +432,17 @@ fun ParseTreeItem.getChildren(): Array<ParseTreeItem> {
         is Plus -> arrayOf(operandA, operandB)
         is Minus -> arrayOf(operandA, operandB)
         is Negative -> arrayOf(operandA)
+        is Power -> arrayOf(operandA, operandB)
         is Multiply -> arrayOf(operandA, operandB)
         is Divide -> arrayOf(operandA, operandB)
         is SquareRoot -> arrayOf(operandA)
         is Exponential -> arrayOf(operandA)
+        is Ln -> arrayOf(operandA)
         is Sine -> arrayOf(operandA)
         is Cosine -> arrayOf(operandA)
         is Tangent -> arrayOf(operandA)
+        is Floor -> arrayOf(operandA)
+        is Ceil -> arrayOf(operandA)
     }
 }
 
@@ -453,17 +478,21 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         }
         is Plus -> VariableType.REAL
         is Minus -> VariableType.REAL
+        is Power -> VariableType.REAL
         is Multiply -> VariableType.REAL
         is Divide -> VariableType.REAL
         is Negative -> VariableType.REAL
         is SquareRoot -> VariableType.REAL
         is Exponential -> VariableType.REAL
+        is Ln -> VariableType.REAL
         is Variable -> knownVariables[name] ?: VariableType.ANY // If we know it, otherwise ANY
         is Literal -> getTypeFromLiteral(value) ?: VariableType.ANY // We try to get the type from the value
         is Constant -> name.getType()
         is Sine -> VariableType.REAL
         is Cosine -> VariableType.REAL
         is Tangent -> VariableType.REAL
+        is Floor -> VariableType.REAL
+        is Ceil -> VariableType.REAL
     }
 }
 
@@ -533,14 +562,18 @@ fun ParseTreeItem.evaluateReal(var_map: Map<String, Literal> = HashMap()): Doubl
     return when(this) {
         is Plus -> operandA.evaluateReal(var_map) + operandB.evaluateReal(var_map)
         is Minus -> operandA.evaluateReal(var_map) - operandB.evaluateReal(var_map)
+        is Power -> Math.pow(operandA.evaluateReal(var_map), operandB.evaluateReal(var_map))
         is Multiply -> operandA.evaluateReal(var_map) * operandB.evaluateReal(var_map)
         is Divide -> operandA.evaluateReal(var_map) / operandB.evaluateReal(var_map)
         is Negative -> -1 * operandA.evaluateReal(var_map)
         is SquareRoot -> Math.sqrt(operandA.evaluateReal(var_map))
         is Exponential -> Math.exp(operandA.evaluateReal(var_map))
+        is Ln -> Math.log(operandA.evaluateReal(var_map))
         is Sine -> Math.sin(operandA.evaluateReal(var_map))
         is Cosine -> Math.cos(operandA.evaluateReal(var_map))
         is Tangent -> Math.tan(operandA.evaluateReal(var_map))
+        is Floor -> Math.floor(operandA.evaluateReal(var_map))
+        is Ceil -> Math.ceil(operandA.evaluateReal(var_map))
 
         is Variable -> var_map.getValue(name).evaluateReal(var_map) // Variables that we know about
         is Literal -> when (value) { // For Literals, Boolean values represent 1 or 0
@@ -714,17 +747,21 @@ fun ParseTreeItem.getExpectedTypes(functionArguments: Map<String, List<VariableT
         }
         is Plus -> arrayOf(VariableType.REAL, VariableType.REAL)
         is Minus -> arrayOf(VariableType.REAL, VariableType.REAL)
+        is Power -> arrayOf(VariableType.REAL, VariableType.REAL)
         is Multiply -> arrayOf(VariableType.REAL, VariableType.REAL)
         is Divide -> arrayOf(VariableType.REAL, VariableType.REAL)
         is Negative -> arrayOf(VariableType.REAL)
         is SquareRoot -> arrayOf(VariableType.REAL)
         is Exponential -> arrayOf(VariableType.REAL)
+        is Ln -> arrayOf(VariableType.REAL)
         is Variable -> arrayOf()
         is Literal -> arrayOf()
         is Constant -> arrayOf()
         is Sine -> arrayOf(VariableType.REAL)
         is Cosine -> arrayOf(VariableType.REAL)
         is Tangent -> arrayOf(VariableType.REAL)
+        is Floor -> arrayOf(VariableType.REAL)
+        is Ceil -> arrayOf(VariableType.REAL)
     }
 }
 

@@ -321,11 +321,69 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
 
         return valid
     }
+
+    /**
+     * We want to override the "equals" operator so that we ignore all of the UUIDs that are part of the model
+     */
+    override fun equals(other: Any?): Boolean {
+        // First check the type
+        if(other !is HybridNetwork)
+            return false
+
+        // Check the names
+        if(this.name != other.name)
+            return false
+
+        // Check the list of variables
+        if(this.variables != other.variables)
+            return false
+
+        // Check the I/O Mapping
+        if(this.ioMapping != other.ioMapping)
+            return false
+
+        // Check that every definition in this one is present in the other, and that they have the same number of
+        // definitions
+        if(this.definitions.size != other.definitions.size)
+            return false
+        for((_, definition) in this.definitions) {
+            if(!other.definitions.any { it.value == definition })
+                return false
+        }
+
+        // And finally, do the same for all the instances
+        if(this.instances.size != other.instances.size)
+            return false
+        for((name, instance) in this.instances) {
+            // We need to find the matching instance in the other network
+            val otherInstance = other.instances.filter { it.key == name }.values.firstOrNull()
+            if(otherInstance == null)
+                return false
+
+            // And then get the two definitions that they each reference
+            val thisDefinition = this.getDefinitionForInstantiateId(instance.instantiate)
+            val otherDefinition = other.getDefinitionForInstantiateId(otherInstance.instantiate)
+
+            // Check that they're the same definition
+            if(thisDefinition == null || otherDefinition == null)
+                return false
+
+            if(thisDefinition.name != otherDefinition.name)
+                return false
+
+            // And that the configuration parameters match
+            if(instance.parameters != otherInstance.parameters)
+                return false
+        }
+
+        // If we get here then all good!
+        return true
+    }
 }
 
 data class AutomataInstance(
         var instantiate: UUID,
-        val parameters: MutableMap<String, ParseTreeItem> = LinkedHashMap()
+        val parameters: LinkedHashMap<String, ParseTreeItem> = LinkedHashMap()
 )
 
 data class AutomataInstantiate(

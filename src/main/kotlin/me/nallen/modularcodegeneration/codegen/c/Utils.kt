@@ -257,13 +257,17 @@ object Utils {
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
             is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)
             is Negative -> "-" + padOperand(item, item.operandA, prefixData)
+            is Power -> "pow(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ", " + generateCodeForParseTreeItem(item.operandA, prefixData) + ")" //throw NotImplementedError("Power function is currently not supported in C Generation")
             is Multiply -> padOperand(item, item.operandA, prefixData) + " * " + padOperand(item, item.operandB, prefixData)
             is Divide -> padOperand(item, item.operandA, prefixData) + " / " + padOperand(item, item.operandB, prefixData)
             is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Exponential -> "exp(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+            is Ln -> "log(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Sine -> "sin(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Cosine -> "cos(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             is Tangent -> "tan(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+            is Floor -> "floor(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+            is Ceil -> "ceil(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
         }
     }
 

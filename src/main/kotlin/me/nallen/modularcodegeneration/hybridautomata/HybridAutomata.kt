@@ -1,6 +1,6 @@
 package me.nallen.modularcodegeneration.hybridautomata
 
-import me.nallen.modularcodegeneration.description.ParseTreeLocality
+import me.nallen.modularcodegeneration.description.haml.ParseTreeLocality
 import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable as ParseTreeVariable
@@ -354,20 +354,20 @@ data class HybridAutomata(
 data class Location(
         var name: String,
         var invariant: ParseTreeItem = Literal("true"),
-        var flow: MutableMap<String, ParseTreeItem> = LinkedHashMap(),
-        var update: MutableMap<String, ParseTreeItem> = LinkedHashMap()
+        var flow: LinkedHashMap<String, ParseTreeItem> = LinkedHashMap(),
+        var update: LinkedHashMap<String, ParseTreeItem> = LinkedHashMap()
 )
 
 data class Edge(
         var fromLocation: String,
         var toLocation: String,
         var guard: ParseTreeItem = Literal("true"),
-        var update: MutableMap<String, ParseTreeItem> = LinkedHashMap()
+        var update: LinkedHashMap<String, ParseTreeItem> = LinkedHashMap()
 )
 
 data class Initialisation(
         var state: String,
-        var valuations: MutableMap<String, ParseTreeItem> = LinkedHashMap()
+        var valuations: LinkedHashMap<String, ParseTreeItem> = LinkedHashMap()
 )
 
 data class Variable(

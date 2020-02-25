@@ -17,8 +17,9 @@ internal enum class Operand {
     OPEN_BRACKET, CLOSE_BRACKET,
     FUNCTION_CALL, FUNCTION_SEPARATOR,
     PLUS, MINUS, MULTIPLY, DIVIDE, NEGATIVE,
-    SQUARE_ROOT, EXPONENTIAL,
+    POWER, SQUARE_ROOT, EXPONENTIAL, LN,
     SINE, COSINE, TANGENT,
+    FLOOR, CEIL,
     SCIENTIFIC_NOTATION_NEGATIVE, SCIENTIFIC_NOTATION_POSITIVE
 }
 
@@ -30,7 +31,8 @@ internal data class Operator(
         var operands: Int,
         var associativity: Associativity,
         var precedence: Int,
-        var commutative: Boolean
+        var commutative: Boolean,
+        var function: Boolean
 )
 
 /**
@@ -39,31 +41,35 @@ internal data class Operator(
 internal fun getOperator(operand: Operand): Operator {
     // Each operator enum corresponds to a pre-defined set of properties
     return when(operand) {
-        Operand.AND -> Operator("&&", 2, Associativity.LEFT, 11, true)
-        Operand.OR -> Operator("||", 2, Associativity.LEFT, 12, true)
-        Operand.NOT -> Operator("!", 1, Associativity.RIGHT, 2, true)
-        Operand.GREATER_THAN_OR_EQUAL -> Operator(">=", 2, Associativity.LEFT, 6, false)
-        Operand.GREATER_THAN -> Operator(">", 2, Associativity.LEFT, 6, false)
-        Operand.LESS_THAN_OR_EQUAL -> Operator("<=", 2, Associativity.LEFT, 6, false)
-        Operand.LESS_THAN -> Operator("<", 2, Associativity.LEFT, 6, false)
-        Operand.EQUAL -> Operator("==", 2, Associativity.LEFT, 7, true)
-        Operand.NOT_EQUAL -> Operator("!=", 2, Associativity.LEFT, 7, true)
-        Operand.OPEN_BRACKET -> Operator("(", 0, Associativity.RIGHT, 1, true)
-        Operand.CLOSE_BRACKET -> Operator(")", 0, Associativity.LEFT, 1, true)
-        Operand.FUNCTION_SEPARATOR -> Operator(",", 0, Associativity.NONE, 1, true)
-        Operand.PLUS -> Operator("+", 2, Associativity.LEFT, 4, true)
-        Operand.MINUS -> Operator("-", 2, Associativity.LEFT, 4, false)
-        Operand.NEGATIVE -> Operator("`", 1, Associativity.RIGHT, 2, true)
-        Operand.MULTIPLY -> Operator("*", 2, Associativity.LEFT, 3, true)
-        Operand.DIVIDE -> Operator("/", 2, Associativity.LEFT, 3, false)
-        Operand.SQUARE_ROOT -> Operator("sqrt", 1, Associativity.RIGHT, 3, true)
-        Operand.EXPONENTIAL -> Operator("exp", 1, Associativity.RIGHT, 3, true)
-        Operand.SCIENTIFIC_NOTATION_NEGATIVE -> Operator("E-", 2, Associativity.LEFT, 2, false)
-        Operand.SCIENTIFIC_NOTATION_POSITIVE -> Operator("E+", 2, Associativity.LEFT, 2, false)
-        Operand.FUNCTION_CALL -> Operator("function<>(", 0, Associativity.RIGHT, 1, false)
-        Operand.SINE -> Operator("sin", 1, Associativity.RIGHT, 3, true)
-        Operand.COSINE -> Operator("cos", 1, Associativity.RIGHT, 3, true)
-        Operand.TANGENT -> Operator("tan", 1, Associativity.RIGHT, 3, true)
+        Operand.AND -> Operator("&&", 2, Associativity.LEFT, 11, true, false)
+        Operand.OR -> Operator("||", 2, Associativity.LEFT, 12, true, false)
+        Operand.NOT -> Operator("!", 1, Associativity.RIGHT, 2, true, false)
+        Operand.GREATER_THAN_OR_EQUAL -> Operator(">=", 2, Associativity.LEFT, 6, false, false)
+        Operand.GREATER_THAN -> Operator(">", 2, Associativity.LEFT, 6, false, false)
+        Operand.LESS_THAN_OR_EQUAL -> Operator("<=", 2, Associativity.LEFT, 6, false, false)
+        Operand.LESS_THAN -> Operator("<", 2, Associativity.LEFT, 6, false, false)
+        Operand.EQUAL -> Operator("==", 2, Associativity.LEFT, 7, true, false)
+        Operand.NOT_EQUAL -> Operator("!=", 2, Associativity.LEFT, 7, true, false)
+        Operand.OPEN_BRACKET -> Operator("(", 0, Associativity.RIGHT, 1, true, false)
+        Operand.CLOSE_BRACKET -> Operator(")", 0, Associativity.LEFT, 1, true, false)
+        Operand.FUNCTION_SEPARATOR -> Operator(",", 0, Associativity.NONE, 20, true, false)
+        Operand.PLUS -> Operator("+", 2, Associativity.LEFT, 4, true, false)
+        Operand.MINUS -> Operator("-", 2, Associativity.LEFT, 4, false, false)
+        Operand.NEGATIVE -> Operator("`", 1, Associativity.RIGHT, 2, true, false)
+        Operand.MULTIPLY -> Operator("*", 2, Associativity.LEFT, 3, true, false)
+        Operand.DIVIDE -> Operator("/", 2, Associativity.LEFT, 3, false, false)
+        Operand.POWER -> Operator("pow", 2, Associativity.RIGHT, 3, false, true)
+        Operand.SQUARE_ROOT -> Operator("sqrt", 1, Associativity.RIGHT, 3, true, true)
+        Operand.EXPONENTIAL -> Operator("exp", 1, Associativity.RIGHT, 3, true, true)
+        Operand.LN -> Operator("ln", 1, Associativity.RIGHT, 3, true, true)
+        Operand.SCIENTIFIC_NOTATION_NEGATIVE -> Operator("E-", 2, Associativity.LEFT, 2, false, false)
+        Operand.SCIENTIFIC_NOTATION_POSITIVE -> Operator("E+", 2, Associativity.LEFT, 2, false, false)
+        Operand.FUNCTION_CALL -> Operator("function<>(", 0, Associativity.RIGHT, 1, false, true)
+        Operand.SINE -> Operator("sin", 1, Associativity.RIGHT, 3, true, true)
+        Operand.COSINE -> Operator("cos", 1, Associativity.RIGHT, 3, true, true)
+        Operand.TANGENT -> Operator("tan", 1, Associativity.RIGHT, 3, true, true)
+        Operand.FLOOR -> Operator("floor", 1, Associativity.RIGHT, 3, true, true)
+        Operand.CEIL -> Operator("ceil", 1, Associativity.RIGHT, 3, true, true)
     }
 }
 
@@ -80,12 +86,12 @@ internal fun getMapOfOperators(): Map<Operand, Operator> {
  * If the first character(s) do not correspond to any operator then null will be returned.
  * If the start of the string matches multiple operators, the one with the longest length will be returned.
  */
-internal fun getOperandForSequence(input: String): Operand? {
+internal fun getOperandForSequence(input: String, entire: Boolean = false): Operand? {
     // Create a list of operators that match the start of the string
     val matches = ArrayList<Operand>()
     for((operand, operator) in getMapOfOperators()) {
         // Check that the string starts with the given operator
-        if(input.startsWith(operator.symbol, ignoreCase = true))
+        if(input.startsWith(operator.symbol, ignoreCase = true) && (entire || !operator.function))
             if(!operator.symbol.last().isLetterOrDigit() || input.length == operator.symbol.length || !input[operator.symbol.length].isLetterOrDigit())
                 matches.add(operand)
     }
@@ -96,12 +102,25 @@ internal fun getOperandForSequence(input: String): Operand? {
         return matches.sortedWith(compareBy({getOperator(it).symbol.length}, {getOperator(it).operands})).last()
 
     // Alternatively, we can see if the start of the string is a valid custom function name
-    if(getFunctionName(input) != null)
+    val functionName = getFunctionName(input)
+    if(functionName != null) {
+        for ((operand, operator) in getMapOfOperators()) {
+            if (functionName.first.equals(operator.symbol, ignoreCase = true) && operator.function)
+                return operand
+        }
+
         return Operand.FUNCTION_CALL
+    }
 
     // Or, if we're looking at a postfix equation, it may be our custom postfix function style
-    if(isPostfixedFunction(input))
+    if(isPostfixedFunction(input)) {
+        for((operand, operator) in getMapOfOperators()) {
+            if(input.equals(operator.symbol, ignoreCase = true) && operator.function)
+                return operand
+        }
+
         return Operand.FUNCTION_CALL
+    }
 
     // Otherwise, no operator found
     return null
