@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.description.Importer
 import me.nallen.modularcodegeneration.hybridautomata.*
 import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.Literal
@@ -74,17 +75,20 @@ class Importer {
          * Once all includes have been parsed, the final YAML document string will be returned.
          */
         private fun parseIncludes(path: String): String {
-            val file = File(path).absoluteFile
+            val (contents, isUrl) = Importer.loadFromPath(path)
 
-            Logger.info("Reading source file ${file.getRelativePath()}")
+            var file: File? = null
 
-            // Try to open the file
-            if(!file.exists() || !file.isFile) {
-                throw FileNotFoundException("Unable to find the requested file at $path")
+            if(isUrl) {
+                file = File(path).absoluteFile
+                Logger.info("Reading source file ${file.getRelativePath()}")
+            }
+            else {
+                Logger.info("Reading remote file $path")
             }
 
             val builder = StringBuilder()
-            val lines = file.readLines()
+            val lines = contents.lines()
 
             // A pair of regex for detecting include statements
             val includeRegex = Regex("!include\\s+([^\\s]+)")
@@ -97,7 +101,10 @@ class Importer {
                 if(match != null) {
                     // We found one! Now time to parse it
                     // Firstly we want to open the included file
-                    val includedFile = File(file.parentFile.absolutePath, match.groupValues[1]).absolutePath
+                    val includedFile = if(file != null)
+                        File(file.parentFile.absolutePath, match.groupValues[1]).absolutePath
+                    else
+                        throw Exception("Unable to parse includes for remote files")
 
                     // Now we need to figure out how much of an indent there was at the start of this line, since
                     // YAML is whitespace sensitive for indentation

@@ -12,6 +12,7 @@ import me.nallen.modularcodegeneration.codegen.Configuration
 import me.nallen.modularcodegeneration.hybridautomata.*
 import java.io.File
 import java.io.FileNotFoundException
+import java.net.URL
 
 typealias HamlImporter = me.nallen.modularcodegeneration.description.haml.Importer
 typealias CellMLImporter = me.nallen.modularcodegeneration.description.cellml.Importer
@@ -30,15 +31,11 @@ class Importer {
          * Configuration settings are also parsed and returned as a separate Configuration object.
          */
         fun import(path: String): Pair<HybridItem, Configuration> {
-            val file = File(path)
-
-            // Try to open the file
-            if(!file.exists() || !file.isFile)
-                throw FileNotFoundException("Unable to find the requested file at $path")
+            val (contents, _) = loadFromPath(path)
 
             // Now we want to try read the file as a YAML file...
             val yamlMapper = YAMLMapper().registerModule(KotlinModule())
-            val yamlTree = yamlMapper.readTree(file)
+            val yamlTree = yamlMapper.readTree(contents)
 
             // Check if we could actually import it as a YAML file
             if(yamlTree != null) {
@@ -51,7 +48,7 @@ class Importer {
             // Otherwise, let's try it as a CellML file
             val xmlMapper = XmlMapper().registerModule(KotlinModule())
             xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES, false)
-            val cellMLTree = xmlMapper.readValue(file, CellMLModel::class.java)
+            val cellMLTree = xmlMapper.readValue(contents, CellMLModel::class.java)
 
             // Check if we could actually import it as an XML file
             if(cellMLTree != null) {
@@ -59,6 +56,22 @@ class Importer {
             }
 
             throw Exception("Unable to determine the provided format for file at $path")
+        }
+
+        fun loadFromPath(path: String): Pair<String, Boolean> {
+            try {
+                val url = URL(path)
+
+                return Pair(url.readText(), true)
+            }
+            catch(e: Exception) {e.printStackTrace()}
+
+            val file = File(path)
+
+            if(!file.exists() || !file.isFile)
+                throw FileNotFoundException("Unable to find the requested file at $path")
+
+            return Pair(file.readText(), false)
         }
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.description.Importer
 import me.nallen.modularcodegeneration.description.cellml.Importer.Factory.variableMap
 import me.nallen.modularcodegeneration.description.cellml.mathml.*
 import me.nallen.modularcodegeneration.hybridautomata.*
@@ -12,6 +13,7 @@ import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
 import me.nallen.modularcodegeneration.parsetree.Program
 import me.nallen.modularcodegeneration.parsetree.VariableDeclaration
 import me.nallen.modularcodegeneration.parsetree.VariableType
+import me.nallen.modularcodegeneration.utils.getRelativePath
 import java.io.File
 import java.lang.Math
 import java.util.*
@@ -29,15 +31,19 @@ class Importer {
          * Imports the CellML document at the specified path and converts it to a Hybrid Item.
          */
         fun import(path: String): Pair<HybridItem, Configuration> {
-            val file = File(path)
+            val (contents, isUrl) = Importer.loadFromPath(path)
 
-            // Try to open the file
-            if(!file.exists() || !file.isFile)
-                throw Exception("Whoops")
+            if(isUrl) {
+                val file = File(path).absoluteFile
+                Logger.info("Reading source file ${file.getRelativePath()}")
+            }
+            else {
+                Logger.info("Reading remote file $path")
+            }
 
             val xmlMapper = XmlMapper().registerModule(KotlinModule())
             xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES, false)
-            val cellMLTree: Model? = xmlMapper.readValue(file, Model::class.java)
+            val cellMLTree: Model? = xmlMapper.readValue(contents, Model::class.java)
 
             // Check if we could actually import it as an XML file
             if(cellMLTree == null) {
