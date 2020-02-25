@@ -673,6 +673,24 @@ fun ParseTreeItem.replaceVariables(map: Map<String, String>): ParseTreeItem {
 }
 
 /**
+ * Removes arguments from function calls
+ */
+fun ParseTreeItem.removeFunctionArguments(list: List<String>): ParseTreeItem {
+    // We only care about function calls, otherwise we just leave it to be
+    // We recursively call this function until we reach the end of the tree
+    if(this is FunctionCall) {
+        // Remove any arguments that match the list
+        this.arguments = this.arguments.filter { !list.contains(it.generateString()) }
+    }
+
+    for(child in this.getChildren()) {
+        child.removeFunctionArguments(list)
+    }
+
+    return this
+}
+
+/**
  * Replaces variable names with something else
  */
 fun ParseTreeItem.replaceVariablesWithParseTree(map: Map<String, ParseTreeItem>): ParseTreeItem {

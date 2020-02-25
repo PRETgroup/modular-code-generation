@@ -8,11 +8,9 @@ import me.nallen.modularcodegeneration.description.Importer
 import me.nallen.modularcodegeneration.description.cellml.Importer.Factory.variableMap
 import me.nallen.modularcodegeneration.description.cellml.mathml.*
 import me.nallen.modularcodegeneration.hybridautomata.*
+import me.nallen.modularcodegeneration.hybridautomata.Locality
 import me.nallen.modularcodegeneration.logging.Logger
-import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
-import me.nallen.modularcodegeneration.parsetree.Program
-import me.nallen.modularcodegeneration.parsetree.VariableDeclaration
-import me.nallen.modularcodegeneration.parsetree.VariableType
+import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.utils.getRelativePath
 import java.io.File
 import java.lang.Math
@@ -352,6 +350,26 @@ private fun createHybridAutomata(component: Component, existingUnitsMap: Map<Str
             variable.defaultValue = item.init.valuations[variable.name]
             item.init.valuations.remove(variable.name)
         }
+    }
+
+    // Remove parameters from function calls
+    // Starting with the function definition itself
+    for(function in item.functions) {
+        for(variable in item.variables.filter { it.locality == Locality.PARAMETER }) {
+            function.inputs.removeIf { it.name == variable.name }
+        }
+
+        function.logic.removeFunctionArguments(item.variables.filter { it.locality == Locality.PARAMETER }.map { it.name })
+    }
+
+    // Any calls in updates
+    for(update in location.update) {
+        update.value.removeFunctionArguments(item.variables.filter { it.locality == Locality.PARAMETER }.map { it.name })
+    }
+
+    // Any calls in flows
+    for(flow in location.flow) {
+        flow.value.removeFunctionArguments(item.variables.filter { it.locality == Locality.PARAMETER }.map { it.name })
     }
 
     item.init.state = "q0"

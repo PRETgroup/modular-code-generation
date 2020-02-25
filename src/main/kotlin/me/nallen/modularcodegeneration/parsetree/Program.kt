@@ -480,3 +480,38 @@ fun Program.setParameterValue(key: String, value: ParseTreeItem): Program {
     // Return the program for chaining
     return this
 }
+
+/**
+ * Removes arguments from function calls
+ */
+fun Program.removeFunctionArguments(list: List<String>): Program {
+    // We need to go through any existing default values for variables to see if it exists in there
+    for(variable in variables) {
+        variable.defaultValue?.removeFunctionArguments(list)
+    }
+
+    //Let's go through each line
+    for(line in lines) {
+        // For each line we need to call the method that sets the parameter value for any ParseTreeItem we find
+        // We also have to recursively call this method for any bodies we find under any conditionals
+        when(line) {
+            is Statement -> line.logic.removeFunctionArguments(list)
+            is Assignment -> {
+                line.variableName.removeFunctionArguments(list)
+                line.variableValue.removeFunctionArguments(list)
+            }
+            is Return -> line.logic.removeFunctionArguments(list)
+            is IfStatement -> {
+                line.condition.removeFunctionArguments(list)
+                line.body.removeFunctionArguments(list)
+            }
+            is ElseIfStatement -> {
+                line.condition.removeFunctionArguments(list)
+                line.body.removeFunctionArguments(list)
+            }
+            is ElseStatement -> line.body.removeFunctionArguments(list)
+        }
+    }
+
+    return this
+}
