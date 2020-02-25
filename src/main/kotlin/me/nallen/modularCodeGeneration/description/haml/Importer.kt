@@ -79,7 +79,7 @@ class Importer {
 
             var file: File? = null
 
-            if(isUrl) {
+            if(!isUrl) {
                 file = File(path).absoluteFile
                 Logger.info("Reading source file ${file.getRelativePath()}")
             }

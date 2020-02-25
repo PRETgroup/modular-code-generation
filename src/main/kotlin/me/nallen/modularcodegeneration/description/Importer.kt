@@ -64,7 +64,7 @@ class Importer {
 
                 return Pair(url.readText(), true)
             }
-            catch(e: Exception) {e.printStackTrace()}
+            catch(e: Exception) {}
 
             val file = File(path)
 
