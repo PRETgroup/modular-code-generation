@@ -664,13 +664,6 @@ object CFileGenerator {
         // Now we go through each input
         var prev: String? = null
         for (key in keys) {
-            if (prev != null && prev != key.automata)
-                result.appendln()
-
-            // Header for output mappings, when needed
-            if(prev != key.automata && key.automata.isBlank())
-                result.appendln("${config.getIndent(1)}// Output Mapping")
-
             // Header for variable mappings, when needed
             if(prev != key.automata && prev != null && prev.isBlank())
                 result.appendln("${config.getIndent(1)}// Mappings")
@@ -679,15 +672,11 @@ object CFileGenerator {
 
             // And assign to the input, the correct output (or combination of them)
             val from = network.ioMapping[key]!!
-            if(key.automata.isBlank())
-                // We are writing to an output of this automata
-                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
-            else
+            if(!key.automata.isBlank())
                 // We are writing to an input of a sub-automata
                 result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
         }
 
-        result.appendln()
         result.appendln()
 
         // Let's start the run code
@@ -703,6 +692,24 @@ object CFileGenerator {
             // And simply call the "Run" function for it
             result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Run")}(&me->${Utils.createVariableName(name, "data")});")
         }
+
+        // Now we go through each output
+        prev = null
+        for (key in keys) {
+            // Header for output mappings, when needed
+            if(prev != key.automata && key.automata.isBlank()) {
+                result.appendln()
+                result.appendln("${config.getIndent(1)}// Output Mapping")
+            }
+
+            prev = key.automata
+
+            // And assign to the output, the correct value (or combination of them)
+            val from = network.ioMapping[key]!!
+            if(key.automata.isBlank())
+                // We are writing to an output of this automata
+                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
+       }
 
         // And return the collection of "Run" functions
         return result.toString()
