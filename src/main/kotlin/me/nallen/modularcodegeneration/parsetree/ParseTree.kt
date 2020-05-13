@@ -476,12 +476,30 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
 
             knownFunctions[functionName] ?: VariableType.ANY // If we know it, otherwise ANY
         }
-        is Plus -> VariableType.REAL
-        is Minus -> VariableType.REAL
+        is Plus -> {
+            // If both arguments are integer, then result is integer
+            if(operandA.getOperationResultType(knownVariables, knownFunctions) == VariableType.REAL || operandB.getOperationResultType(knownVariables, knownFunctions) == VariableType.INTEGER) {
+                VariableType.INTEGER
+            }
+            VariableType.REAL
+        }
+        is Minus -> {
+            // If both arguments are integer, then result is integer
+            if(operandA.getOperationResultType(knownVariables, knownFunctions) == VariableType.INTEGER && operandB.getOperationResultType(knownVariables, knownFunctions) == VariableType.INTEGER) {
+                VariableType.INTEGER
+            }
+            VariableType.REAL
+        }
         is Power -> VariableType.REAL
-        is Multiply -> VariableType.REAL
+        is Multiply -> {
+            // If both arguments are integer, then result is integer
+            if(operandA.getOperationResultType(knownVariables, knownFunctions) == VariableType.INTEGER && operandB.getOperationResultType(knownVariables, knownFunctions) == VariableType.INTEGER) {
+                VariableType.INTEGER
+            }
+            VariableType.REAL
+        }
         is Divide -> VariableType.REAL
-        is Negative -> VariableType.REAL
+        is Negative -> operandA.getOperationResultType(knownVariables, knownFunctions)
         is SquareRoot -> VariableType.REAL
         is Exponential -> VariableType.REAL
         is Ln -> VariableType.REAL
@@ -491,8 +509,8 @@ fun ParseTreeItem.getOperationResultType(knownVariables: Map<String, VariableTyp
         is Sine -> VariableType.REAL
         is Cosine -> VariableType.REAL
         is Tangent -> VariableType.REAL
-        is Floor -> VariableType.REAL
-        is Ceil -> VariableType.REAL
+        is Floor -> VariableType.INTEGER
+        is Ceil -> VariableType.INTEGER
     }
 }
 
@@ -827,11 +845,15 @@ fun ParseTreeItem.validate(variableTypes: Map<String, VariableType>, functionTyp
         if(children.size > i) {
             // And check that we provided a valid argument to it by first getting the type of the argument
             val childType = children[i].getOperationResultType(variableTypes, functionTypes)
+
             // And then comparing it with what we expect
             if(childType != type && type != VariableType.ANY) {
-                Logger.error("Invalid argument supplied to position $i of '$name' in $location." +
+                // We are able to cast integers into reals, so check for that
+                if(!(childType == VariableType.INTEGER && type == VariableType.REAL)) {
+                    Logger.error("Invalid argument supplied to position $i of '$name' in $location." +
                         " Found '$childType', expected '$type'.")
-                valid = false
+                    valid = false
+                }
             }
         }
     }
