@@ -175,6 +175,9 @@ class VHDLGenerator {
                 outputDir
             }
 
+            // Use default parameters for top-level item
+            item.setDefaultParametrisation()
+
             // Generate the current item
             generateItem(generateItem, itemDir.absolutePath, generateConfig)
 
