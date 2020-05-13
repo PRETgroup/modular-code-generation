@@ -151,7 +151,7 @@ object Utils {
         return when(type) {
             null -> "void"
             VariableType.BOOLEAN -> "false"
-            VariableType.REAL -> "(others => '0')"
+            VariableType.REAL -> "CREATE_FP(0.0)"
             VariableType.INTEGER -> "0"
             else -> throw NotImplementedError("Unable to generate code for requested type '$type'")
         }
