@@ -669,11 +669,11 @@ object CFileGenerator {
 
             // Header for output mappings, when needed
             if(prev != key.automata && key.automata.isBlank())
-                result.appendln("${config.getIndent(1)}/* Output Mapping */")
+                result.appendln("${config.getIndent(1)}// Output Mapping")
 
             // Header for variable mappings, when needed
             if(prev != key.automata && prev != null && prev.isBlank())
-                result.appendln("${config.getIndent(1)}/* Mappings */")
+                result.appendln("${config.getIndent(1)}// Mappings")
 
             prev = key.automata
 
@@ -691,7 +691,7 @@ object CFileGenerator {
         result.appendln()
 
         // Let's start the run code
-        result.appendln("${config.getIndent(1)}/* Run Automata */")
+        result.appendln("${config.getIndent(1)}// Run Automata")
 
         // We go through each instantiate we've created
         var first = true
