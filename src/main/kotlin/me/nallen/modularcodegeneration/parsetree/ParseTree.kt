@@ -649,27 +649,6 @@ fun ParseTreeItem.setParameterValue(key: String, value: ParseTreeItem): ParseTre
 }
 
 /**
- * Prepends something in front of all variables
- */
-fun ParseTreeItem.prependVariables(prependString: String, asVariable: Boolean = true): ParseTreeItem {
-    // We only care about variables, otherwise we just leave it to be
-    // We recursively call this function until we reach the end of the tree
-    if(this is Variable) {
-        // Let's prepend it
-        if(asVariable)
-            this.name = Utils.createVariableName(prependString, this.name)
-        else
-            this.name = prependString + this.name
-    }
-
-    for(child in this.getChildren()) {
-        child.prependVariables(prependString, asVariable)
-    }
-
-    return this
-}
-
-/**
  * Replaces variable names with something else
  */
 fun ParseTreeItem.replaceVariables(map: Map<String, String>): ParseTreeItem {
@@ -718,15 +697,45 @@ fun ParseTreeItem.replaceVariablesWithParseTree(map: Map<String, ParseTreeItem>)
         // Let's check if it exists
         if(map.containsKey(this.name)) {
             // Let's replace it
-            this.value = map.getValue(this.name)
+            return map.getValue(this.name)
         }
     }
 
-    for(child in this.getChildren()) {
-        child.replaceVariablesWithParseTree(map)
+    return when(this) {
+        is And -> And(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is Or -> Or(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is Not -> Not(operandA.replaceVariablesWithParseTree(map))
+        is GreaterThanOrEqual -> GreaterThanOrEqual(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is GreaterThan -> GreaterThan(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is LessThanOrEqual -> LessThanOrEqual(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is LessThan -> LessThan(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is Equal -> Equal(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is NotEqual -> NotEqual(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is FunctionCall -> {
+            val newArguments = ArrayList<ParseTreeItem>()
+            for(argument in arguments) {
+                newArguments.add(argument.replaceVariablesWithParseTree(map))
+            }
+            return FunctionCall(functionName, newArguments)
+        }
+        is Plus -> Plus(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is Minus -> Minus(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is Multiply -> Multiply(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is Divide -> Divide(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is Negative -> Negative(operandA.replaceVariablesWithParseTree(map))
+        is Power -> Power(operandA.replaceVariablesWithParseTree(map), operandB.replaceVariablesWithParseTree(map))
+        is SquareRoot -> SquareRoot(operandA.replaceVariablesWithParseTree(map))
+        is Exponential -> Exponential(operandA.replaceVariablesWithParseTree(map))
+        is Ln -> Ln(operandA.replaceVariablesWithParseTree(map))
+        is Sine -> Sine(operandA.replaceVariablesWithParseTree(map))
+        is Cosine -> Cosine(operandA.replaceVariablesWithParseTree(map))
+        is Tangent -> Tangent(operandA.replaceVariablesWithParseTree(map))
+        is Floor -> Floor(operandA.replaceVariablesWithParseTree(map))
+        is Ceil -> Ceil(operandA.replaceVariablesWithParseTree(map))
+        is Variable -> Variable(name, value?.replaceVariablesWithParseTree(map))
+        is Literal -> Literal(value)
+        is Constant -> Constant(name)
     }
-
-    return this
 }
 
 /**

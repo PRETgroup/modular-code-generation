@@ -180,7 +180,26 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
 
                     for(item in flattenedDefinition.ioMapping) {
                         var newKey = AutomataVariablePair(Utils.createVariableName(instanceName, item.key.automata), item.key.variable)
-                        val newValue = ParseTreeItem.generate(item.value.generateString()).prependVariables(instanceName)
+
+                        val replaceVariableMap = HashMap<String, ParseTreeItem>()
+                        for((key, value) in this.ioMapping.filter { it.key.automata == instanceName }) {
+                            replaceVariableMap.put(key.variable, value)
+                        }
+
+                        for(variable in item.value.collectVariables()) {
+                            if(!replaceVariableMap.containsKey(variable)) {
+                                if(variable.contains(".")) {
+                                    replaceVariableMap.put(variable, ParseTreeItem.generate(Utils.createVariableName(instanceName, variable.substringBefore(".")) + "." + variable.substringAfter(".")))
+                                }
+                                else {
+                                    replaceVariableMap.put(variable, ParseTreeItem.generate(Utils.createVariableName(instanceName, variable)))
+                                }
+                            }
+                        }
+
+                        val newValue = ParseTreeItem.generate(item.value.generateString())
+                                .replaceVariablesWithParseTree(replaceVariableMap)
+
                         if(item.key.automata.isNotEmpty()) {
                             val innerInstance = this.instances[item.key.automata]
                             if(innerInstance != null) {
