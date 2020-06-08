@@ -388,6 +388,7 @@ object Utils {
                 is IfStatement -> "if ${Utils.generateCodeForParseTreeItem(line.condition, prefixData)} then\n${Utils.generateCodeForProgram(line.body, 1, prefixData)}\n"
                 is ElseIfStatement -> "elsif ${Utils.generateCodeForParseTreeItem(line.condition, prefixData)} then\n${Utils.generateCodeForProgram(line.body, 1, prefixData)}\n"
                 is ElseStatement -> "else\n${Utils.generateCodeForProgram(line.body, 1, prefixData)}\n"
+                is ForStatement -> throw NotImplementedError("For loops are currently not supported in VHDL Generation")
             }.prependIndent(indent))
 
             // If we're in a conditional block we need to check if we need to add an end

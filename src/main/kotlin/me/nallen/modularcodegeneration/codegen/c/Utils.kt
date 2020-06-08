@@ -302,6 +302,28 @@ object Utils {
                         is IfStatement -> "if(${Utils.generateCodeForParseTreeItem(it.condition, prefixData)}) {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData, true)}\n}"
                         is ElseIfStatement -> "else if(${Utils.generateCodeForParseTreeItem(it.condition, prefixData)}) {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData, true)}\n}"
                         is ElseStatement -> "else {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData, true)}\n}"
+                        is ForStatement -> {
+                            var loopAnnotation = ""
+                            if(config.ccodeSettings.hasLoopAnnotations) {
+                                val loops = Math.abs(it.upperBound - it.lowerBound) + 1
+                                loopAnnotation = "\n${config.getIndent(1)}${config.ccodeSettings.getLoopAnnotation(loops)}"
+                            }
+                            
+                            if(it.lowerBound <= it.upperBound) {
+                                "for(" +
+                                        "int ${Utils.generateCodeForParseTreeItem(it.variableName, prefixData)} = ${it.lowerBound}; " +
+                                        "${Utils.generateCodeForParseTreeItem(it.variableName, prefixData)} <= ${it.upperBound}; " +
+                                        "${Utils.generateCodeForParseTreeItem(it.variableName, prefixData)}++" +
+                                        ") {$loopAnnotation\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData, true)}\n}"
+                            }
+                            else {
+                                "for(" +
+                                        "int ${Utils.generateCodeForParseTreeItem(it.variableName, prefixData)} = ${it.lowerBound}; " +
+                                        "${Utils.generateCodeForParseTreeItem(it.variableName, prefixData)} >= ${it.upperBound}; " +
+                                        "${Utils.generateCodeForParseTreeItem(it.variableName, prefixData)}--" +
+                                        ") {$loopAnnotation\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData, true)}\n}"
+                            }
+                        }
                     }
                 }
                 .forEach { builder.appendln(it.prependIndent(config.getIndent(depth))) }
