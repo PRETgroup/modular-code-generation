@@ -1,6 +1,6 @@
 # Hybrid Automata Modelling Language (HAML)
 
-#### Version: 0.1.4
+#### Version: 0.1.5
 
 ## Introduction
 
@@ -12,7 +12,7 @@ This specification allows for the describing of hybrid systems in a formal manne
 ## Table of Contents
 
 - [Hybrid Automata Modelling Language (HAML)](#hybrid-automata-modelling-language-haml)
-      - [Version: 0.1.4](#version-014)
+      - [Version: 0.1.5](#version-015)
   - [Introduction](#introduction)
   - [Table of Contents](#table-of-contents)
   - [Definitions](#definitions)
@@ -742,6 +742,7 @@ codegenConfig:
 
 | Version | Date | Notes |
 |---|---|---|
+| 0.1.5 | 2020-06-08 | Added support for loops in custom functions, including `for` and `break` statements |
 | 0.1.4 | 2020-02-25 | Added support for more functions: `Power`, `Natural Log`, `Floor`, `Ceil` |
 | 0.1.3 | 2019-04-26 | Added support for trigonometric functions and constants |
 | 0.1.2 | 2019-01-31 | Added support for `Integer` types of variables |
