@@ -454,6 +454,7 @@ Each line may be one of the following:
 | ElseIf Statement | Allows for branching based on some [Formula](#formula) | `elseif (x < 10) {`<br/>&nbsp;&nbsp;&nbsp;&nbsp;`y = x + 10`<br/>`}` |
 | Else Statement | Allows for branching | `else {`<br/>&nbsp;&nbsp;&nbsp;&nbsp;`y = x + 15`<br/>`}` |
 | For Statement | Allows for loops between some bounds (inclusive) | `for (i in 0 to 3) {`<br/>&nbsp;&nbsp;&nbsp;&nbsp;`x = x + i`<br/>`}` |
+| Break | Allows for exiting of loops before their natural end | `break` |
 
 #### Example
 

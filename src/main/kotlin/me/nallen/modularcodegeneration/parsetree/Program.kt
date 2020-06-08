@@ -173,6 +173,7 @@ data class Program(
             // Adding on however many lines we've found
             numberOfLines += when(line) {
                 is Statement -> 1
+                is Break -> 1
                 is Assignment -> 1
                 is Return -> 1
                 is IfStatement -> 2 + line.body.getTotalLines()
@@ -284,6 +285,7 @@ sealed class ProgramLine(var type: String)
 
 // All of the line types
 data class Statement(var logic: ParseTreeItem): ProgramLine("statement")
+class Break(): ProgramLine("breakStatement")
 data class Assignment(var variableName: Variable, var variableValue: ParseTreeItem): ProgramLine("assignment")
 data class Return(var logic: ParseTreeItem): ProgramLine("return")
 data class IfStatement(var condition: ParseTreeItem, var body: Program): ProgramLine("ifStatement")
@@ -380,8 +382,14 @@ fun generateProgramFromString(input: String): Program {
                         // Yes it's an assignment, create the Assignment Line
                         Assignment(Variable(assignmentMatch.groupValues[1]), ParseTreeItem.generate(assignmentMatch.groupValues[2]))
                     } else {
-                        // Not an assignment either, so must just be a Statement Line
-                        Statement(ParseTreeItem.generate(line))
+                        // Not an assignment either, so check if it's a break
+                        if(line.trim() == "break") {
+                            Break()
+                        }
+                        else {
+                            // Not a break, so must just be a Statement Line
+                            Statement(ParseTreeItem.generate(line))
+                        }
                     }
                 }
             }
@@ -435,6 +443,7 @@ fun Program.generateString(): String {
                 // Depending on the type, the generated output will be slightly different
                 when(it) {
                     is Statement -> it.logic.generateString()
+                    is Break -> "break"
                     is Assignment -> "${it.variableName.generateString()} = ${it.variableValue.generateString()}"
                     is Return -> "return ${it.logic.generateString()}"
                     // The other ones (conditionals) all require indenting for their bodies too

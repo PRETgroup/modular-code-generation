@@ -297,6 +297,7 @@ object Utils {
                     // (such as If statements)
                     when(it) {
                         is Statement -> "${Utils.generateCodeForParseTreeItem(it.logic, prefixData)};"
+                        is Break -> "break;"
                         is Assignment -> "${Utils.generateCodeForParseTreeItem(it.variableName, prefixData)} = ${Utils.generateCodeForParseTreeItem(it.variableValue, prefixData)};"
                         is Return -> "return ${Utils.generateCodeForParseTreeItem(it.logic, prefixData)};"
                         is IfStatement -> "if(${Utils.generateCodeForParseTreeItem(it.condition, prefixData)}) {\n${Utils.generateCodeForProgram(it.body, config, 1, prefixData, true)}\n}"

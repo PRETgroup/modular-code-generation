@@ -383,6 +383,7 @@ object Utils {
             // (such as If statements)
             builder.appendln(when(line) {
                 is Statement -> "${Utils.generateCodeForParseTreeItem(line.logic, prefixData)};"
+                is Break -> "exit;"
                 is Assignment -> "${Utils.generateCodeForParseTreeItem(line.variableName, prefixData)} := ${Utils.generateCodeForParseTreeItem(line.variableValue, prefixData)};"
                 is Return -> "return ${Utils.generateCodeForParseTreeItem(line.logic, prefixData)};"
                 is IfStatement -> "if ${Utils.generateCodeForParseTreeItem(line.condition, prefixData)} then\n${Utils.generateCodeForProgram(line.body, 1, prefixData)}\n"
