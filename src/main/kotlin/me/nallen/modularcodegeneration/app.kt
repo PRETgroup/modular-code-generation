@@ -23,7 +23,7 @@ fun main() {
 
     // Times are recorded and output for debugging purposes
 
-    val source = "examples/water_heater/main.yaml"
+    val source = "examples/thermostat/main.yaml"
     val exportFormat = Exporter.ExportFormat.HAML
     val exportFile = "Generated/main.yaml"
     val language = CodeGenLanguage.C
@@ -45,10 +45,10 @@ fun main() {
         println("Export time: $time ms")
 
         // Generate C code
-        /*time = measureTimeMillis {
+        time = measureTimeMillis {
             CodeGenManager.generate(item, language, outputDir, config)
         }
-        println("Code Generation time: $time ms")*/
+        println("Code Generation time: $time ms")
     }
     catch(e: Exception) {
         Logger.error(e.message ?: "Unexpected Error")
