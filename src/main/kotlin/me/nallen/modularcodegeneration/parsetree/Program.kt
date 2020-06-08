@@ -189,8 +189,8 @@ data class Program(
 
     /**
      * Combines two VariableTypes into a single VariableType that matches both of the arguments.
-     * A null as input is treated as "don't care", and if the two arguments are both non-null and non-equal then no
-     * common type could be found and an exception wil be thrown.
+     * A null as input is treated as "don't care", and if the two arguments are both non-null and non-equal then an
+     * "Any" type will be created.
      */
     private fun combineReturnTypes(a: VariableType?, b: VariableType?): VariableType? {
         // If a is null, we don't care, just use b
@@ -203,8 +203,8 @@ data class Program(
 
         // Otherwise both non-null, check they're equal
         if(a != b)
-            // Non-equal is an error
-            throw IllegalArgumentException("Error in return types!")
+            // Non-equal means any
+            return VariableType.ANY
 
         // They're both equal, so doesn't matter which we return
         return a

@@ -4,6 +4,7 @@ import io.kotlintest.matchers.*
 import io.kotlintest.specs.StringSpec
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
 import me.nallen.modularcodegeneration.parsetree.Program
+import me.nallen.modularcodegeneration.parsetree.VariableType
 import me.nallen.modularcodegeneration.parsetree.evaluate
 import me.nallen.modularcodegeneration.parsetree.generateString
 
@@ -117,24 +118,22 @@ class ParseTreeTests : StringSpec() {
             program.generateString()
         }
 
-        "Invalid Program Return Types" {
+        "Any Program Return Types" {
             val program = Program.generate(
                     "if(x < 5) {\n" +
-                    "    return x\n" +
+                    "    return 2\n" +
                     "}\n" +
                     "else {\n" +
                     "    return false\n" +
                     "}\n")
 
-            shouldThrow<IllegalArgumentException> {
-                program.getReturnType()
-            }
+            program.getReturnType() shouldBe VariableType.ANY
         }
 
         "Invalid Program" {
             shouldThrow<IllegalArgumentException> {
                 Program.generate(
-                "if(x < 5) {\n" +
+                        "if(x < 5) {\n" +
                         "    return x\n")
             }
         }

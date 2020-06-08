@@ -122,12 +122,6 @@ data class HybridAutomata(
         val functionArgumentsMap = HashMap<String, List<VariableType>>()
         val functionReturnMap = HashMap<String, VariableType?>()
         for(function in functions) {
-            // We need to store function types so we can make sure it's called correctly
-            functionArgumentsMap[function.name] = function.inputs.map { it.type }
-
-            // And keep track of what it returns
-            functionReturnMap[function.name] = function.returnType
-
             // When checking the body we want to keep track of what variables can be written to or read from
             val writeableVars = function.logic.variables
                     .filter { it.locality == ParseTreeLocality.INTERNAL }
@@ -143,7 +137,18 @@ data class HybridAutomata(
             }
 
             // And then validate the function body
-            valid = valid and validateFunction(function.logic, readableVars, writeableVars, "function '${function.name}' of '$name'")
+            valid = valid and validateFunction(function.logic, readableVars, writeableVars, functionReturnMap, functionArgumentsMap, "function '${function.name}' of '$name'")
+
+            if(function.returnType == VariableType.ANY) {
+                Logger.error("Invalid return type of '${function.returnType}' for function '${function.name}' of '$name'.")
+                valid = false
+            }
+
+            // We need to store function types so we can make sure it's called correctly
+            functionArgumentsMap[function.name] = function.inputs.map { it.type }
+
+            // And keep track of what it returns
+            functionReturnMap[function.name] = function.returnType
         }
 
         val writeableVars = ArrayList<String>()
@@ -283,7 +288,7 @@ data class HybridAutomata(
      * Check if a function program is valid in terms of its definition. This will check that every variable used is used
      * correctly (e.g. inputs aren't written to, etc.).
      */
-    private fun validateFunction(program: Program, readableVars: Map<String, VariableType>, writeableVars: Map<String, VariableType>, location: String = "'$name'", lineNumberStart: Int = 1, inLoop: Boolean = false): Boolean {
+    private fun validateFunction(program: Program, readableVars: Map<String, VariableType>, writeableVars: Map<String, VariableType>, functionTypes: Map<String, VariableType?>, functionArguments: Map<String, List<VariableType>>, location: String = "'$name'", lineNumberStart: Int = 1, inLoop: Boolean = false): Boolean {
         var valid = true
 
         // We keep track of the line number to be somewhat helpful when printing out errors
@@ -295,7 +300,7 @@ data class HybridAutomata(
             when(line) {
                 is Statement -> {
                     valid = valid and validateReadingVariables(line.logic, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
-                    valid = valid and line.logic.validate(readableVars.plus(writeableVars), mapOf(), mapOf(), "line $lineNumber of $location")
+                    valid = valid and line.logic.validate(readableVars.plus(writeableVars), functionTypes, functionArguments, "line $lineNumber of $location")
 
                     lineNumber++
                 }
@@ -308,7 +313,7 @@ data class HybridAutomata(
                 is Assignment -> {
                     valid = valid and validateWritingVariables(ParseTreeVariable(line.variableName.name), readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
                     valid = valid and validateReadingVariables(line.variableValue, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
-                    valid = valid and line.variableValue.validate(readableVars.plus(writeableVars), mapOf(), mapOf(), "line $lineNumber of $location")
+                    valid = valid and line.variableValue.validate(readableVars.plus(writeableVars), functionTypes, functionArguments, "line $lineNumber of $location")
 
                     // For assignments we should also check that we're assigning correct values
                     if(writeableVars.containsKey(line.variableName.name)) {
@@ -324,29 +329,29 @@ data class HybridAutomata(
                 }
                 is Return -> {
                     valid = valid and validateReadingVariables(line.logic, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
-                    valid = valid and line.logic.validate(readableVars.plus(writeableVars), mapOf(), mapOf(), "line $lineNumber of $location")
+                    valid = valid and line.logic.validate(readableVars.plus(writeableVars), functionTypes, functionArguments, "line $lineNumber of $location")
 
                     lineNumber++
                 }
                 is IfStatement -> {
                     // Statements with their own bodies also need to be recursively checked
-                    valid = valid and validateFunction(line.body, readableVars, writeableVars, location, lineNumber+1, inLoop)
+                    valid = valid and validateFunction(line.body, readableVars, writeableVars, functionTypes, functionArguments, location, lineNumber+1, inLoop)
                     valid = valid and validateReadingVariables(line.condition, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
-                    valid = valid and line.condition.validate(readableVars.plus(writeableVars), mapOf(), mapOf(), "line $lineNumber of $location")
+                    valid = valid and line.condition.validate(readableVars.plus(writeableVars), functionTypes, functionArguments, "line $lineNumber of $location")
 
                     lineNumber += line.body.getTotalLines() + 2
                 }
                 is ElseStatement -> {
                     // Statements with their own bodies also need to be recursively checked
-                    valid = valid and validateFunction(line.body, readableVars, writeableVars, location, lineNumber+1, inLoop)
+                    valid = valid and validateFunction(line.body, readableVars, writeableVars, functionTypes, functionArguments, location, lineNumber+1, inLoop)
 
                     lineNumber += line.body.getTotalLines() + 2
                 }
                 is ElseIfStatement -> {
                     // Statements with their own bodies also need to be recursively checked
-                    valid = valid and validateFunction(line.body, readableVars, writeableVars, location, lineNumber+1, inLoop)
+                    valid = valid and validateFunction(line.body, readableVars, writeableVars, functionTypes, functionArguments, location, lineNumber+1, inLoop)
                     valid = valid and validateReadingVariables(line.condition, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
-                    valid = valid and line.condition.validate(readableVars.plus(writeableVars), mapOf(), mapOf(), "line $lineNumber of $location")
+                    valid = valid and line.condition.validate(readableVars.plus(writeableVars), functionTypes, functionArguments, "line $lineNumber of $location")
 
                     lineNumber += line.body.getTotalLines() + 2
                 }
@@ -362,7 +367,7 @@ data class HybridAutomata(
                     innerVars[line.variableName.name] = VariableType.INTEGER
 
                     // For loops with their own bodies also need to be recursively checked
-                    valid = valid and validateFunction(line.body, innerVars, writeableVars, location, lineNumber+1, true)
+                    valid = valid and validateFunction(line.body, innerVars, writeableVars, functionTypes, functionArguments, location, lineNumber+1, true)
 
                     lineNumber += line.body.getTotalLines() + 2
                 }
