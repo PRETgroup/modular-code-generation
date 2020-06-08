@@ -308,7 +308,7 @@ data class HybridAutomata(
                     if(writeableVars.containsKey(line.variableName.name)) {
                         val assignType = line.variableValue.getOperationResultType(readableVars.plus(writeableVars))
                         if(writeableVars[line.variableName.name] != assignType && writeableVars[line.variableName.name] != VariableType.ANY) {
-                            Logger.error("Incorrect type assigned to variable '${line.variableName.name} in line $lineNumber of $location'." +
+                            Logger.error("Incorrect type assigned to variable '${line.variableName.name}' in line $lineNumber of $location." +
                                     " Found '$assignType', expected '${writeableVars[line.variableName.name]}'")
                             valid = false
                         }
@@ -341,6 +341,22 @@ data class HybridAutomata(
                     valid = valid and validateFunction(line.body, readableVars, writeableVars, location, lineNumber+1)
                     valid = valid and validateReadingVariables(line.condition, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
                     valid = valid and line.condition.validate(readableVars.plus(writeableVars), mapOf(), mapOf(), "line $lineNumber of $location")
+
+                    lineNumber += line.body.getTotalLines() + 2
+                }
+                is ForStatement -> {
+                    // Check that the loop variable isn't already used
+                    if(readableVars.plus(writeableVars).containsKey(line.variableName.name)) {
+                        Logger.error("Loop variable '${line.variableName.name}' already assigned in line $lineNumber of $location.")
+                        valid = false
+                    }
+
+                    // Add the loop variable as a readable variable
+                    val innerVars = HashMap(readableVars)
+                    innerVars[line.variableName.name] = VariableType.INTEGER
+
+                    // For loops with their own bodies also need to be recursively checked
+                    valid = valid and validateFunction(line.body, innerVars, writeableVars, location, lineNumber+1)
 
                     lineNumber += line.body.getTotalLines() + 2
                 }

@@ -103,6 +103,13 @@ data class Program(
                         addVariable(name, type, Locality.INTERNAL)
                     }
                 }
+                is ForStatement -> {
+                    val innerVariables = line.body.collectVariables(variables, knownFunctionTypes, knownFunctionArguments)
+                    for((name, type) in innerVariables) {
+                        if(name != line.variableName.name)
+                            addVariable(name, type, Locality.INTERNAL)
+                    }
+                }
             }
         }
 
@@ -140,6 +147,7 @@ data class Program(
                     bodiesToParse.add(line.body)
                 }
                 is ElseStatement -> bodiesToParse.add(line.body)
+                is ForStatement -> bodiesToParse.add(line.body)
             }
         }
 
@@ -170,6 +178,7 @@ data class Program(
                 is IfStatement -> 2 + line.body.getTotalLines()
                 is ElseStatement -> 2 + line.body.getTotalLines()
                 is ElseIfStatement -> 2 + line.body.getTotalLines()
+                is ForStatement -> 2 + line.body.getTotalLines()
             }
         }
 
@@ -280,6 +289,7 @@ data class Return(var logic: ParseTreeItem): ProgramLine("return")
 data class IfStatement(var condition: ParseTreeItem, var body: Program): ProgramLine("ifStatement")
 data class ElseStatement(var body: Program): ProgramLine("elseStatement")
 data class ElseIfStatement(var condition: ParseTreeItem, var body: Program): ProgramLine("elseIfStatement")
+data class ForStatement(var variableName: Variable, var lowerBound: Int, var upperBound: Int, var body: Program): ProgramLine("forStatement")
 
 /**
  * Generates a complete Program from a given input string
@@ -306,17 +316,19 @@ fun generateProgramFromString(input: String): Program {
         if(line.isNotBlank()) {
             var programLine: ProgramLine? = null
 
-            // A regex that finds conditionals, either "if", "elseif", "else if", or "else"
-            val conditionalRegex = Regex("^\\s*((if|else(\\s*)if)\\s*\\((.*)\\)|else)\\s*\\{\\s*\$")
+            // A regex that finds conditionals, either "if", "elseif", "else if", or "else", and loops "for"
+            val conditionalRegex = Regex("^\\s*((for|if|else(\\s*)if)\\s*\\((.*)\\)|else)\\s*\\{\\s*\$")
+            // A regex that splits the criteria for for loops
+            val forRegex = Regex("^\\s*(.*)\\s+in\\s+(\\d*)\\s+to\\s+(\\d*)\\s*\$")
             // A regex that finds return statements
             val returnRegex = Regex("^\\s*return\\s+(.*)\\s*$")
             // A regex that finds assignments
             val assignmentRegex = Regex("^\\s*([-_a-zA-Z0-9]+)\\s*=\\s*(.*)\\s*$")
 
-            // Check if the current line is a conditional
+            // Check if the current line is a conditional or loop
             val match = conditionalRegex.matchEntire(line)
             if(match != null) {
-                // Yes it's a conditional!
+                // Yes it's a conditional or loop!
                 // Now we want to get the inner body of the conditional by looking for the matching close bracket
                 val bodyText = getTextUntilNextMatchingCloseBracket(lines.slice(IntRange(i, lines.size-1)).joinToString("\n"))
 
@@ -326,10 +338,23 @@ fun generateProgramFromString(input: String): Program {
                 // And create the Program for the inner body text that we'll now use
                 val body = generateProgramFromString(bodyText)
 
-                // Now we need to figure out which exact conditional it was
+                // Now we need to figure out which exact conditional or loop it was
                 if(match.groupValues[1] == "else") {
                     // Else Statement
                     programLine = ElseStatement(body)
+                }
+                else if(match.groupValues[2] == "for") {
+                    // For Statement
+                    val criteriaMatch = forRegex.matchEntire(match.groupValues[4])
+                    // Check if it's valid
+                    if(criteriaMatch != null) {
+                        // Valid, let's add it
+                        programLine = ForStatement(Variable(criteriaMatch.groupValues[1]), criteriaMatch.groupValues[2].toInt(), criteriaMatch.groupValues[3].toInt(), body)
+                    }
+                    else {
+                        // Invalid body for for loop criteria
+                        throw IllegalArgumentException("Invalid definition of for loop provided: $line")
+                    }
                 }
                 else {
                     // Either If or ElseIf, meaning that it has a condition too
@@ -416,6 +441,7 @@ fun Program.generateString(): String {
                     is IfStatement -> "if(${it.condition.generateString()}) {\n${it.body.generateString().prependIndent("  ")}\n}"
                     is ElseIfStatement -> "else if(${it.condition.generateString()}) {\n${it.body.generateString().prependIndent("  ")}\n}"
                     is ElseStatement -> "else {\n${it.body.generateString().prependIndent("  ")}\n}"
+                    is ForStatement -> "for(${it.variableName.generateString()} in ${it.lowerBound} to ${it.upperBound}){\n${it.body.generateString().prependIndent("  ")}\n}"
                 }
             }
             // And append them all together!
@@ -457,6 +483,7 @@ fun Program.setParameterValue(key: String, value: ParseTreeItem): Program {
                 line.body.setParameterValue(key, value)
             }
             is ElseStatement -> line.body.setParameterValue(key, value)
+            is ForStatement -> line.body.setParameterValue(key, value)
         }
     }
 
@@ -495,6 +522,7 @@ fun Program.removeFunctionArguments(list: List<String>): Program {
                 line.body.removeFunctionArguments(list)
             }
             is ElseStatement -> line.body.removeFunctionArguments(list)
+            is ForStatement -> line.body.removeFunctionArguments(list)
         }
     }
 

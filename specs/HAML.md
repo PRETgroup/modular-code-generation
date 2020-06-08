@@ -11,32 +11,67 @@ This specification allows for the describing of hybrid systems in a formal manne
 
 ## Table of Contents
 
-- [Definitions](#definitions)
-    - [Hybrid Automata](#hybrid-automata)
-    - [Hybrid Network](#hybrid-network)
-    - [Ordinary Differential Equation](#ordinary-differential-equation)
-- [Specification](#specification)
+- [Hybrid Automata Modelling Language (HAML)](#hybrid-automata-modelling-language-haml)
+      - [Version: 0.1.4](#version-014)
+  - [Introduction](#introduction)
+  - [Table of Contents](#table-of-contents)
+  - [Definitions](#definitions)
+      - [Hybrid Automata](#hybrid-automata)
+      - [Hybrid Network](#hybrid-network)
+      - [Ordinary Differential Equation](#ordinary-differential-equation)
+  - [Specification](#specification)
     - [Includes](#includes)
-- [Schema](#schema)
+  - [Schema](#schema)
     - [HAML Document Root](#haml-document-root)
+      - [Fields](#fields)
+      - [Example](#example)
     - [Network](#network)
+      - [Fields](#fields-1)
+      - [Example](#example-1)
     - [Automata](#automata)
+      - [Fields](#fields-2)
+      - [Example](#example-2)
     - [Variable Definition](#variable-definition)
+      - [Fields](#fields-3)
+      - [Example](#example-3)
     - [Variable Type](#variable-type)
+      - [Enum Values](#enum-values)
     - [Location](#location)
+      - [Fields](#fields-4)
+      - [Example](#example-4)
     - [Transition](#transition)
+      - [Fields](#fields-5)
+      - [Example](#example-5)
     - [Function](#function)
+      - [Fields](#fields-6)
+      - [Example](#example-6)
     - [Initialisation](#initialisation)
+      - [Fields](#fields-7)
+      - [Example](#example-7)
     - [Instance](#instance)
+      - [Fields](#fields-8)
+      - [Example](#example-8)
     - [Program](#program)
+      - [Example](#example-9)
     - [Formula](#formula)
+      - [Example](#example-10)
     - [Codegen Configuration](#codegen-configuration)
+      - [Fields](#fields-9)
+      - [Example](#example-11)
     - [Execution Settings](#execution-settings)
+      - [Fields](#fields-10)
+      - [Example](#example-12)
     - [Logging Settings](#logging-settings)
+      - [Fields](#fields-11)
+      - [Example](#example-13)
     - [Parametrisation Method](#parametrisation-method)
-- [Example Documents](#example-documents)
+      - [Enum Values](#enum-values-1)
+    - [C Code Settings](#c-code-settings)
+      - [Fields](#fields-12)
+      - [Example](#example-14)
+  - [Example documents](#example-documents)
     - [Water Heater](#water-heater)
-- [Revision History](#revision-history)
+  - [Revision History](#revision-history)
 
 
 ## Definitions
@@ -415,9 +450,10 @@ Each line may be one of the following:
 | Statement | A single [Formula](#formula). | `x + 5` |
 | Assignment | An assignment of a [Formula](#formula) to a variable. | `y = x + 5` |
 | Return | Return some [Formula](#formula) for a [Function](#function) | `return x + 5` |
-| If Statement | Allows for branching based on some [Formula](#formula) | `if (x < 5) {`<br/>&nbsp;&nbsp;&nbsp;&nbsp;`    y = x + 5`<br/>`}` |
+| If Statement | Allows for branching based on some [Formula](#formula) | `if (x < 5) {`<br/>&nbsp;&nbsp;&nbsp;&nbsp;`y = x + 5`<br/>`}` |
 | ElseIf Statement | Allows for branching based on some [Formula](#formula) | `elseif (x < 10) {`<br/>&nbsp;&nbsp;&nbsp;&nbsp;`y = x + 10`<br/>`}` |
 | Else Statement | Allows for branching | `else {`<br/>&nbsp;&nbsp;&nbsp;&nbsp;`y = x + 15`<br/>`}` |
+| For Statement | Allows for loops between some bounds (inclusive) | `for (i in 0 to 3) {`<br/>&nbsp;&nbsp;&nbsp;&nbsp;`x = x + i`<br/>`}` |
 
 #### Example
 
