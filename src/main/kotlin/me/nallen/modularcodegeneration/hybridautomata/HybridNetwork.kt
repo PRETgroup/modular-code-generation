@@ -270,9 +270,13 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
 
         val writeableVars = ArrayList<String>()
         val readableVars = ArrayList<String>()
+        val variableTypes = HashMap<String, VariableType>()
 
         // We need to keep track of what variables we can write to and read from in this network
         for(variable in this.variables) {
+            // Keep track of variable types
+            variableTypes[variable.name] = variable.type
+            
             // Many things can be read from
             if(variable.locality == Locality.EXTERNAL_INPUT || variable.locality == Locality.INTERNAL || variable.locality == Locality.PARAMETER) {
                 readableVars.add(variable.name)
@@ -285,8 +289,6 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
 
         // We want to keep track of each definition we've validated so that we don't run it multiple times
         val validated = ArrayList<UUID>()
-
-        val variableTypes = HashMap<String, VariableType>()
 
         // Firstly, let's iterate over every sub-instance
         for((name, instance) in this.instances) {
