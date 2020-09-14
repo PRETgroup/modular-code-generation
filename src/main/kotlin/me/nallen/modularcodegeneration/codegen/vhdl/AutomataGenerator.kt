@@ -7,6 +7,7 @@ import me.nallen.modularcodegeneration.hybridautomata.Locality
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable
 import me.nallen.modularcodegeneration.codegen.vhdl.Utils.VariableObject
+import me.nallen.modularcodegeneration.codegen.vhdl.Utils.CustomFunctionObject
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
@@ -266,26 +267,6 @@ object AutomataGenerator {
 
             // The initial location for the automaton to start execution in
             var initialLocation: String = ""
-    )
-
-    /**
-     * A class which stores information about custom functions that need to be declared
-     */
-    data class CustomFunctionObject(
-            // The name of the funtion
-            var name: String,
-
-            // The return type of the function
-            var returnType: String,
-
-            // A list of any inputs that are required when the function is called
-            var inputs: MutableList<VariableObject> = ArrayList(),
-
-            // A list of internal variables of the function
-            var variables: MutableList<VariableObject> = ArrayList(),
-
-            // The logic (body) of the function
-            var logic: MutableList<String> = ArrayList()
     )
 
     /**

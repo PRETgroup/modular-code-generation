@@ -122,21 +122,19 @@ object CodeGenManager {
             val functionTypes = LinkedHashMap<String, VariableType?>()
             val functionArguments = LinkedHashMap<String, List<VariableType>>()
 
-            if(item is HybridAutomata) {
-                // We need to parametrise every function
-                for(function in item.functions) {
-                    // All variables that are either inputs, or parameters, end up the same - they get set externally.
-                    val inputs = ArrayList(function.inputs)
-                    inputs.addAll(item.variables.filter {it.locality == Locality.PARAMETER}.map { VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) })
+            // We need to parametrise every function
+            for(function in item.functions) {
+                // All variables that are either inputs, or parameters, end up the same - they get set externally.
+                val inputs = ArrayList(function.inputs)
+                inputs.addAll(item.variables.filter {it.locality == Locality.PARAMETER}.map { VariableDeclaration(it.name, it.type, ParseTreeLocality.EXTERNAL_INPUT, it.defaultValue) })
 
-                    // So now we collect all internal variables given we know about the external inputs and parameters
-                    function.logic.collectVariables(inputs, functionTypes, functionArguments)
+                // So now we collect all internal variables given we know about the external inputs and parameters
+                function.logic.collectVariables(inputs, functionTypes, functionArguments)
 
-                    // Get the return type, and keep track of it too
-                    function.returnType = function.logic.getReturnType(functionTypes)
-                    functionTypes[function.name] = function.returnType
-                    functionArguments[function.name] = function.inputs.map { it.type }
-                }
+                // Get the return type, and keep track of it too
+                function.returnType = function.logic.getReturnType(functionTypes)
+                functionTypes[function.name] = function.returnType
+                functionArguments[function.name] = function.inputs.map { it.type }
             }
 
             // Now for the new automata, we want to set the value for each parameter
