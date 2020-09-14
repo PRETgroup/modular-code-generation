@@ -143,9 +143,6 @@ private fun createHybridAutomata(name: String, definition: Automata): HybridAuto
     // Load the common features
     automata.loadData(name, definition)
 
-    // And then any custom functions that it may contain
-    automata.loadFunctions(definition.functions)
-
     // Add the locations (transitions are within locations)
     automata.loadLocations(definition.locations)
 
@@ -194,6 +191,9 @@ private fun HybridItem.loadData(name: String, definition: DefinitionItem) {
 
     // And all parameters
     this.loadVariables(definition.parameters, Locality.PARAMETER)
+
+    // And then any custom functions that it may contain
+    this.loadFunctions(definition.functions)
 }
 
 /**
@@ -314,9 +314,9 @@ private fun HybridAutomata.loadInitialisation(init: Initialisation?) {
 }
 
 /**
- * Imports a set of HAML Function definitions into the given HybridAutomata instantiate
+ * Imports a set of HAML Function definitions into the given HybridItem instantiate
  */
-private fun HybridAutomata.loadFunctions(functions: Map<String, Function>?) {
+private fun HybridItem.loadFunctions(functions: Map<String, Function>?) {
     // We need to keep track of functions we know about and their return types
     val existingFunctionTypes = LinkedHashMap<String, ParseTreeVariableType?>()
     val existingFunctionArguments = LinkedHashMap<String, List<ParseTreeVariableType>>()

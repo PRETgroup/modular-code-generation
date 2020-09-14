@@ -44,9 +44,6 @@ class Automata: DefinitionItem() {
     // The locations that exist inside this Hybrid Automata
     var locations: LinkedHashMap<String, Location>? = null
 
-    // A set of functions that exist inside this Hybrid Automata
-    var functions: LinkedHashMap<String, Function>? = null
-
     // Sets the initialisation options for the Hybrid Automata (location, variable states, etc.)
     var initialisation: Initialisation? = null
 }
@@ -61,8 +58,11 @@ sealed class DefinitionItem {
     // The variables that this Hybrid Item emits as outputs
     var outputs: LinkedHashMap<String, VariableDefinition>? = null
 
-    // The parameters that are available for configuration of this Hybrid Automata
+    // The parameters that are available for configuration of this Hybrid Item
     var parameters: LinkedHashMap<String, VariableDefinition>? = null
+
+    // A set of functions that exist inside this Hybrid Item
+    var functions: LinkedHashMap<String, Function>? = null
 
     companion object Factory {
         // Method for creating from a String (used in JSON parsing)

@@ -286,6 +286,8 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
         // We want to keep track of each definition we've validated so that we don't run it multiple times
         val validated = ArrayList<UUID>()
 
+        val variableTypes = HashMap<String, VariableType>()
+
         // Firstly, let's iterate over every sub-instance
         for((name, instance) in this.instances) {
             // Fetch the definition
@@ -317,9 +319,11 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
                     // Inputs of this instance can be written to, while outputs can be read from
                     if(variable.locality == Locality.EXTERNAL_INPUT) {
                         writeableVars.add("$name.${variable.name}")
+                        variableTypes["$name.${variable.name}"] = variable.type
                     }
                     else if(variable.locality == Locality.EXTERNAL_OUTPUT) {
                         readableVars.add("$name.${variable.name}")
+                        variableTypes["$name.${variable.name}"] = variable.type
                     }
                 }
             }
@@ -329,13 +333,17 @@ class HybridNetwork(override var name: String = "Network") : HybridItem(){
             }
         }
 
+        val functionReturnMap = functions.map { Pair(it.name, it.returnType) }.toMap()
+        val functionArgumentsMap = functions.map { Pair(it.name, it.inputs.map { it.type }) }.toMap()
+
         // Now check for all variables in the I/O Mapping
         for((to, from) in this.ioMapping) {
             // First let's start with where we're writing to
-            valid = valid and validateWritingVariables(Variable(to.getString()), readableVars, writeableVars)
+            valid = valid and validateWritingVariables(Variable(to.getString()), readableVars, writeableVars, "I/O Mapping of '${to.getString()}' in '$name'")
 
             // Now let's validate the right-hand-side
-            valid = valid and validateReadingVariables(from, readableVars, writeableVars)
+            valid = valid and validateReadingVariables(from, readableVars, writeableVars, "I/O Mapping of '${to.getString()}' in '$name'")
+            valid = valid and from.validate(variableTypes, functionReturnMap, functionArgumentsMap, "I/O Mapping of '${to.getString()}' in '$name'")
         }
 
         return valid

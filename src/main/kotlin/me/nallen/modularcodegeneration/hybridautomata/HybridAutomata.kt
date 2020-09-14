@@ -14,9 +14,7 @@ data class HybridAutomata(
 
         val locations: ArrayList<Location> = ArrayList(),
         val edges: ArrayList<Edge> = ArrayList(),
-        var init: Initialisation = Initialisation(""),
-
-        val functions: ArrayList<FunctionDefinition> = ArrayList()
+        var init: Initialisation = Initialisation("")
 ) : HybridItem() {
     fun addLocation(location: Location): HybridAutomata {
         val variableTypes = variables.map { Pair(it.name, it.type) }.toMap()
@@ -98,15 +96,6 @@ data class HybridAutomata(
         for((_, valuation) in init.valuations) {
             valuation.setParameterValue(key, value)
         }
-
-        // Parametrise functions
-        for(function in functions) {
-            for(input in function.inputs) {
-                input.defaultValue?.setParameterValue(key, value)
-            }
-
-            function.logic.setParameterValue(key, value)
-        }
     }
 
     /**
@@ -118,42 +107,11 @@ data class HybridAutomata(
         // Let's try see if anything isn't valid
         var valid = super.validate()
 
-        // Let's first start by checking through all functions
-        val functionArgumentsMap = HashMap<String, List<VariableType>>()
-        val functionReturnMap = HashMap<String, VariableType?>()
-        for(function in functions) {
-            // When checking the body we want to keep track of what variables can be written to or read from
-            val writeableVars = function.logic.variables
-                    .filter { it.locality == ParseTreeLocality.INTERNAL }
-                    .map { Pair(it.name, it.type) }.toMap()
-            val readableVars = function.logic.variables
-                    .filter { it.locality == ParseTreeLocality.INTERNAL || it.locality == ParseTreeLocality.EXTERNAL_INPUT }
-                    .plus(function.inputs)
-                    .map { Pair(it.name, it.type) }.toMap()
-
-            for(variable in function.logic.variables.filter { it.type == VariableType.ANY }) {
-                Logger.error("Unable to detect type for variable '${variable.name}' in function '${function.name}' of '$name'.")
-                valid = false
-            }
-
-            // And then validate the function body
-            valid = valid and validateFunction(function.logic, readableVars, writeableVars, functionReturnMap, functionArgumentsMap, "function '${function.name}' of '$name'")
-
-            if(function.returnType == VariableType.ANY) {
-                Logger.error("Invalid return type of '${function.returnType}' for function '${function.name}' of '$name'.")
-                valid = false
-            }
-
-            // We need to store function types so we can make sure it's called correctly
-            functionArgumentsMap[function.name] = function.inputs.map { it.type }
-
-            // And keep track of what it returns
-            functionReturnMap[function.name] = function.returnType
-        }
-
         val writeableVars = ArrayList<String>()
         val readableVars = ArrayList<String>()
         val variableTypes = HashMap<String, VariableType>()
+        val functionReturnMap = functions.map { Pair(it.name, it.returnType) }.toMap()
+        val functionArgumentsMap = functions.map { Pair(it.name, it.inputs.map { it.type }) }.toMap()
 
         // We need to keep track of what variables we can write to and read from in this network
         for(variable in this.variables) {
@@ -277,99 +235,6 @@ data class HybridAutomata(
                     Logger.error("Incorrect type assigned to initialisation equation for '$to' in '$name'." +
                             " Found '$assignType', expected '${variableTypes[to]}'")
                     valid = false
-                }
-            }
-        }
-
-        return valid
-    }
-
-    /**
-     * Check if a function program is valid in terms of its definition. This will check that every variable used is used
-     * correctly (e.g. inputs aren't written to, etc.).
-     */
-    private fun validateFunction(program: Program, readableVars: Map<String, VariableType>, writeableVars: Map<String, VariableType>, functionTypes: Map<String, VariableType?>, functionArguments: Map<String, List<VariableType>>, location: String = "'$name'", lineNumberStart: Int = 1, inLoop: Boolean = false): Boolean {
-        var valid = true
-
-        // We keep track of the line number to be somewhat helpful when printing out errors
-        var lineNumber = lineNumberStart
-
-        // We need to iterate over every line
-        for(line in program.lines) {
-            // And then depending on what the line is, check each component of it
-            when(line) {
-                is Statement -> {
-                    valid = valid and validateReadingVariables(line.logic, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
-                    valid = valid and line.logic.validate(readableVars.plus(writeableVars), functionTypes, functionArguments, "line $lineNumber of $location")
-
-                    lineNumber++
-                }
-                is Break -> {
-                    if(!inLoop) {
-                        Logger.error("Break statement found at unexpected location on line $lineNumber of $location.")
-                        valid = false
-                    }
-                }
-                is Assignment -> {
-                    valid = valid and validateWritingVariables(ParseTreeVariable(line.variableName.name), readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
-                    valid = valid and validateReadingVariables(line.variableValue, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
-                    valid = valid and line.variableValue.validate(readableVars.plus(writeableVars), functionTypes, functionArguments, "line $lineNumber of $location")
-
-                    // For assignments we should also check that we're assigning correct values
-                    if(writeableVars.containsKey(line.variableName.name)) {
-                        val assignType = line.variableValue.getOperationResultType(readableVars.plus(writeableVars))
-                        if(writeableVars[line.variableName.name] != assignType && writeableVars[line.variableName.name] != VariableType.ANY) {
-                            Logger.error("Incorrect type assigned to variable '${line.variableName.name}' in line $lineNumber of $location." +
-                                    " Found '$assignType', expected '${writeableVars[line.variableName.name]}'")
-                            valid = false
-                        }
-                    }
-
-                    lineNumber++
-                }
-                is Return -> {
-                    valid = valid and validateReadingVariables(line.logic, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
-                    valid = valid and line.logic.validate(readableVars.plus(writeableVars), functionTypes, functionArguments, "line $lineNumber of $location")
-
-                    lineNumber++
-                }
-                is IfStatement -> {
-                    // Statements with their own bodies also need to be recursively checked
-                    valid = valid and validateFunction(line.body, readableVars, writeableVars, functionTypes, functionArguments, location, lineNumber+1, inLoop)
-                    valid = valid and validateReadingVariables(line.condition, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
-                    valid = valid and line.condition.validate(readableVars.plus(writeableVars), functionTypes, functionArguments, "line $lineNumber of $location")
-
-                    lineNumber += line.body.getTotalLines() + 2
-                }
-                is ElseStatement -> {
-                    // Statements with their own bodies also need to be recursively checked
-                    valid = valid and validateFunction(line.body, readableVars, writeableVars, functionTypes, functionArguments, location, lineNumber+1, inLoop)
-
-                    lineNumber += line.body.getTotalLines() + 2
-                }
-                is ElseIfStatement -> {
-                    // Statements with their own bodies also need to be recursively checked
-                    valid = valid and validateFunction(line.body, readableVars, writeableVars, functionTypes, functionArguments, location, lineNumber+1, inLoop)
-                    valid = valid and validateReadingVariables(line.condition, readableVars.keys.toList(), writeableVars.keys.toList(), "line $lineNumber of $location")
-                    valid = valid and line.condition.validate(readableVars.plus(writeableVars), functionTypes, functionArguments, "line $lineNumber of $location")
-
-                    lineNumber += line.body.getTotalLines() + 2
-                }
-                is ForStatement -> {
-                    // Check that the loop variable isn't already used
-                    if(readableVars.plus(writeableVars).containsKey(line.variableName.name)) {
-                        Logger.error("Loop variable '${line.variableName.name}' already assigned in line $lineNumber of $location.")
-                        valid = false
-                    }
-
-                    // Add the loop variable as a readable variable
-                    val innerVars = HashMap(readableVars)
-                    innerVars[line.variableName.name] = VariableType.INTEGER
-
-                    // For loops with their own bodies also need to be recursively checked
-                    valid = valid and validateFunction(line.body, innerVars, writeableVars, functionTypes, functionArguments, location, lineNumber+1, true)
-
-                    lineNumber += line.body.getTotalLines() + 2
                 }
             }
         }
