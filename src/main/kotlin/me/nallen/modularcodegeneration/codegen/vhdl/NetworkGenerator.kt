@@ -3,6 +3,7 @@ package me.nallen.modularcodegeneration.codegen.vhdl
 import com.hubspot.jinjava.Jinjava
 import me.nallen.modularcodegeneration.codegen.Configuration
 import me.nallen.modularcodegeneration.codegen.vhdl.Utils.VariableObject
+import me.nallen.modularcodegeneration.codegen.vhdl.Utils.CustomFunctionObject
 import me.nallen.modularcodegeneration.hybridautomata.HybridAutomata
 import me.nallen.modularcodegeneration.hybridautomata.HybridNetwork
 import me.nallen.modularcodegeneration.hybridautomata.Locality
@@ -10,6 +11,7 @@ import me.nallen.modularcodegeneration.hybridautomata.Variable
 import me.nallen.modularcodegeneration.parsetree.And
 import me.nallen.modularcodegeneration.parsetree.ParseTreeItem
 import me.nallen.modularcodegeneration.parsetree.VariableType
+import me.nallen.modularcodegeneration.parsetree.Variable as ParseTreeVariable
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -55,6 +57,54 @@ object NetworkGenerator {
                 rootItem.parameters.add(variableObject)
             else
                 rootItem.variables.add(variableObject)
+        }
+
+        // Now it's time to create all the functions that we need
+        val functionParams = HashMap<String, ArrayList<ParseTreeItem>>()
+
+        // Iterate through every function we want to declare
+        for(func in item.functions) {
+            // Create a function object
+            val functionObject = CustomFunctionObject(
+                    Utils.createFunctionName(func.name),
+                    Utils.generateBasicVHDLType(func.returnType)
+            )
+
+            // We keep track of (extra) parameters that are needed for each function call. This will basically just be
+            // parameters that are fed into this automaton
+            functionParams[func.name] = ArrayList()
+
+            // Iterate over every input to the function
+            for(input in func.inputs) {
+                // And then we want to add that to the function object
+                functionObject.inputs.add(VariableObject.create(me.nallen.modularcodegeneration.hybridautomata.Variable(input.name, input.type, Locality.EXTERNAL_INPUT, input.defaultValue)))
+            }
+
+            // We also need to find all of the internal variables that we need, this is any internal variable which
+            // isn't a parameter
+            for(internal in func.logic.variables.filter {it.locality == ParseTreeLocality.INTERNAL}) {
+                // And then we can add internal variables
+                functionObject.variables.add(VariableObject.create(me.nallen.modularcodegeneration.hybridautomata.Variable(internal.name, internal.type, Locality.INTERNAL, internal.defaultValue)))
+            }
+
+            // If we are doing run-time parametrisation then we also need to deal with parameters
+            if(config.runTimeParametrisation) {
+                // We want to go through each parameter that is used in this function
+                for(internal in func.logic.variables.filter {it.locality == ParseTreeLocality.EXTERNAL_INPUT}
+                        .filter {item.variables.any { search -> search.locality == Locality.PARAMETER && search.name == it.name }}) {
+                    // Add it as an external input
+                    functionObject.inputs.add(VariableObject.create(me.nallen.modularcodegeneration.hybridautomata.Variable(internal.name, internal.type, Locality.EXTERNAL_INPUT, internal.defaultValue)))
+
+                    // And keep track of the extra parameter that needs to be added to functions
+                    functionParams[func.name]!!.add(ParseTreeVariable(internal.name))
+                }
+            }
+
+            // Now we want to generate the internal logic for the function
+            functionObject.logic.addAll(Utils.generateCodeForProgram(func.logic).split("\n"))
+
+            // And record the function so that we can add it to the end file
+            rootItem.customFunctions.add(functionObject)
         }
 
         // Depending on the parametrisation method, we'll do things slightly differently
@@ -398,14 +448,14 @@ object NetworkGenerator {
                 // If it's a local signal, then we want to check signalNameMap
                 rootItem.mappings.add(MappingObject(
                         Utils.createVariableName(signalNameMap[destination.variable] ?: destination.variable),
-                        Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("", signalNameMap))
+                        Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("", signalNameMap, functionParams))
                 ))
             }
             else {
                 // Otherwise we use the automata name
                 rootItem.mappings.add(MappingObject(
                         Utils.createVariableName(destination.automata, destination.variable),
-                        Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("", signalNameMap))
+                        Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("", signalNameMap, functionParams))
                 ))
             }
         }
@@ -461,6 +511,9 @@ object NetworkGenerator {
 
             // The Mappings between variables that need to be done once per tick
             var mappings: MutableList<MappingObject> = ArrayList(),
+
+            // A list of custom functions that need to be declared for the operation
+            var customFunctions: MutableList<CustomFunctionObject> = ArrayList(),
 
             // If run-time parametrisation is being done then this will be a list of run-time processes to be
             // declared which will do all of the execution for each instantiate of each type

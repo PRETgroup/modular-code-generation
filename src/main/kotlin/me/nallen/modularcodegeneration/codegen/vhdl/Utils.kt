@@ -499,4 +499,24 @@ object Utils {
             }
         }
     }
+
+    /**
+     * A class which stores information about custom functions that need to be declared
+     */
+    data class CustomFunctionObject(
+            // The name of the funtion
+            var name: String,
+
+            // The return type of the function
+            var returnType: String,
+
+            // A list of any inputs that are required when the function is called
+            var inputs: MutableList<VariableObject> = ArrayList(),
+
+            // A list of internal variables of the function
+            var variables: MutableList<VariableObject> = ArrayList(),
+
+            // The logic (body) of the function
+            var logic: MutableList<String> = ArrayList()
+    )
 }

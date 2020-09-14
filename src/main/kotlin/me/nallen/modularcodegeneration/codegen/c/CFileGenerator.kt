@@ -60,12 +60,9 @@ object CFileGenerator {
         result.appendln("#include \"${Utils.createFileName(item.name)}.h\"")
         result.appendln()
 
-        // If this is an Automata, then we also want to add the custom functions
-        if(item is HybridAutomata) {
-            //Generate the code for any custom functions, if any
-            if(item.functions.size > 0)
-                result.appendln(generateCustomFunctions(item))
-        }
+        //Generate the code for any custom functions, if any
+        if(item.functions.size > 0)
+            result.appendln(generateCustomFunctions(item))
 
         // If we're supporting run time parametrisation then we want to generate the default parametrisation function
         if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME)
@@ -85,7 +82,7 @@ object CFileGenerator {
      * Generates a string that captures all custom functions defined in this automata, including both the method
      * signatures and the method bodies
      */
-    private fun generateCustomFunctions(automata: HybridAutomata): String {
+    private fun generateCustomFunctions(item: HybridItem): String {
         val result = StringBuilder()
 
         // Iterate over every function in the automaton

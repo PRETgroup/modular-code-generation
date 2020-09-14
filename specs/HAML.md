@@ -1,6 +1,6 @@
 # Hybrid Automata Modelling Language (HAML)
 
-#### Version: 0.1.5
+#### Version: 0.1.6
 
 ## Introduction
 
@@ -158,6 +158,7 @@ A Network can instantiate further networks inside of it, to create a hierarchica
 | definitions | Map[String, [Network](#network) \| [Automata](#automata)] | **Required.** A set of definitions of Hybrid Networks or Hybrid Automata that can be instantiated. |
 | instances | Map[String, [Instance](#instance) \| String] | **Required.** A set of instances of previously defined Hybrid Networks or Hybrid Automata. |
 | mappings | Map[String, [Formula](#formula)] | A set of mappings that determine the value of each output of this network, or input of each Instance. |
+| functions | Map[String, [Function](#function)] | A set of functions that exist inside this Hybrid Network. |
 
 
 #### Example
@@ -742,6 +743,7 @@ codegenConfig:
 
 | Version | Date | Notes |
 |---|---|---|
+| 0.1.6 | 2020-09-14 | Added support for functions inside Networks |
 | 0.1.5 | 2020-06-08 | Added support for loops in custom functions, including `for` and `break` statements |
 | 0.1.4 | 2020-02-25 | Added support for more functions: `Power`, `Natural Log`, `Floor`, `Ceil` |
 | 0.1.3 | 2019-04-26 | Added support for trigonometric functions and constants |

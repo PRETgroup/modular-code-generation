@@ -98,6 +98,8 @@ private fun createNetwork(network: HybridNetwork): Network {
 
     definition.loadMappings(network.ioMapping)
 
+    definition.loadFunctions(network.functions)
+
     return definition
 }
 
@@ -219,9 +221,9 @@ private fun createTransitionDefinition(edge: HybridEdge): Transition {
 }
 
 /**
- * Loads the functions from a Hybrid Automata into an Automata DefinitionItem
+ * Loads the functions from a Hybrid Item into a DefinitionItem
  */
-private fun Automata.loadFunctions(functions: List<HybridFunction>) {
+private fun DefinitionItem.loadFunctions(functions: List<HybridFunction>) {
     if(functions.isNotEmpty() && this.functions == null)
         this.functions = LinkedHashMap()
 
