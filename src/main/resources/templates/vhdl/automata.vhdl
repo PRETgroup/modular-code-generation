@@ -124,11 +124,13 @@ begin
 {%- if item.locations|length > 1 %}
             -- Run the state machine for transition logic
     {%- for location in item.locations %}
-            {% if not loop.first -%} els {%- endif -%}
+            {% if not loop.first %}
+            els {%- endif -%}
             if {% if config.runTimeParametrisation -%} {{ item.enumName }}'VAL(state_in) {%- else -%} state {%- endif %} = {{ location.macroName }} then -- Logic for state {{ location.name }}
 
             {%- for transition in location.transitions %}
-                {% if not loop.first -%} els {%- endif -%}
+                {% if not loop.first %}
+                els {%- endif -%}
                 if {{ transition.guard }} then
 
                     {%- if transition.flow|length > 0 %}
@@ -168,7 +170,7 @@ begin
                         {{ dependency.variable }} := {{ dependency.equation }};
                             {%- endfor %}
                         {% endif %}
-                        {{ saturation.update.variable }} := {{ saturation.update.equation }}
+                        {{ saturation.update.variable }} := {{ saturation.update.equation }};
 
                     end if;
                     {%- endfor %}
@@ -180,12 +182,13 @@ begin
                     -- Next state is {{ transition.nextStateName }}
                     state_update := {{ transition.nextState }};
                     {%- endif %}
-            {% endfor %}
+            {%- endfor %}
             {%- if location.transitions|length > 0 %}
                 end if;
             {%- endif %}
 
     {%- endfor %}
+
             end if;
 
     {%- if config.runTimeParametrisation %}
