@@ -235,14 +235,9 @@ begin
 {%- else %}
     {%- if item.mappings|length > 0 %}
     -- Perform Mapping
-    process(clk)
-    begin
-        if clk'event and clk = '1' then
         {%- for mapping in item.mappings %}
-            {{ mapping.left }} <= {{ mapping.right }};
+    {{ mapping.left }} <= {{ mapping.right }};
         {%- endfor %}
-        end if;
-    end process;
     {%- endif %}
 {%- endif %}
 end architecture;
