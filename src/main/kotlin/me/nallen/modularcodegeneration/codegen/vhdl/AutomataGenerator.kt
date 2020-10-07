@@ -1,13 +1,16 @@
 package me.nallen.modularcodegeneration.codegen.vhdl
 
 import com.hubspot.jinjava.Jinjava
+import me.nallen.modularcodegeneration.codegen.CodeGenManager
 import me.nallen.modularcodegeneration.codegen.Configuration
+import me.nallen.modularcodegeneration.codegen.SaturationDirection
 import me.nallen.modularcodegeneration.hybridautomata.*
 import me.nallen.modularcodegeneration.hybridautomata.Locality
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable
 import me.nallen.modularcodegeneration.codegen.vhdl.Utils.VariableObject
 import me.nallen.modularcodegeneration.codegen.vhdl.Utils.CustomFunctionObject
+import me.nallen.modularcodegeneration.logging.Logger
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
@@ -147,13 +150,12 @@ object AutomataGenerator {
             // Now to sort out all the transitions
             val transitionList = ArrayList<TransitionObject>()
 
-            //TODO: Saturation
-
             // First we can add all other transitions, so iterate over each of them
             for((_, toLocation, guard, update) in item.edges.filter{it.fromLocation == location.name }) {
                 // Create the transition
                 val transitionObject = TransitionObject(
                         Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("", signalNameMap, functionParams)),
+                        ArrayList(),
                         ArrayList(),
                         ArrayList(),
                         toLocation,
@@ -171,6 +173,7 @@ object AutomataGenerator {
             // Now we want to add the self-transition which uses the invariant for the guard
             val transitionObject = TransitionObject(
                     Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("", signalNameMap, functionParams)),
+                    ArrayList(),
                     ArrayList(),
                     ArrayList(),
                     location.name,
@@ -196,6 +199,60 @@ object AutomataGenerator {
             for((variable, equation) in location.update) {
                 // Here, we use the updatedFlowMap from before to replace signal names if possible
                 transitionObject.update.add(UpdateObject(Utils.createVariableName(variable, "update"), Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("", updatedFlowMap, functionParams))))
+            }
+
+            // Now we look at saturation, so collect all the limits
+            val saturationLimits = CodeGenManager.collectSaturationLimits(location, item.edges)
+
+            // And now for each limit we need to add in the check for it
+            for((point, dependencies) in saturationLimits) {
+                // Get the variable that we'll be checking for saturation
+                val new_variable = Variable(Utils.createVariableName(point.variable, "update"))
+                val old_variable = Variable(point.variable)
+
+                // Now, depending on the direction of saturation we'll have a different equatio that we generate for the check
+                val condition = when(point.direction) {
+                    SaturationDirection.RISING -> And(GreaterThan(new_variable, point.value), LessThan(old_variable, point.value)) // Variable is now above limit, but wasn't before
+                    SaturationDirection.FALLING -> And(LessThan(new_variable, point.value), GreaterThan(old_variable, point.value)) // Variable is now below limit, but wasn't before
+                    SaturationDirection.BOTH -> Or(And(GreaterThan(new_variable, point.value), LessThan(old_variable, point.value)), And(LessThan(new_variable, point.value), GreaterThan(old_variable, point.value))) // Either of the above
+                }
+
+                val saturationDependencies = ArrayList<UpdateObject>()
+                // Now we have the code that actually performs the saturation
+                if(dependencies.isNotEmpty()) {
+                    // All dependencies that we allow are linear combinations, so we work out at what time the limit would
+                    // have been hit "frac", and then use that to scale each of the values with respect to their previous
+                    // values
+
+                    val frac = Divide(Minus(point.value, old_variable), Minus(new_variable, old_variable))
+                    
+                    // Now do the scaling with respect to their previous values
+                    dependencies
+                            .forEach {
+                                val new_dependency = Variable(Utils.createVariableName(it, "update"))
+                                val old_dependency = Variable(it)
+                                val value = Plus(old_dependency, Multiply(frac, Minus(new_dependency, old_dependency)))
+                                saturationDependencies.add(UpdateObject(Utils.createVariableName(new_dependency.name), Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("", signalNameMap, functionParams))))
+                            }
+                }
+
+                // Generate the limit
+                val limit = Utils.generateCodeForParseTreeItem(point.value, Utils.PrefixData("", signalNameMap, functionParams))
+
+                // And saturate the actual variable we're looking at
+                val update = UpdateObject(Utils.createVariableName(new_variable.name), limit)
+
+                // Create the saturation object
+                val saturationObject = SaturationObject(
+                    Utils.createVariableName(old_variable.name),
+                    limit,
+                    Utils.generateCodeForParseTreeItem(condition, Utils.PrefixData("", signalNameMap, functionParams)),
+                    saturationDependencies,
+                    update
+                )
+
+                // Add it to the transition
+                transitionObject.saturation.add(saturationObject)
             }
 
             // Add it to the list
@@ -296,6 +353,9 @@ object AutomataGenerator {
             // A list of variables that are to be updated due to "Update" constraints
             var update: MutableList<UpdateObject>,
 
+            // A list of saturation operations to be performed 
+            var saturation: MutableList<SaturationObject>,
+
             // The human-readable name of the next location that this transition goes to
             var nextStateName: String,
 
@@ -312,5 +372,25 @@ object AutomataGenerator {
 
             // The value to assign to the variable (right-hand side of the equation)
             var equation: String
+    )
+
+    /**
+     * A class which captures a saturation condition and updates
+     */
+    data class SaturationObject(
+            // The variable which is being saturated
+            var variable: String,
+
+            // The value to which we are saturating
+            var limit: String,
+
+            // The condition for when this saturation should occur
+            var condition: String,
+
+            // A list of dependencies that also need to be updated
+            var dependencies: MutableList<UpdateObject>,
+
+            // The update to apply for saturation
+            var update: UpdateObject
     )
 }

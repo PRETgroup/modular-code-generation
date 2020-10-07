@@ -153,6 +153,29 @@ begin
                     {%- if transition.update|length > 0 %}
                     {% endif %}
 
+                    {%- if transition.saturation|length > 0 %}
+                    -- Perform Saturation
+                    {%- endif %}
+    
+                    {%- for saturation in transition.saturation %}
+                    if {{ saturation.condition }} then
+                        -- Need to saturate {{ saturation.variable }} to {{ saturation.limit }}
+
+                        {%- if saturation.dependencies|length > 0 %}
+
+                        -- First, some dependencies need saturating
+                            {%- for dependency in saturation.dependencies %}
+                        {{ dependency.variable }} := {{ dependency.equation }};
+                            {%- endfor %}
+                        {%- endif %}
+                        
+                        {{ saturation.update.variable }} := {{ saturation.update.equation }}
+                    end if;
+                    {%- endfor %}
+    
+                    {%- if transition.saturation|length > 0 %}
+                    {% endif %}
+
                     {%- if location.name != transition.nextStateName %}
                     -- Next state is {{ transition.nextStateName }}
                     state_update := {{ transition.nextState }};
