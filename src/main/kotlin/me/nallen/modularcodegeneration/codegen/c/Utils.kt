@@ -214,7 +214,16 @@ object Utils {
                 // And then return the final function name
                 return "${createFunctionName(item.functionName)}($builder)"
             }
-            is Literal -> item.value
+            is Literal -> {
+                // If the literal can be a double, then we'll make sure it's a double
+                if(item.value.toDoubleOrNull() != null) {
+                    item.value.toDouble().toString()
+                }
+                else {
+                    // Otherwise it's probably a boolean, so just use it as such
+                    item.value
+                }
+            }
             is me.nallen.modularcodegeneration.parsetree.Variable -> {
                 // Variables also have a bit of extra logic that's needed
 
