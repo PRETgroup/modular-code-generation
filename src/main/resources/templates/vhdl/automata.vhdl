@@ -167,9 +167,9 @@ begin
                             {%- for dependency in saturation.dependencies %}
                         {{ dependency.variable }} := {{ dependency.equation }};
                             {%- endfor %}
-                        {%- endif %}
-                        
+                        {% endif %}
                         {{ saturation.update.variable }} := {{ saturation.update.equation }}
+
                     end if;
                     {%- endfor %}
     
