@@ -26,6 +26,10 @@ typedef int bool;
 
 #include "config.h"
 
+{%- if item.hasFixedPoint %}
+#include "fp_lib.h"
+{%- endif %}
+
 {%- if item.hasDelayed %}
 #include "delayable.h"
 {%- endif %}

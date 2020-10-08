@@ -45,6 +45,12 @@ object RunnableGenerator {
             )
         }
 
+        if(config.ccodeSettings.isFixedPoint()) {
+            for(loggingField in loggingFields) {
+                    loggingField.field = "FROM_FP(" + loggingField.field + ")"
+            }
+        }
+
         // Create the context
         val context = RunnableContext(
                 config,

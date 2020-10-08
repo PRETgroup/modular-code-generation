@@ -16,7 +16,7 @@ build: $(TARGET)
 {%- for object in objects -%}
     {%- if object.type == "compile" %}
 
-$(OBJECTSDIR)/{{ object.outputFile }}:{% for source in object.sources %} {{ source }}{% endfor %}{% for dep in object.dependencies %} {{ dep }}{% endfor %} $(BASEDIR)/config.h
+$(OBJECTSDIR)/{{ object.outputFile }}:{% for source in object.sources %} {{ source }}{% endfor %}{% for dep in object.dependencies %} {{ dep }}{% endfor %} $(BASEDIR)/config.h {%- if config.ccodeSettings.isFixedPoint() %} $(BASEDIR)/fp_lib.h {%- endif %}
 	@echo Building {{ object.name }}...
 	@mkdir -p $(OBJECTSDIR)
 	@$(CC) $(CFLAGS) $< -o $@
@@ -28,7 +28,7 @@ $(OBJECTSDIR)/{{ object.outputFile }}:{% for source in object.sources %} {{ sour
     {%- endif -%}
 {%- endfor %}
 
-$(TARGET):{% for object in objects %} {% if object.type == "subcall" %}{{ object.outputDir }}{% else %}$(OBJECTSDIR){% endif %}/{{ object.outputFile }}{% endfor %}
+$(TARGET):{% for object in objects %} {% if object.type == "subcall" %}{{ object.outputDir }}{% else %}$(OBJECTSDIR){% endif %}/{{ object.outputFile }}{% endfor %} {%- if config.ccodeSettings.isFixedPoint() %} $(BASEDIR)/fp_lib.c {%- endif %}
 	@echo Building $(TARGET)...
 	@rm -f $(TARGET)
 {%- for object in objects -%}

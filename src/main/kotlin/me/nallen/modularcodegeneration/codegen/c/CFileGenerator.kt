@@ -89,7 +89,7 @@ object CFileGenerator {
         for(function in automata.functions) {
             // Now we declare the method signature for the function
             // Note that it is declared as "static" so that there are no conflicts with other automata
-            result.append("static ${Utils.generateCType(function.returnType)} ${Utils.createFunctionName(function.name)}(")
+            result.append("static ${Utils.generateCType(function.returnType, config.ccodeSettings.isFixedPoint())} ${Utils.createFunctionName(function.name)}(")
             // Now we need to add all the parameters
             var first = true
             // If we require self references then the first parameter needs to be as such
@@ -104,22 +104,22 @@ object CFileGenerator {
                 first = false
 
                 // Generate both the type and variable name
-                result.append("${Utils.generateCType(input.type)} ${Utils.createVariableName(input.name)}")
+                result.append("${Utils.generateCType(input.type, config.ccodeSettings.isFixedPoint())} ${Utils.createVariableName(input.name)}")
             }
             // Open the function
             result.appendln(") {")
 
             // We need to set all parameters to use the value stored inside the self reference, as this is where their
             // values will be stored
-            val customDefinedVariables = LinkedHashMap<String, String>(Utils.DEFAULT_CUSTOM_VARIABLES)
+            val customDefinedVariables = LinkedHashMap<String, String>()
             for(parameter in automata.variables.filter {it.locality == Locality.PARAMETER}) {
                 customDefinedVariables[parameter.name] = "me->${Utils.createVariableName(parameter.name)}"
             }
 
             // Now we can generate the code for the internal body of the function!
-            result.appendln(Utils.generateCodeForProgram(function.logic, config, 1, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customDefinedVariables)))
+            result.appendln(Utils.generateCodeForProgram(function.logic, config, 1, Utils.PrefixData("", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, delayedVariableTypes, customDefinedVariables)))
 
-            // Close the function
+            // Close the function`
             result.appendln("}")
             result.appendln()
         }
@@ -162,7 +162,7 @@ object CFileGenerator {
                     // Next we need to go through every parameter that we need to set
                     for ((key, value) in item.instances[name]!!.parameters) {
                         // And set that parameter value accordingly
-                        result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(name, "data")}.${Utils.createVariableName(key)} = ${Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("${Utils.createVariableName(name, "data")}.", requireSelfReferenceInFunctionCalls))};")
+                        result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(name, "data")}.${Utils.createVariableName(key)} = ${Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("${Utils.createVariableName(name, "data")}.", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls))};")
                     }
                 }
             }
@@ -224,8 +224,8 @@ object CFileGenerator {
                 // For delayed variables, we need to call a memset to create the structure that holds the delayed data,
                 // as well as initialise the delayable structure
                 result.appendln()
-                result.appendln("${config.getIndent(1)}(void) memset((void *)&me->${Utils.createVariableName(variable.name, "delayed")}, 0, sizeof(${Utils.createTypeName("Delayable", Utils.generateCType(variable.type))}));")
-                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Init")}(&me->${Utils.createVariableName(variable.name, "delayed")}, ${Utils.generateCodeForParseTreeItem(variable.delayableBy!!, Utils.PrefixData("me->"))});")
+                result.appendln("${config.getIndent(1)}(void) memset((void *)&me->${Utils.createVariableName(variable.name, "delayed")}, 0, sizeof(${Utils.createTypeName("Delayable", Utils.generateCType(variable.type, config.ccodeSettings.isFixedPoint()))}));")
+                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type, config.ccodeSettings.isFixedPoint()), "Init")}(&me->${Utils.createVariableName(variable.name, "delayed")}, ${Utils.generateCodeForParseTreeItem(variable.delayableBy!!, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint()))});")
             }
         }
 
@@ -261,11 +261,11 @@ object CFileGenerator {
         // But, if an initial value for the variable is provided then let's use that
         if(automata is HybridAutomata && (automata as HybridAutomata).init.valuations.containsKey(variable.name)) {
             // Generate code that represents the initial value for the variable
-            initValue = Utils.generateCodeForParseTreeItem((automata as HybridAutomata).init.valuations[variable.name] !!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))
+            initValue = Utils.generateCodeForParseTreeItem((automata as HybridAutomata).init.valuations[variable.name] !!, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, delayedVariableTypes))
         }
         else if(automata is HybridNetwork && (automata as HybridNetwork).ioMapping.containsKey(AutomataVariablePair("", variable.name))) {
             val customVariableNames = (automata as HybridNetwork).instances.mapValues { "me->${ Utils.createVariableName(it.key, "data")}" }
-            initValue = Utils.generateCodeForParseTreeItem((automata as HybridNetwork).ioMapping[AutomataVariablePair("", variable.name)] !!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customVariableNames))
+            initValue = Utils.generateCodeForParseTreeItem((automata as HybridNetwork).ioMapping[AutomataVariablePair("", variable.name)] !!, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, delayedVariableTypes, customVariableNames))
         }
 
         // Now we can return the code that initialises the variable
@@ -292,7 +292,7 @@ object CFileGenerator {
         // Check that we do actually have a default value
         if(variable.defaultValue != null) {
             // Now we can se the parameter to its default value
-            return "me->${Utils.createVariableName(variable.name)} = ${Utils.generateCodeForParseTreeItem(variable.defaultValue!!, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))};"
+            return "me->${Utils.createVariableName(variable.name)} = ${Utils.generateCodeForParseTreeItem(variable.defaultValue!!, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, delayedVariableTypes))};"
         }
 
         // Otherwise no default value, so let's skip this
@@ -345,7 +345,7 @@ object CFileGenerator {
         // Let's start by adding an entry to each delayed variable that we have to keep track of
         if (automata.variables.any { it.canBeDelayed() }) {
             for (variable in automata.variables.filter { it.canBeDelayed() })
-                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
+                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type, config.ccodeSettings.isFixedPoint()), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
             result.appendln()
         }
 
@@ -427,11 +427,11 @@ object CFileGenerator {
             var atLeastOneIf = false
             for((_, toLocation, guard, update) in automata.edges.filter{it.fromLocation == location.name }) {
                 // Check if the guard of the transition is satisfied
-                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
+                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
 
                 // If it is satisfied, then we will perform the updates associated with the transition
                 for((variable, equation) in update) {
-                    result.appendln("${config.getIndent(defaultIndent+3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))};")
+                    result.appendln("${config.getIndent(defaultIndent+3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, delayedVariableTypes))};")
                 }
 
                 if(update.isNotEmpty())
@@ -451,7 +451,7 @@ object CFileGenerator {
             if(!config.requireOneIntraTransitionPerTick) {
                 // Yes we should include them!
                 // So let's start off with checking the invariant of the location
-                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
+                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
 
                 // And add the code for the intra-transition, which will include both flow and updates
                 result.append(generateCodeForIntraLogic(location, automata, defaultIndent+3))
@@ -545,7 +545,7 @@ object CFileGenerator {
     private fun generateCodeForIntraLogic(location: Location, automata: HybridAutomata, indent: Int): String {
         val result = StringBuilder()
 
-        val customVars = HashMap<String, String>(Utils.DEFAULT_CUSTOM_VARIABLES)
+        val customVars = HashMap<String, String>()
 
         // Go through each flow constraint
         for((variable, equation) in location.flow) {
@@ -553,7 +553,7 @@ object CFileGenerator {
             val eulerSolution = Plus(ParseTreeVariable(variable), Multiply(equation, ParseTreeVariable("STEP_SIZE")))
 
             // And then generate code that performs the ODE
-            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))};")
+            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, delayedVariableTypes))};")
 
             // We also keep track of the variables we've added in flow, so that the latest copies can be used in the
             // update section
@@ -566,7 +566,7 @@ object CFileGenerator {
         // Now go through each update constraint
         for((variable, equation) in location.update) {
             // Generate code that performs the given update
-            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customVars))};")
+            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, delayedVariableTypes, customVars))};")
         }
 
         if(location.update.isNotEmpty())
@@ -580,7 +580,7 @@ object CFileGenerator {
             // Get the variable that we'll be checking for saturation
             val variable = Utils.createVariableName(point.variable)
             // And the limit
-            val limit = Utils.generateCodeForParseTreeItem(point.value, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))
+            val limit = Utils.generateCodeForParseTreeItem(point.value, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, delayedVariableTypes))
 
             // Now, depending on the direction of saturation we'll have a different equatio that we generate for the check
             val condition = when(point.direction) {
@@ -627,7 +627,7 @@ object CFileGenerator {
      */
     private fun generateIntermediateVariable(variable: Variable): String {
         // This will be of the same type, and start with the same value, just have a different name
-        return "${Utils.generateCType(variable.type)} ${Utils.createVariableName(variable.name)}_u = me->${Utils.createVariableName(variable.name)};"
+        return "${Utils.generateCType(variable.type, config.ccodeSettings.isFixedPoint())} ${Utils.createVariableName(variable.name)}_u = me->${Utils.createVariableName(variable.name)};"
     }
 
     /**
@@ -647,7 +647,7 @@ object CFileGenerator {
         // Let's start by adding an entry to each delayed variable that we have to keep track of
         if (network.variables.any { it.canBeDelayed() }) {
             for (variable in network.variables.filter { it.canBeDelayed() })
-                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
+                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type, config.ccodeSettings.isFixedPoint()), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
             result.appendln()
         }
 
@@ -671,7 +671,7 @@ object CFileGenerator {
             val from = network.ioMapping[key]!!
             if(!key.automata.isBlank())
                 // We are writing to an input of a sub-automata
-                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
+                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
         }
 
         result.appendln()
@@ -705,7 +705,7 @@ object CFileGenerator {
             val from = network.ioMapping[key]!!
             if(key.automata.isBlank())
                 // We are writing to an output of this automata
-                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
+                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", config.ccodeSettings.isFixedPoint(), requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
        }
 
         // And return the collection of "Run" functions

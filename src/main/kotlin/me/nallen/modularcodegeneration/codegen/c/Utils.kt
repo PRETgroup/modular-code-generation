@@ -7,6 +7,7 @@ import me.nallen.modularcodegeneration.hybridautomata.Variable
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.utils.NamingConvention
 import me.nallen.modularcodegeneration.utils.convertWordDelimiterConvention
+import me.nallen.modularcodegeneration.logging.Logger
 
 typealias ParseTreeLocality = me.nallen.modularcodegeneration.parsetree.Locality
 
@@ -14,19 +15,15 @@ typealias ParseTreeLocality = me.nallen.modularcodegeneration.parsetree.Locality
  * A set of utilities for C Code generation regarding types, ParseTree generation, and naming conventions
  */
 object Utils {
-    // If something uses STEP_SIZE, we don't want to throw an error when there's no default value for it, because it's
-    // defined in another file
-    val DEFAULT_CUSTOM_VARIABLES = mapOf("STEP_SIZE" to "STEP_SIZE")
-
     /**
      * Convert our VariableType to a C type
      */
-    fun generateCType(type: VariableType?): String {
+    fun generateCType(type: VariableType?, fixedPoint: Boolean): String {
         // Switch on the type, and return the appropriate C type
         return when(type) {
             null -> "void"
             VariableType.BOOLEAN -> "bool"
-            VariableType.REAL -> "double"
+            VariableType.REAL -> if(!fixedPoint) "double" else "uint64_t"
             VariableType.INTEGER -> "int"
             else -> throw NotImplementedError("Unable to generate code for requested type '$type'")
         }
@@ -160,7 +157,7 @@ object Utils {
      *
      * This will recursively go through the Parse Tree to generate the string, including adding brackets where necessary
      */
-    fun generateCodeForParseTreeItem(item: ParseTreeItem, prefixData: PrefixData = PrefixData(""), parent: ParseTreeItem? = null): String {
+    fun generateCodeForParseTreeItem(item: ParseTreeItem, prefixData: PrefixData = PrefixData("", false), parent: ParseTreeItem? = null): String {
         // For each possible ParseTreeItem we have a different output string that will be generated
         // We recursively call these generation functions until we reach the end of the tree
         return when (item) {
@@ -189,7 +186,7 @@ object Utils {
                                 // Generate the Delayable call for this variable. It requires the type of the variable,
                                 // the name of the variable (to point to the struct), and the time that we want to fetch
                                 // from
-                                return "${createFunctionName("Delayable", generateCType(prefixData.delayedVariableTypes[varName]), "Get")}(" +
+                                return "${createFunctionName("Delayable", generateCType(prefixData.delayedVariableTypes[varName], prefixData.fixedPoint), "Get")}(" +
                                         "&${generateCodeForParseTreeItem(item.arguments[0], prefixData)}_delayed, " +
                                         "${generateCodeForParseTreeItem(item.arguments[1], prefixData)})"
                             }
@@ -217,7 +214,7 @@ object Utils {
             is Literal -> {
                 // If the literal can be a double, then we'll make sure it's a double
                 if(item.value.toDoubleOrNull() != null) {
-                    item.value.toDouble().toString()
+                    if(!prefixData.fixedPoint) item.value.toDouble().toString() else "CREATE_FP(${item.value.toDouble()})"
                 }
                 else {
                     // Otherwise it's probably a boolean, so just use it as such
@@ -232,6 +229,12 @@ object Utils {
                     // Then we want to just replace this with the string representing the value
                     return padOperand(parent ?: item, item.value!!, prefixData)
                 else {
+                    // If something uses STEP_SIZE, we don't want to throw an error when there's no default value for it, because it's
+                    // defined in another file
+                    if(item.name == "STEP_SIZE") {
+                        return if(!prefixData.fixedPoint) "STEP_SIZE" else "CREATE_FP(STEP_SIZE)"
+                    }
+                    
                     // Otherwise we want to generate this variable
                     // It may consist of data inside structs, separated by periods
                     val parts = item.name.split(".")
@@ -261,22 +264,76 @@ object Utils {
                 }
             }
             is Constant -> when(item.name) {
-                ConstantType.PI -> "M_PI"
+                ConstantType.PI -> if(!prefixData.fixedPoint) "M_PI" else "CREATE_FP(M_PI)"
             }
             is Plus -> padOperand(item, item.operandA, prefixData) + " + " + padOperand(item, item.operandB, prefixData)
             is Minus -> padOperand(item, item.operandA, prefixData) + " - " + padOperand(item, item.operandB, prefixData)
             is Negative -> "-" + padOperand(item, item.operandA, prefixData)
             is Power -> "pow(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ", " + generateCodeForParseTreeItem(item.operandB, prefixData) + ")"
-            is Multiply -> padOperand(item, item.operandA, prefixData) + " * " + padOperand(item, item.operandB, prefixData)
-            is Divide -> padOperand(item, item.operandA, prefixData) + " / " + padOperand(item, item.operandB, prefixData)
-            is SquareRoot -> "sqrt(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
-            is Exponential -> "exp(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
-            is Ln -> "log(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
-            is Sine -> "sin(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
-            is Cosine -> "cos(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
-            is Tangent -> "tan(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
-            is Floor -> "floor(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
-            is Ceil -> "ceil(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+            is Multiply -> {
+                if(!prefixData.fixedPoint)
+                    padOperand(item, item.operandA, prefixData) + " * " + padOperand(item, item.operandB, prefixData)
+                else
+                    "FP_MULT(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
+            }
+            is Divide -> {
+                if(!prefixData.fixedPoint)
+                    padOperand(item, item.operandA, prefixData) + " / " + padOperand(item, item.operandB, prefixData)
+                else
+                    "FP_DIV(" + padOperand(item, item.operandA, prefixData) + ", " + padOperand(item, item.operandB, prefixData) + ")"
+            }
+            is SquareRoot -> {
+                if(!prefixData.fixedPoint)
+                    "sqrt(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+                else {
+                    Logger.warn("Square Root is currently not supported for fixed point generation in C - Converting to floating point")
+                    "CREATE_FP(sqrt(FROM_FP(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")))"
+                }
+            }
+            is Exponential -> {
+                if(!prefixData.fixedPoint)
+                    "exp(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+                else {
+                    Logger.warn("Exponential is currently not supported for fixed point generation in C - Converting to floating point")
+                    "CREATE_FP(exp(FROM_FP(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")))"
+                }
+            }
+            is Ln -> {
+                if(!prefixData.fixedPoint)
+                    "log(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+                else
+                    throw NotImplementedError("Natural Log is currently not supported for fixed point generation in C")
+            }
+            is Sine -> {
+                if(!prefixData.fixedPoint)
+                    "sin(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+                else
+                    throw NotImplementedError("Trigonometric Functions are currently not supported for fixed point generation in C")
+            }
+            is Cosine -> {
+                if(!prefixData.fixedPoint)
+                    "cos(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+                else
+                    throw NotImplementedError("Trigonometric Functions are currently not supported for fixed point generation in C")
+            }
+            is Tangent -> {
+                if(!prefixData.fixedPoint)
+                    "tan(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+                else
+                    throw NotImplementedError("Trigonometric Functions are currently not supported for fixed point generation in C")
+            }
+            is Floor -> {
+                if(!prefixData.fixedPoint)
+                    "floor(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+                else
+                    throw NotImplementedError("Floor is currently not supported for fixed point generation in C")
+            }
+            is Ceil -> {
+                if(!prefixData.fixedPoint)
+                    "ceil(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
+                else
+                    throw NotImplementedError("Ceil is currently not supported for fixed point generation in C")
+            }
         }
     }
 
@@ -286,14 +343,14 @@ object Utils {
      *
      * This will recursively go through the Program to generate the string, including adding brackets where necessary
      */
-    fun generateCodeForProgram(program: Program, config: Configuration, depth: Int = 0, prefixData: PrefixData = PrefixData(""), innerProgram: Boolean = false): String {
+    fun generateCodeForProgram(program: Program, config: Configuration, depth: Int = 0, prefixData: PrefixData = PrefixData("", false), innerProgram: Boolean = false): String {
         val builder = StringBuilder()
 
         // First, we want to declare and initialise any internal variables that exist in this program, if it's not an inner program
         if(!innerProgram) {
             program.variables.filter {it.locality == ParseTreeLocality.INTERNAL}
                     .filterNot { prefixData.customVariableNames.containsKey(it.name) }
-                    .forEach { builder.appendln("${config.getIndent(depth)}${Utils.generateCType(it.type)} ${Utils.createVariableName(it.name)};") }
+                    .forEach { builder.appendln("${config.getIndent(depth)}${Utils.generateCType(it.type, prefixData.fixedPoint)} ${Utils.createVariableName(it.name)};") }
             if(builder.isNotEmpty())
                 builder.appendln()
         }
@@ -349,6 +406,9 @@ object Utils {
             // A prefix that should be placed before all variable names
             val prefix: String,
 
+            // The number of bits to use for fixed point numbers
+            val fixedPoint: Boolean,
+
             // Whether or not to require the first argument of a custom function call to be a self-reference to the
             // object's struct
             val requireSelfReferenceInFunctionCalls: Boolean = false,
@@ -357,6 +417,6 @@ object Utils {
             val delayedVariableTypes: Map<String, VariableType> = HashMap(),
 
             // A set of variables whose names should be something other than the style convention
-            val customVariableNames: Map<String, String> = DEFAULT_CUSTOM_VARIABLES
+            val customVariableNames: Map<String, String> = HashMap()
     )
 }

@@ -24,6 +24,8 @@ class CCodeGenerator {
         private const val MAKEFILE = "Makefile"
         private const val CONFIG_FILE = "config.h"
         private const val DELAYABLE_HEADER = "delayable.h"
+        private const val FP_LIBRARY_FILE = "fp_lib.c"
+        private const val FP_LIBRARY_HEADER = "fp_lib.h"
 
         // We need to keep track of the variables we need to delay
         private val delayedTypes = ArrayList<VariableType>()
@@ -115,6 +117,16 @@ class CCodeGenerator {
 
             // And write the content
             File(outputDir, CONFIG_FILE).writeText(content.toString())
+
+            // Also generate the Fixed Point library if required
+            if(config.ccodeSettings.isFixedPoint()) {
+                // Generate the Fixed Point library
+                Logger.info("Generating ${outputDir.getRelativePath()}/$FP_LIBRARY_FILE")
+                File(outputDir, FP_LIBRARY_FILE).writeText(this::class.java.classLoader.getResource("templates/c/fp_lib.c").readText())
+
+                Logger.info("Generating ${outputDir.getRelativePath()}/$FP_LIBRARY_HEADER")
+                File(outputDir, FP_LIBRARY_HEADER).writeText(this::class.java.classLoader.getResource("templates/c/fp_lib.h").readText().replace("{{FP_BITS}}", config.ccodeSettings.fixedPointBits.toString()))
+            }
         }
 
         /**
@@ -160,27 +172,27 @@ class CCodeGenerator {
             // For each type we need to make delayable
             for(type in types) {
                 // Create the struct, which includes a buffer, max length, and current index
-                content.appendln("// Delayable struct for type ${Utils.generateCType(type)}")
+                content.appendln("// Delayable struct for type ${Utils.generateCType(type, config.ccodeSettings.isFixedPoint())}")
                 content.appendln("typedef struct {")
-                content.appendln("${config.getIndent(1)}${Utils.generateCType(type)} *buffer;")
+                content.appendln("${config.getIndent(1)}${Utils.generateCType(type, config.ccodeSettings.isFixedPoint())} *buffer;")
                 content.appendln("${config.getIndent(1)}unsigned int index;")
                 content.appendln("${config.getIndent(1)}unsigned int max_length;")
-                content.appendln("} ${Utils.createTypeName("Delayable", Utils.generateCType(type))};")
+                content.appendln("} ${Utils.createTypeName("Delayable", Utils.generateCType(type, config.ccodeSettings.isFixedPoint()))};")
                 content.appendln()
 
                 // Create the initialisation function, which instantiates the buffer, sets the max length, and resets
                 // the index to 0
                 content.appendln("// Initialisation function")
-                content.appendln("static inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Init")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double max_delay) {")
+                content.appendln("static inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type, config.ccodeSettings.isFixedPoint()), "Init")}(${Utils.createTypeName("Delayable", Utils.generateCType(type, config.ccodeSettings.isFixedPoint()))}* me, double max_delay) {")
                 content.appendln("${config.getIndent(1)}me->index = 0;")
                 content.appendln("${config.getIndent(1)}me->max_length = (unsigned int) (max_delay / STEP_SIZE);")
-                content.appendln("${config.getIndent(1)}me->buffer = malloc(sizeof(${Utils.generateCType(type)}) * me->max_length);")
+                content.appendln("${config.getIndent(1)}me->buffer = malloc(sizeof(${Utils.generateCType(type, config.ccodeSettings.isFixedPoint())}) * me->max_length);")
                 content.appendln("}")
                 content.appendln()
 
                 // Create the add function, which will add an item to the buffer and roll around the index if needed
                 content.appendln("// Add function")
-                content.appendln("static inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Add")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, ${Utils.generateCType(type)} value) {")
+                content.appendln("static inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type, config.ccodeSettings.isFixedPoint()), "Add")}(${Utils.createTypeName("Delayable", Utils.generateCType(type, config.ccodeSettings.isFixedPoint()))}* me, ${Utils.generateCType(type, config.ccodeSettings.isFixedPoint())} value) {")
                 content.appendln("${config.getIndent(1)}me->index++;")
                 content.appendln("${config.getIndent(1)}if(me->index >= me->max_length)")
                 content.appendln("${config.getIndent(2)}me->index = 0;")
@@ -192,7 +204,7 @@ class CCodeGenerator {
                 // And finally create the get function, which will access the buffer at the correct position in the past
                 // If the requested delay is larger than the max delay then an error will occur
                 content.appendln("// Get function")
-                content.appendln("static inline ${Utils.generateCType(type)} ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Get")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double delay) {")
+                content.appendln("static inline ${Utils.generateCType(type, config.ccodeSettings.isFixedPoint())} ${Utils.createFunctionName("Delayable", Utils.generateCType(type, config.ccodeSettings.isFixedPoint()), "Get")}(${Utils.createTypeName("Delayable", Utils.generateCType(type, config.ccodeSettings.isFixedPoint()))}* me, double delay) {")
                 content.appendln("${config.getIndent(1)}int steps = (int) (delay / STEP_SIZE);")
                 content.appendln("${config.getIndent(1)}if(steps > me->max_length)")
                 content.appendln("${config.getIndent(2)}return 0; // This is an error")
@@ -346,6 +358,11 @@ class CCodeGenerator {
          */
         fun generate(item: HybridItem, dir: String, config: Configuration = Configuration()) {
             val outputDir = File(dir)
+
+            if(config.ccodeSettings.fixedPointBits != null) {
+                if(config.ccodeSettings.fixedPointBits < 1 || config.ccodeSettings.fixedPointBits > 32)
+                    throw IllegalArgumentException("Fixed Point implementation needs between 1 and 32 bits")
+            }
 
             // If the directory doesn't already exist, we want to create it
             if(!outputDir.exists())

@@ -61,11 +61,13 @@ object HFileGenerator {
             }
         }
 
+        rootItem.hasFixedPoint = config.ccodeSettings.fixedPointBits != null
+
         for(variable in item.variables.sortedWith(compareBy({ it.locality }, { it.type }))) {
             val delayedObject = if(variable.canBeDelayed()) {
                 rootItem.hasDelayed = true
                 DelayedObject(
-                        Utils.createTypeName("Delayable", Utils.generateCType(variable.type)),
+                        Utils.createTypeName("Delayable", Utils.generateCType(variable.type, config.ccodeSettings.isFixedPoint())),
                         Utils.createVariableName(variable.name, "delayed")
                 )
             }
@@ -75,7 +77,7 @@ object HFileGenerator {
 
             val variableObject = VariableObject(
                     variable.locality.getTextualName(),
-                    Utils.generateCType(variable.type),
+                    Utils.generateCType(variable.type, config.ccodeSettings.isFixedPoint()),
                     Utils.createVariableName(variable.name),
                     delayedObject
             )
@@ -115,6 +117,7 @@ object HFileGenerator {
             var initFunction: String,
             var paramFunction: String,
             var hasDelayed: Boolean = false,
+            var hasFixedPoint: Boolean = false,
             var variables: MutableList<VariableObject> = ArrayList(),
             var enumName: String = "",
             var locations: MutableList<String> = ArrayList(),

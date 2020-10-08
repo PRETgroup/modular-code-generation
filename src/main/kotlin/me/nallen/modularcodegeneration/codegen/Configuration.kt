@@ -94,11 +94,19 @@ data class CSettings(
 
         // If annotations are desired around loops in C code generation then this field should be set to the value to be
         // used with {bound} for the bound e.g. `ANNOT_MAXITER({bound});`.
-        val loopAnnotation: String? = null
+        val loopAnnotation: String? = null,
+
+        // The number of bits to use for fixed point numbers. A value of NULL indicates that floating point numbers
+        // should be used.
+        val fixedPointBits: Int? = null
 ) {
     val hasLoopAnnotations: Boolean = loopAnnotation != null
 
     fun getLoopAnnotation(bound: Any): String? {
         return loopAnnotation?.replace("{bound}", bound.toString())
+    }
+
+    fun isFixedPoint(): Boolean {
+        return fixedPointBits != null
     }
 }
