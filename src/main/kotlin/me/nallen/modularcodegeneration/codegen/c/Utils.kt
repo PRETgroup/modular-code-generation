@@ -23,7 +23,7 @@ object Utils {
         return when(type) {
             null -> "void"
             VariableType.BOOLEAN -> "bool"
-            VariableType.REAL -> if(!fixedPoint) "double" else "uint64_t"
+            VariableType.REAL -> if(!fixedPoint) "double" else "int64_t"
             VariableType.INTEGER -> "int"
             else -> throw NotImplementedError("Unable to generate code for requested type '$type'")
         }
