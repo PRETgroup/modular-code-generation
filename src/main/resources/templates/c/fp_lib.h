@@ -13,5 +13,6 @@ extern uint64_t lo(uint64_t x);
 extern int64_t FP_MULT(int64_t y, int64_t z);
 extern int64_t FP_DIV(int64_t y, int64_t z);
 extern int64_t FP_FLOOR(int64_t x);
+extern int64_t FP_CEIL(int64_t x);
 
 #endif // FP_LIB_H_

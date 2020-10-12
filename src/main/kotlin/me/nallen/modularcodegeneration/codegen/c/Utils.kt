@@ -326,13 +326,13 @@ object Utils {
                 if(!prefixData.fixedPoint)
                     "floor(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
                 else
-                    throw NotImplementedError("Floor is currently not supported for fixed point generation in C")
+                    "FP_FLOOR(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             }
             is Ceil -> {
                 if(!prefixData.fixedPoint)
                     "ceil(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
                 else
-                    throw NotImplementedError("Ceil is currently not supported for fixed point generation in C")
+                    "FP_CEIL(" + generateCodeForParseTreeItem(item.operandA, prefixData) + ")"
             }
         }
     }

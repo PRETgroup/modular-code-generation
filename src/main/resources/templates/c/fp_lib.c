@@ -67,7 +67,17 @@ int64_t FP_DIV(int64_t y, int64_t z) {
 }
 
 int64_t FP_FLOOR(int64_t x) {
-    int64_t a = x / (1L << FP_BITS);
+    int64_t a = x >> FP_BITS;
+
+    return (a << FP_BITS);
+}
+
+int64_t FP_CEIL(int64_t x) {
+    if((x & ((1L << FP_BITS) - 1)) == 0) {
+        return x;
+    }
+
+    int64_t a = (x >> FP_BITS) + 1;
 
     return (a << FP_BITS);
 }
