@@ -1,5 +1,9 @@
 #include "fp_lib.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+
 uint64_t hi(uint64_t x) {
     return x >> FP_BITS;
 }
@@ -33,27 +37,32 @@ int64_t FP_DIV(int64_t y, int64_t z) {
     uint64_t a = labs(y);
     uint64_t b = labs(z);
 
-    lldiv_t res;
-    res = lldiv (a, b);
-
-    uint64_t s0 = res.quot;
-    uint64_t upper = hi(res.rem);
-
-    res = lldiv(lo(res.rem) << FP_BITS, b);
-
-    int64_t result = (s0 << FP_BITS) + res.quot;
-
-    if(b >> FP_BITS > 0) {
-        res = lldiv(upper << FP_BITS, b >> FP_BITS);
-        result += res.quot;
+    if(z == 0) {
+        printf("Division by zero\n");
+        return 0;
     }
 
+    uint64_t quotient = 0;
+    uint64_t remainder = 0;
+
+    for(int i=3*FP_BITS-1; i>=0; i--) {
+        remainder <<= 1;
+
+        if(i >= FP_BITS) {
+            remainder += (a >> (i - FP_BITS)) & 0b1;
+        }
+
+        if(remainder >= b) {
+            remainder -= b;
+            quotient |= (1UL << i);
+        }
+    }
 
     if((y < 0) != (z < 0)) {
-        return result * -1;
+        return quotient * -1;
     }
     else {
-        return result;
+        return quotient;
     }
 }
 

@@ -2,8 +2,6 @@
 #define FP_LIB_H_
 
 #include <stdint.h>
-#include <stdlib.h>
-#include <math.h>
 
 #define FP_BITS {{FP_BITS}}
 
