@@ -655,7 +655,8 @@ object CFileGenerator {
         val keys = network.ioMapping.keys.sortedWith(compareBy({ it.automata }, { it.variable }))
 
         // And get a map of all the instantiate names that we need to use here (they're formatted differently to variables)
-        val customVariableNames = network.instances.mapValues { "me->${ Utils.createVariableName(it.key, "data")}" }
+        val customVariableNames = HashMap<String, String>(Utils.DEFAULT_CUSTOM_VARIABLES)
+        customVariableNames.putAll(network.instances.mapValues { "me->${ Utils.createVariableName(it.key, "data")}" })
         //customVariableNames.putAll(network.variables.associate {  })
 
         // Now we go through each input

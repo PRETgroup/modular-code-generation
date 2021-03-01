@@ -1,6 +1,7 @@
 package me.nallen.modularcodegeneration.hybridautomata
 
 import me.nallen.modularcodegeneration.description.haml.ParseTreeLocality
+import me.nallen.modularcodegeneration.codegen.CodeGenManager
 import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable as ParseTreeVariable
@@ -103,9 +104,9 @@ data class HybridAutomata(
      * between valid locations, etc. This can help the user detect errors during the compile stage rather than by
      * analysing the generated code.
      */
-    override fun validate(): Boolean {
+    override fun validate(includeConstants: Boolean): Boolean {
         // Let's try see if anything isn't valid
-        var valid = super.validate()
+        var valid = super.validate(includeConstants)
 
         val writeableVars = ArrayList<String>()
         val readableVars = ArrayList<String>()
@@ -113,6 +114,11 @@ data class HybridAutomata(
         val functionReturnMap = functions.map { Pair(it.name, it.returnType) }.toMap()
         val functionArgumentsMap = functions.map { Pair(it.name, it.inputs.map { it.type }) }.toMap()
 
+        if(includeConstants) {
+            readableVars.addAll(CodeGenManager.CODEGEN_CONSTANTS.keys)
+            variableTypes.putAll(CodeGenManager.CODEGEN_CONSTANTS)
+        }
+        
         // We need to keep track of what variables we can write to and read from in this network
         for(variable in this.variables) {
             // Keep track of variable types

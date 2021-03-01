@@ -19,6 +19,8 @@ typealias ParseTreeLocality = me.nallen.modularcodegeneration.parsetree.Locality
  * This class also provides several utility methods for things such as saturation, and parametrisation of the instances
  */
 object CodeGenManager {
+    val CODEGEN_CONSTANTS = mapOf("STEP_SIZE" to VariableType.REAL)
+
     private val mapper = jacksonObjectMapper()
 
     /**

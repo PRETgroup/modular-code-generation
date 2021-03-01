@@ -2,6 +2,7 @@ package me.nallen.modularcodegeneration.hybridautomata
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import me.nallen.modularcodegeneration.codegen.CodeGenManager
 import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.parsetree.Variable as ParseTreeVariable
@@ -73,7 +74,7 @@ abstract class HybridItem(
      * Check if the basic parts of this Hybrid Item are valid, this only involves variables. This can help the user
      * detect errors during the compile stage rather than by analysing the generated code.
      */
-    open fun validate(): Boolean {
+    open fun validate(includeConstants: Boolean = true): Boolean {
         // Let's try see if anything isn't valid
         var valid = true
 
@@ -97,10 +98,14 @@ abstract class HybridItem(
             val writeableVars = function.logic.variables
                     .filter { it.locality == ParseTreeLocality.INTERNAL }
                     .map { Pair(it.name, it.type) }.toMap()
-            val readableVars = function.logic.variables
+            val readableVars = HashMap<String, VariableType>()
+            readableVars.putAll(function.logic.variables
                     .filter { it.locality == ParseTreeLocality.INTERNAL || it.locality == ParseTreeLocality.EXTERNAL_INPUT }
                     .plus(function.inputs)
-                    .map { Pair(it.name, it.type) }.toMap()
+                    .map { Pair(it.name, it.type) }.toMap())
+
+            if(includeConstants)
+                readableVars.putAll(CodeGenManager.CODEGEN_CONSTANTS)
 
             for(variable in function.logic.variables.filter { it.type == VariableType.ANY }) {
                 Logger.error("Unable to detect type for variable '${variable.name}' in function '${function.name}' of '$name'.")
