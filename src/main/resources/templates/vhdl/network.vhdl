@@ -180,13 +180,13 @@ begin
                 {%- endfor %}
                 {% endif %}
 
-                {%- if i == runtimeMappingProcess.runtimeMappings|length-1 %}
+                {%- if i == runtimeMappingProcess.runtimeMappings|length %}
                 -- We're done!
                 {{ runtimeMappingProcess.processDoneSignal }} <= true;
                 {% endif %}
 
-                {%- if i == 1+runtimeMappingProcess.runtimeMappings|length %}
-                -- We're waiting to restart!
+                {%- if i == 0 %}
+                -- We're starting the next run!
                 {{ runtimeMappingProcess.processDoneSignal }} <= false;
                 {% endif %}
         {%- endfor %}
