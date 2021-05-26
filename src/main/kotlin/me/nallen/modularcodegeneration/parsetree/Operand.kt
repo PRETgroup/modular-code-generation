@@ -82,6 +82,13 @@ internal fun getMapOfOperators(): Map<Operand, Operator> {
 }
 
 /**
+ * Checks whether a character is part of a valid string (variable name)
+ */
+internal fun isValidStringCharacter(input: Char): Boolean {
+    return input.isLetterOrDigit() || input.equals('_')
+}
+
+/**
  * Detects what the next operator should be for the given input string.
  * If the first character(s) do not correspond to any operator then null will be returned.
  * If the start of the string matches multiple operators, the one with the longest length will be returned.
@@ -92,7 +99,7 @@ internal fun getOperandForSequence(input: String, entire: Boolean = false): Oper
     for((operand, operator) in getMapOfOperators()) {
         // Check that the string starts with the given operator
         if(input.startsWith(operator.symbol, ignoreCase = true) && (entire || !operator.function))
-            if(!operator.symbol.last().isLetterOrDigit() || input.length == operator.symbol.length || !input[operator.symbol.length].isLetterOrDigit())
+            if(!isValidStringCharacter(operator.symbol.last()) || input.length == operator.symbol.length || !isValidStringCharacter(input[operator.symbol.length]))
                 matches.add(operand)
     }
 

@@ -42,6 +42,7 @@ class ParseTreeTests : StringSpec() {
                 EquationSet("sin(0.5 * PI)", "sin(0.5 * PI)", 1.0),
                 EquationSet("4 + cos(PI / 2)", "4 + cos(PI / 2)", 4.0),
                 EquationSet("tan(0)", "tan(0)", 0.0),
+                EquationSet("exp_discontinuous_proc_done", "exp_discontinuous_proc_done"),
 
                 EquationSet("my_custom_function(a, b c)"),
                 EquationSet("my_custom_function(a, b, c"),
