@@ -38,7 +38,7 @@ $(TARGET):{% for object in objects %} {% if object.type == "subcall" %}{{ object
 {%- endfor %}
 {%- if targetMethod == "link" %}
 	@$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
-{%- elif targetMethod == "archive" -%}
+{%- elif targetMethod == "archive" %}
 	@$(AR) $(ARFLAGS) $(TARGET) $(OBJECTSDIR)/*.o
 {%- endif %}
 
