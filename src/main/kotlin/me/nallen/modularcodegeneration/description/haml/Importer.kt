@@ -115,16 +115,16 @@ class Importer {
                     // If there was any text before the include statement then we want to append that, and now we need
                     // to indent one level further (2 spaces per tab in YAML)
                     if(pretext.isNotBlank()) {
-                        builder.appendln(pretext)
+                        builder.appendLine(pretext)
                         indent += "  "
                     }
 
                     // Add the included file (parsing any includes it may have first) and apply the indent
-                    builder.appendln(parseIncludes(includedFile).trim().prependIndent(indent))
+                    builder.appendLine(parseIncludes(includedFile).trim().prependIndent(indent))
                 }
                 else {
                     // No include statement, so let's just append the line
-                    builder.appendln(line)
+                    builder.appendLine(line)
                 }
             }
 

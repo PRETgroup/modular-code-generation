@@ -85,17 +85,17 @@ class VHDLGenerator {
 
             // Represent most of the config properties as #defines in the C
             // Execution Settings
-            content.appendln("library ieee;")
-            content.appendln("use ieee.std_logic_1164.all;")
-            content.appendln("use ieee.numeric_std.all;")
-            content.appendln("")
-            content.appendln("use work.lib.all;")
-            content.appendln("")
-            content.appendln("package config is")
-            content.appendln("")
-            content.appendln("    constant step_size : signed(31 downto 0) := CREATE_FP(${config.execution.stepSize});")
-            content.appendln("")
-            content.appendln("end package config;")
+            content.appendLine("library ieee;")
+            content.appendLine("use ieee.std_logic_1164.all;")
+            content.appendLine("use ieee.numeric_std.all;")
+            content.appendLine("")
+            content.appendLine("use work.lib.all;")
+            content.appendLine("")
+            content.appendLine("package config is")
+            content.appendLine("")
+            content.appendLine("    constant step_size : signed(31 downto 0) := CREATE_FP(${config.execution.stepSize});")
+            content.appendLine("")
+            content.appendLine("end package config;")
 
             // And write the content
             File(outputDir, CONFIG_FILE).writeText(content.toString())

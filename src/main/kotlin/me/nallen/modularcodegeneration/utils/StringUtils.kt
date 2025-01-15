@@ -1,5 +1,8 @@
 package me.nallen.modularcodegeneration.utils
 
+import java.util.*
+import kotlin.collections.ArrayList
+
 /**
  * A set of utilities that operate on Strings (or Arrays of Strings).
  */
@@ -45,10 +48,10 @@ fun String.splitIntoWords(): List<String> {
         val regex = Regex("^([A-Z][a-z0-9]*)+$")
 
         // We capitalise the first letter in order to convert to PascalCase
-        if(regex.matches(this.capitalize())) {
+        if(regex.matches(this.capitalizeFirstLetter())) {
             // Get each individual word
             val smallerRegex = Regex("[A-Z][a-z0-9]*")
-            val matches = smallerRegex.findAll(this.capitalize())
+            val matches = smallerRegex.findAll(this.capitalizeFirstLetter())
 
             val words = ArrayList<String>()
             for(match in matches) {
@@ -64,6 +67,27 @@ fun String.splitIntoWords(): List<String> {
 }
 
 /**
+ * Capitalizes the first letter of a string, if it is not already a capital
+ */
+fun String.capitalizeFirstLetter(): String {
+    return replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+}
+
+/**
+ * Converts the String to all lower case
+ */
+fun String.toLowerCase(): String {
+    return this.lowercase(Locale.getDefault())
+}
+
+/**
+ * Converts the String to all upper case
+ */
+fun String.toUpperCase(): String {
+    return this.uppercase(Locale.getDefault())
+}
+
+/**
  * Generates a string in camelCase format (lower case first letter) from a List of Strings
  */
 private fun List<String>.convertToCamelCase(): String {
@@ -76,7 +100,7 @@ private fun List<String>.convertToCamelCase(): String {
         if(first)
             builder.append(word.toLowerCase())
         else
-            builder.append(word.toLowerCase().capitalize())
+            builder.append(word.toLowerCase().capitalizeFirstLetter())
         first = false
     }
 
@@ -112,7 +136,7 @@ fun Array<out String>.convertWordDelimiterConvention(newConvention: NamingConven
         NamingConvention.KEBAB_CASE -> words.filter {it.isNotEmpty() }.joinToString("-").toLowerCase()
         NamingConvention.UPPER_KEBAB_CASE -> words.filter {it.isNotEmpty() }.joinToString("-").toUpperCase()
         NamingConvention.CAMEL_CASE -> words.filter {it.isNotEmpty() }.convertToCamelCase()
-        NamingConvention.UPPER_CAMEL_CASE -> words.filter {it.isNotEmpty() }.convertToCamelCase().capitalize()
+        NamingConvention.UPPER_CAMEL_CASE -> words.filter {it.isNotEmpty() }.convertToCamelCase().capitalizeFirstLetter()
     }
 }
 

@@ -56,12 +56,12 @@ object Utils {
         // We only need to do anything if there are any variables of the requested type
         if(item.variables.any{it.locality == locality}) {
             if(blankStart)
-                result.appendln()
+                result.appendLine()
 
             // If we need to generate a comment
             if(comment != null)
                 // Generate the comment, at the correct indent, with the locality named after
-                result.appendln("${config.getIndent(depth)}// $comment ${locality.getTextualName()}")
+                result.appendLine("${config.getIndent(depth)}// $comment ${locality.getTextualName()}")
 
             // Now for each variable of the right locality, we want to add the output of the arbitrary function with the
             // variable as input
@@ -70,10 +70,10 @@ object Utils {
                     .sortedBy { it.type }
                     .map { function(it) }
                     .filter { it.isNotEmpty() }
-                    .forEach { result.appendln("${config.getIndent(depth)}$it") }
+                    .forEach { result.appendLine("${config.getIndent(depth)}$it") }
 
             if(blankEnd)
-                result.appendln()
+                result.appendLine()
         }
 
         // And now return the overall result
@@ -293,9 +293,9 @@ object Utils {
         if(!innerProgram) {
             program.variables.filter {it.locality == ParseTreeLocality.INTERNAL}
                     .filterNot { prefixData.customVariableNames.containsKey(it.name) }
-                    .forEach { builder.appendln("${config.getIndent(depth)}${Utils.generateCType(it.type)} ${Utils.createVariableName(it.name)};") }
+                    .forEach { builder.appendLine("${config.getIndent(depth)}${Utils.generateCType(it.type)} ${Utils.createVariableName(it.name)};") }
             if(builder.isNotEmpty())
-                builder.appendln()
+                builder.appendLine()
         }
 
         // Now, we need to go through each line
@@ -336,7 +336,7 @@ object Utils {
                         }
                     }
                 }
-                .forEach { builder.appendln(it.prependIndent(config.getIndent(depth))) }
+                .forEach { builder.appendLine(it.prependIndent(config.getIndent(depth))) }
 
         // And return the total program
         return builder.toString().trimEnd()

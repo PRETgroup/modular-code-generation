@@ -105,13 +105,13 @@ class CCodeGenerator {
 
             // Represent most of the config properties as #defines in the C
             // Execution Settings
-            content.appendln("#define STEP_SIZE ${config.execution.stepSize}")
-            content.appendln("#define SIMULATION_TIME ${config.execution.simulationTime}")
+            content.appendLine("#define STEP_SIZE ${config.execution.stepSize}")
+            content.appendLine("#define SIMULATION_TIME ${config.execution.simulationTime}")
 
             // Logging Settings
-            content.appendln("#define ENABLE_LOGGING ${if(config.logging.enable) 1 else 0}")
-            content.appendln("#define LOGGING_FILE \"${config.logging.file}\"")
-            content.appendln("#define LOGGING_INTERVAL ${config.logging.interval ?: config.execution.stepSize}")
+            content.appendLine("#define ENABLE_LOGGING ${if (config.logging.enable) 1 else 0}")
+            content.appendLine("#define LOGGING_FILE \"${config.logging.file}\"")
+            content.appendLine("#define LOGGING_INTERVAL ${config.logging.interval ?: config.execution.stepSize}")
 
             // And write the content
             File(outputDir, CONFIG_FILE).writeText(content.toString())
@@ -135,78 +135,78 @@ class CCodeGenerator {
             val content = StringBuilder()
 
             // Create the guard for the file
-            content.appendln("#ifndef DELAYABLE_H_")
-            content.appendln("#define DELAYABLE_H_")
-            content.appendln()
+            content.appendLine("#ifndef DELAYABLE_H_")
+            content.appendLine("#define DELAYABLE_H_")
+            content.appendLine()
 
             // We depend on stdlib and string.h
-            content.appendln("#include <stdlib.h>")
-            content.appendln("#include <string.h>")
-            content.appendln()
+            content.appendLine("#include <stdlib.h>")
+            content.appendLine("#include <string.h>")
+            content.appendLine()
 
             // If we're generating for a boolean type
             if(types.contains(VariableType.BOOLEAN)) {
                 // We need to create the type for bool, and true / false
-                content.appendln("typedef int bool;")
-                content.appendln("#define false 0")
-                content.appendln("#define true 1")
-                content.appendln()
+                content.appendLine("typedef int bool;")
+                content.appendLine("#define false 0")
+                content.appendLine("#define true 1")
+                content.appendLine()
             }
 
             // Include the config file so we have access to step size
-            content.appendln("#include \"$CONFIG_FILE\"")
-            content.appendln()
+            content.appendLine("#include \"$CONFIG_FILE\"")
+            content.appendLine()
 
             // For each type we need to make delayable
             for(type in types) {
                 // Create the struct, which includes a buffer, max length, and current index
-                content.appendln("// Delayable struct for type ${Utils.generateCType(type)}")
-                content.appendln("typedef struct {")
-                content.appendln("${config.getIndent(1)}${Utils.generateCType(type)} *buffer;")
-                content.appendln("${config.getIndent(1)}unsigned int index;")
-                content.appendln("${config.getIndent(1)}unsigned int max_length;")
-                content.appendln("} ${Utils.createTypeName("Delayable", Utils.generateCType(type))};")
-                content.appendln()
+                content.appendLine("// Delayable struct for type ${Utils.generateCType(type)}")
+                content.appendLine("typedef struct {")
+                content.appendLine("${config.getIndent(1)}${Utils.generateCType(type)} *buffer;")
+                content.appendLine("${config.getIndent(1)}unsigned int index;")
+                content.appendLine("${config.getIndent(1)}unsigned int max_length;")
+                content.appendLine("} ${Utils.createTypeName("Delayable", Utils.generateCType(type))};")
+                content.appendLine()
 
                 // Create the initialisation function, which instantiates the buffer, sets the max length, and resets
                 // the index to 0
-                content.appendln("// Initialisation function")
-                content.appendln("static inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Init")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double max_delay) {")
-                content.appendln("${config.getIndent(1)}me->index = 0;")
-                content.appendln("${config.getIndent(1)}me->max_length = (unsigned int) (max_delay / STEP_SIZE);")
-                content.appendln("${config.getIndent(1)}me->buffer = malloc(sizeof(${Utils.generateCType(type)}) * me->max_length);")
-                content.appendln("}")
-                content.appendln()
+                content.appendLine("// Initialisation function")
+                content.appendLine("static inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Init")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double max_delay) {")
+                content.appendLine("${config.getIndent(1)}me->index = 0;")
+                content.appendLine("${config.getIndent(1)}me->max_length = (unsigned int) (max_delay / STEP_SIZE);")
+                content.appendLine("${config.getIndent(1)}me->buffer = malloc(sizeof(${Utils.generateCType(type)}) * me->max_length);")
+                content.appendLine("}")
+                content.appendLine()
 
                 // Create the add function, which will add an item to the buffer and roll around the index if needed
-                content.appendln("// Add function")
-                content.appendln("static inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Add")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, ${Utils.generateCType(type)} value) {")
-                content.appendln("${config.getIndent(1)}me->index++;")
-                content.appendln("${config.getIndent(1)}if(me->index >= me->max_length)")
-                content.appendln("${config.getIndent(2)}me->index = 0;")
-                content.appendln()
-                content.appendln("${config.getIndent(1)}me->buffer[me->index] = value;")
-                content.appendln("}")
-                content.appendln()
+                content.appendLine("// Add function")
+                content.appendLine("static inline void ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Add")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, ${Utils.generateCType(type)} value) {")
+                content.appendLine("${config.getIndent(1)}me->index++;")
+                content.appendLine("${config.getIndent(1)}if(me->index >= me->max_length)")
+                content.appendLine("${config.getIndent(2)}me->index = 0;")
+                content.appendLine()
+                content.appendLine("${config.getIndent(1)}me->buffer[me->index] = value;")
+                content.appendLine("}")
+                content.appendLine()
 
                 // And finally create the get function, which will access the buffer at the correct position in the past
                 // If the requested delay is larger than the max delay then an error will occur
-                content.appendln("// Get function")
-                content.appendln("static inline ${Utils.generateCType(type)} ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Get")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double delay) {")
-                content.appendln("${config.getIndent(1)}int steps = (int) (delay / STEP_SIZE);")
-                content.appendln("${config.getIndent(1)}if(steps > me->max_length)")
-                content.appendln("${config.getIndent(2)}return 0; // This is an error")
-                content.appendln()
-                content.appendln("${config.getIndent(1)}if(steps > me->index)")
-                content.appendln("${config.getIndent(2)}return me->buffer[me->max_length + me->index - steps];")
-                content.appendln("${config.getIndent(1)}else")
-                content.appendln("${config.getIndent(2)}return me->buffer[me->index - steps];")
-                content.appendln("}")
-                content.appendln()
+                content.appendLine("// Get function")
+                content.appendLine("static inline ${Utils.generateCType(type)} ${Utils.createFunctionName("Delayable", Utils.generateCType(type), "Get")}(${Utils.createTypeName("Delayable", Utils.generateCType(type))}* me, double delay) {")
+                content.appendLine("${config.getIndent(1)}int steps = (int) (delay / STEP_SIZE);")
+                content.appendLine("${config.getIndent(1)}if(steps > me->max_length)")
+                content.appendLine("${config.getIndent(2)}return 0; // This is an error")
+                content.appendLine()
+                content.appendLine("${config.getIndent(1)}if(steps > me->index)")
+                content.appendLine("${config.getIndent(2)}return me->buffer[me->max_length + me->index - steps];")
+                content.appendLine("${config.getIndent(1)}else")
+                content.appendLine("${config.getIndent(2)}return me->buffer[me->index - steps];")
+                content.appendLine("}")
+                content.appendLine()
             }
 
             // Close the guard
-            content.appendln("#endif // DELAYABLE_H_")
+            content.appendLine("#endif // DELAYABLE_H_")
 
             // And write the contents to disk
             File(outputDir, DELAYABLE_HEADER).writeText(content.toString())

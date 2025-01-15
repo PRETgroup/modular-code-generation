@@ -5,6 +5,7 @@ import me.nallen.modularcodegeneration.hybridautomata.Variable
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.utils.NamingConvention
 import me.nallen.modularcodegeneration.utils.convertWordDelimiterConvention
+import me.nallen.modularcodegeneration.utils.toLowerCase
 
 typealias ParseTreeLocality = me.nallen.modularcodegeneration.parsetree.Locality
 
@@ -381,7 +382,7 @@ object Utils {
             // And convert the ProgramLine into a string representation
             // Note that some of these will recursively call this method, as they contain their own bodies
             // (such as If statements)
-            builder.appendln(when(line) {
+            builder.appendLine(when(line) {
                 is Statement -> "${Utils.generateCodeForParseTreeItem(line.logic, prefixData)};"
                 is Break -> "exit;"
                 is Assignment -> "${Utils.generateCodeForParseTreeItem(line.variableName, prefixData)} := ${Utils.generateCodeForParseTreeItem(line.variableValue, prefixData)};"
@@ -397,7 +398,7 @@ object Utils {
             // If we're in a conditional block we need to check if we need to add an end
             if(line is IfStatement || line is ElseIfStatement || line is ElseStatement) {
                 if(index+1 >= program.lines.size || !(program.lines[index+1] is ElseIfStatement || program.lines[index+1] is ElseStatement)) {
-                    builder.appendln("end if;\n".prependIndent(indent))
+                    builder.appendLine("end if;\n".prependIndent(indent))
                 }
             }
         }

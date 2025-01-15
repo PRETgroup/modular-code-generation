@@ -458,7 +458,7 @@ fun Program.generateString(): String {
                 }
             }
             // And append them all together!
-            .forEach { builder.appendln(it) }
+            .forEach { builder.appendLine(it) }
 
     // And return the generated string
     return builder.toString().trimEnd()

@@ -13,6 +13,7 @@ import me.nallen.modularcodegeneration.hybridautomata.Locality
 import me.nallen.modularcodegeneration.logging.Logger
 import me.nallen.modularcodegeneration.parsetree.*
 import me.nallen.modularcodegeneration.utils.getRelativePath
+import me.nallen.modularcodegeneration.utils.toLowerCase
 import java.io.File
 import java.lang.Math
 import java.util.*
@@ -42,8 +43,9 @@ class Importer {
 
             val filteredContents = contents.replace(Regex("<documentation.*</documentation>", RegexOption.DOT_MATCHES_ALL), "")
 
-            val xmlMapper = XmlMapper().registerKotlinModule()
-            xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES, false)
+            val xmlMapper = XmlMapper.builder()
+                .configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES, false)
+                .build().registerKotlinModule()
             val cellMLTree: Model? = xmlMapper.readValue(filteredContents, Model::class.java)
 
             // Check if we could actually import it as an XML file

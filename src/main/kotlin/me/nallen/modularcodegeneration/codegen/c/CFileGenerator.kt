@@ -57,22 +57,22 @@ object CFileGenerator {
         val result = StringBuilder()
 
         // First off, we'll include the associated header file
-        result.appendln("#include \"${Utils.createFileName(item.name)}.h\"")
-        result.appendln()
+        result.appendLine("#include \"${Utils.createFileName(item.name)}.h\"")
+        result.appendLine()
 
         //Generate the code for any custom functions, if any
         if(item.functions.size > 0)
-            result.appendln(generateCustomFunctions(item))
+            result.appendLine(generateCustomFunctions(item))
 
         // If we're supporting run time parametrisation then we want to generate the default parametrisation function
         if(config.parametrisationMethod == ParametrisationMethod.RUN_TIME)
-            result.appendln(generateParametrisationFunction(item))
+            result.appendLine(generateParametrisationFunction(item))
 
         // Generate the initialisation function
-        result.appendln(generateInitialisationFunction(item))
+        result.appendLine(generateInitialisationFunction(item))
 
         // Generate the execution / step function
-        result.appendln(generateExecutionFunction(item))
+        result.appendLine(generateExecutionFunction(item))
 
         // And return the total source file contents
         return result.toString().trim()
@@ -107,7 +107,7 @@ object CFileGenerator {
                 result.append("${Utils.generateCType(input.type)} ${Utils.createVariableName(input.name)}")
             }
             // Open the function
-            result.appendln(") {")
+            result.appendLine(") {")
 
             // We need to set all parameters to use the value stored inside the self reference, as this is where their
             // values will be stored
@@ -117,11 +117,11 @@ object CFileGenerator {
             }
 
             // Now we can generate the code for the internal body of the function!
-            result.appendln(Utils.generateCodeForProgram(function.logic, config, 1, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customDefinedVariables)))
+            result.appendLine(Utils.generateCodeForProgram(function.logic, config, 1, Utils.PrefixData("", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customDefinedVariables)))
 
             // Close the function
-            result.appendln("}")
-            result.appendln()
+            result.appendLine("}")
+            result.appendLine()
         }
 
         // Return all the functions
@@ -135,10 +135,10 @@ object CFileGenerator {
         val result = StringBuilder()
 
         // Let's start the default parametrisation function
-        result.appendln("// ${item.name} Default Parametrisation function")
+        result.appendLine("// ${item.name} Default Parametrisation function")
 
         // Create the method name
-        result.appendln("void ${Utils.createFunctionName(item.name, "Parametrise")}(${Utils.createTypeName(item.name)}* me) {")
+        result.appendLine("void ${Utils.createFunctionName(item.name, "Parametrise")}(${Utils.createTypeName(item.name)}* me) {")
 
         // We only need to add any logic here if there are actually any parameters with default values
         if(item.variables.any {it.locality == Locality.PARAMETER && it.defaultValue != null})
@@ -151,25 +151,25 @@ object CFileGenerator {
             var first = true
             for ((name, instance) in objects) {
                 if (!first)
-                    result.appendln()
+                    result.appendLine()
                 first = false
 
                 // Now, if it's run-time parametrisation then we need to do some extra logic
                 if (config.parametrisationMethod == ParametrisationMethod.RUN_TIME) {
                     // Firstly we want to call the default parametrisation for the model, in case we don't set any
-                    result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Parametrise")}(&me->${Utils.createVariableName(name, "data")});")
+                    result.appendLine("${config.getIndent(1)}${Utils.createFunctionName(instance, "Parametrise")}(&me->${Utils.createVariableName(name, "data")});")
 
                     // Next we need to go through every parameter that we need to set
                     for ((key, value) in item.instances[name]!!.parameters) {
                         // And set that parameter value accordingly
-                        result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(name, "data")}.${Utils.createVariableName(key)} = ${Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("${Utils.createVariableName(name, "data")}.", requireSelfReferenceInFunctionCalls))};")
+                        result.appendLine("${config.getIndent(1)}me->${Utils.createVariableName(name, "data")}.${Utils.createVariableName(key)} = ${Utils.generateCodeForParseTreeItem(value, Utils.PrefixData("${Utils.createVariableName(name, "data")}.", requireSelfReferenceInFunctionCalls))};")
                     }
                 }
             }
         }
 
         // Close the method
-        result.appendln("}")
+        result.appendLine("}")
 
         // And return the parametrisation method
         return result.toString()
@@ -182,10 +182,10 @@ object CFileGenerator {
         val result = StringBuilder()
 
         // Let's start the initialisation function
-        result.appendln("// ${item.name} Initialisation function")
+        result.appendLine("// ${item.name} Initialisation function")
 
         // Create the method, which just takes in a self reference
-        result.appendln("void ${Utils.createFunctionName(item.name, "Init")}(${Utils.createTypeName(item.name)}* me) {")
+        result.appendLine("void ${Utils.createFunctionName(item.name, "Init")}(${Utils.createTypeName(item.name)}* me) {")
 
         // If it's an Automata then we have some extra logic to include
         if(item is HybridAutomata)
@@ -196,14 +196,14 @@ object CFileGenerator {
             // We need to initialise every object
 
             if(objects.size > 0)
-                result.appendln("${config.getIndent(1)}// Initialise Sub-objects")
+                result.appendLine("${config.getIndent(1)}// Initialise Sub-objects")
             var first = true
             for ((name, instance) in objects) {
                 if (!first)
-                    result.appendln()
+                    result.appendLine()
                 first = false
 
-                result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Init")}(&me->${Utils.createVariableName(name, "data")});")
+                result.appendLine("${config.getIndent(1)}${Utils.createFunctionName(instance, "Init")}(&me->${Utils.createVariableName(name, "data")});")
             }
         }
 
@@ -215,7 +215,7 @@ object CFileGenerator {
 
         // Now we need to look for delayed variables to initialise too
         if (item.variables.any { it.canBeDelayed() }) {
-            result.appendln()
+            result.appendLine()
             result.append("${config.getIndent(1)}// Initialise Delayed Variables")
 
             // Iterate over every variable that needs to be delayed
@@ -223,16 +223,16 @@ object CFileGenerator {
                     .filter { it.canBeDelayed() }) {
                 // For delayed variables, we need to call a memset to create the structure that holds the delayed data,
                 // as well as initialise the delayable structure
-                result.appendln()
-                result.appendln("${config.getIndent(1)}(void) memset((void *)&me->${Utils.createVariableName(variable.name, "delayed")}, 0, sizeof(${Utils.createTypeName("Delayable", Utils.generateCType(variable.type))}));")
-                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Init")}(&me->${Utils.createVariableName(variable.name, "delayed")}, ${Utils.generateCodeForParseTreeItem(variable.delayableBy!!, Utils.PrefixData("me->"))});")
+                result.appendLine()
+                result.appendLine("${config.getIndent(1)}(void) memset((void *)&me->${Utils.createVariableName(variable.name, "delayed")}, 0, sizeof(${Utils.createTypeName("Delayable", Utils.generateCType(variable.type))}));")
+                result.appendLine("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Init")}(&me->${Utils.createVariableName(variable.name, "delayed")}, ${Utils.generateCodeForParseTreeItem(variable.delayableBy!!, Utils.PrefixData("me->"))});")
             }
         }
 
 
 
         // Close the method
-        result.appendln("}")
+        result.appendLine("}")
 
         // Return the initialisation code
         return result.toString()
@@ -245,8 +245,8 @@ object CFileGenerator {
         val result = StringBuilder()
 
         // First off, let's initialise the state correctly
-        result.appendln("${config.getIndent(1)}// Initialise State")
-        result.appendln("${config.getIndent(1)}me->state = ${Utils.createMacroName(automata.name, automata.init.state)};")
+        result.appendLine("${config.getIndent(1)}// Initialise State")
+        result.appendLine("${config.getIndent(1)}me->state = ${Utils.createMacroName(automata.name, automata.init.state)};")
 
         return result.toString()
     }
@@ -306,10 +306,10 @@ object CFileGenerator {
         val result = StringBuilder()
 
         // Let's start the execution function
-        result.appendln("// ${item.name} Execution function")
+        result.appendLine("// ${item.name} Execution function")
 
         // It's simply a function that takes a self reference as the only argument
-        result.appendln("void ${Utils.createFunctionName(item.name, "Run")}(${Utils.createTypeName(item.name)}* me) {")
+        result.appendLine("void ${Utils.createFunctionName(item.name, "Run")}(${Utils.createTypeName(item.name)}* me) {")
 
         // If it's an Automata then we have some extra logic to include
         if(item is HybridAutomata)
@@ -320,7 +320,7 @@ object CFileGenerator {
             result.append(generateNetworkExecutionFunction(item))
 
         // Close the execution function
-        result.appendln("}")
+        result.appendLine("}")
 
         // And return it!
         return result.toString()
@@ -334,19 +334,19 @@ object CFileGenerator {
 
         // We create intermediary variables for anything that we change - namely the state, outputs, and internals.
         // This is so that scheduling order of flow or update statements does not matter
-        result.appendln("${config.getIndent(1)}// Create intermediary variables")
-        result.appendln("${config.getIndent(1)}enum ${Utils.createTypeName(automata.name, "States")} state_u = me->state;")
+        result.appendLine("${config.getIndent(1)}// Create intermediary variables")
+        result.appendLine("${config.getIndent(1)}enum ${Utils.createTypeName(automata.name, "States")} state_u = me->state;")
 
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.EXTERNAL_OUTPUT, CFileGenerator::generateIntermediateVariable, config))
 
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, CFileGenerator::generateIntermediateVariable, config))
-        result.appendln()
+        result.appendLine()
 
         // Let's start by adding an entry to each delayed variable that we have to keep track of
         if (automata.variables.any { it.canBeDelayed() }) {
             for (variable in automata.variables.filter { it.canBeDelayed() })
-                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
-            result.appendln()
+                result.appendLine("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
+            result.appendLine()
         }
 
         // A few different semantics are supported in the configuration settings, which are handled by the following
@@ -358,24 +358,24 @@ object CFileGenerator {
         // If we could do more than 1 inter-location transition
         if (needsTransitionCounting) {
             // We want to make sure we only ever do that many at maximum through a while loop
-            result.appendln("${config.getIndent(1)}unsigned int remaining_transitions = ${config.maximumInterTransitions};")
-            result.appendln("${config.getIndent(1)}while(remaining_transitions > 0) {")
+            result.appendLine("${config.getIndent(1)}unsigned int remaining_transitions = ${config.maximumInterTransitions};")
+            result.appendLine("${config.getIndent(1)}while(remaining_transitions > 0) {")
             if(config.ccodeSettings.hasLoopAnnotations) {
-                result.appendln("${config.getIndent(2)}${config.ccodeSettings.getLoopAnnotation(config.maximumInterTransitions)}")
+                result.appendLine("${config.getIndent(2)}${config.ccodeSettings.getLoopAnnotation(config.maximumInterTransitions)}")
             }
             // As soon as we start the loop, we decrease the counter by one
-            result.appendln("${config.getIndent(2)}// Decrement the remaining transitions available")
-            result.appendln("${config.getIndent(2)}remaining_transitions--;")
-            result.appendln()
+            result.appendLine("${config.getIndent(2)}// Decrement the remaining transitions available")
+            result.appendLine("${config.getIndent(2)}remaining_transitions--;")
+            result.appendLine()
         }
 
         // Now we can add in the state machine logic
-        result.appendln(generateStateMachine(automata, needsTransitionCounting))
+        result.appendLine(generateStateMachine(automata, needsTransitionCounting))
 
         // Now we do the opposite of earlier, and update each internal variable / output from the intermediary ones we
         // created and used throughout the state machine. Again we do it for state, outputs, and internals
-        result.appendln("${config.getIndent(defaultIndent)}// Update from intermediary variables")
-        result.appendln("${config.getIndent(defaultIndent)}me->state = state_u;")
+        result.appendLine("${config.getIndent(defaultIndent)}// Update from intermediary variables")
+        result.appendLine("${config.getIndent(defaultIndent)}me->state = state_u;")
 
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.EXTERNAL_OUTPUT, CFileGenerator::updateFromIntermediateVariable, config, depth = defaultIndent))
 
@@ -384,7 +384,7 @@ object CFileGenerator {
         // If we could have done more than 1 inter-location transition
         if (needsTransitionCounting) {
             // We want to close the while loop we opened earlier
-            result.appendln("${config.getIndent(1)}}")
+            result.appendLine("${config.getIndent(1)}}")
         }
 
         // Similarly, another config option is to always require one intra-location transition per tick (i.e. one set of
@@ -392,7 +392,7 @@ object CFileGenerator {
         if (config.requireOneIntraTransitionPerTick) {
             // If this is the case, then we generate a special state machine that doesn't advance the state, but merely
             // performs the internal actions of the current state
-            result.appendln()
+            result.appendLine()
 
             result.append(generateIntraStateMachine(automata))
         }
@@ -411,38 +411,38 @@ object CFileGenerator {
         // Keep a record of the indentation so that the code looks nice
         val defaultIndent = if(countTransitions) 2 else 1
 
-        result.appendln("${config.getIndent(defaultIndent)}// Run the state machine for transition logic")
+        result.appendLine("${config.getIndent(defaultIndent)}// Run the state machine for transition logic")
         if(config.requireOneIntraTransitionPerTick)
-            result.appendln("${config.getIndent(defaultIndent)}// This will only be inter-location transitions, with intra-location transitions happening later")
+            result.appendLine("${config.getIndent(defaultIndent)}// This will only be inter-location transitions, with intra-location transitions happening later")
 
         // Start the switch statement (operating on the current state) that captures the state machine
-        result.appendln("${config.getIndent(defaultIndent)}switch(me->state) {")
+        result.appendLine("${config.getIndent(defaultIndent)}switch(me->state) {")
 
         // For each location we will generate an entry
         for(location in automata.locations) {
             // Generate the case that matches this state
-            result.appendln("${config.getIndent(defaultIndent+1)}case ${Utils.createMacroName(automata.name, location.name)}: // Logic for state ${location.name}")
+            result.appendLine("${config.getIndent(defaultIndent+1)}case ${Utils.createMacroName(automata.name, location.name)}: // Logic for state ${location.name}")
 
             // For each transition that leaves this location, we need to check if it can be taken
             var atLeastOneIf = false
             for((_, toLocation, guard, update) in automata.edges.filter{it.fromLocation == location.name }) {
                 // Check if the guard of the transition is satisfied
-                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
+                result.appendLine("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(guard, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
 
                 // If it is satisfied, then we will perform the updates associated with the transition
                 for((variable, equation) in update) {
-                    result.appendln("${config.getIndent(defaultIndent+3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))};")
+                    result.appendLine("${config.getIndent(defaultIndent+3)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))};")
                 }
 
                 if(update.isNotEmpty())
-                    result.appendln()
+                    result.appendLine()
 
                 // And update the state to correspond to where the transition will take us to
-                result.appendln("${config.getIndent(defaultIndent+3)}// Next state is $toLocation")
-                result.appendln("${config.getIndent(defaultIndent+3)}state_u = ${Utils.createMacroName(automata.name, toLocation)};")
+                result.appendLine("${config.getIndent(defaultIndent+3)}// Next state is $toLocation")
+                result.appendLine("${config.getIndent(defaultIndent+3)}state_u = ${Utils.createMacroName(automata.name, toLocation)};")
 
                 // Close the check for the guard
-                result.appendln("${config.getIndent(defaultIndent+2)}}")
+                result.appendLine("${config.getIndent(defaultIndent+2)}}")
 
                 atLeastOneIf = true
             }
@@ -451,25 +451,25 @@ object CFileGenerator {
             if(!config.requireOneIntraTransitionPerTick) {
                 // Yes we should include them!
                 // So let's start off with checking the invariant of the location
-                result.appendln("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
+                result.appendLine("${config.getIndent(defaultIndent+2)}${if(atLeastOneIf) { "else " } else { "" }}if(${Utils.generateCodeForParseTreeItem(location.invariant, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))}) {")
 
                 // And add the code for the intra-transition, which will include both flow and updates
                 result.append(generateCodeForIntraLogic(location, automata, defaultIndent+3))
 
                 // For an intra-location, the state won't change, so we can set it to itself
-                result.appendln("${config.getIndent(defaultIndent+3)}// Remain in this state")
-                result.appendln("${config.getIndent(defaultIndent+3)}state_u = ${Utils.createMacroName(automata.name, location.name)};")
+                result.appendLine("${config.getIndent(defaultIndent+3)}// Remain in this state")
+                result.appendLine("${config.getIndent(defaultIndent+3)}state_u = ${Utils.createMacroName(automata.name, location.name)};")
 
                 // We then also need to check if we're counting transitions
                 if(countTransitions) {
                     // Performing an intra-location transition stops execution in this tick, so we need to do that
-                    result.appendln()
-                    result.appendln("${config.getIndent(defaultIndent+3)}// Taking an intra-location transition stops execution")
-                    result.appendln("${config.getIndent(defaultIndent+3)}remaining_transitions = 0;")
+                    result.appendLine()
+                    result.appendLine("${config.getIndent(defaultIndent+3)}// Taking an intra-location transition stops execution")
+                    result.appendLine("${config.getIndent(defaultIndent+3)}remaining_transitions = 0;")
                 }
 
                 // Close the invariant check
-                result.appendln("${config.getIndent(defaultIndent+2)}}")
+                result.appendLine("${config.getIndent(defaultIndent+2)}}")
 
                 atLeastOneIf = true
             }
@@ -477,19 +477,19 @@ object CFileGenerator {
             // If we're counting transitions
             if(atLeastOneIf && countTransitions) {
                 // Then we want to add a check in case none of the transitions could be taken
-                result.appendln("${config.getIndent(defaultIndent+2)}else {")
+                result.appendLine("${config.getIndent(defaultIndent+2)}else {")
                 // In this case, we will take no further transitions in this tick
-                result.appendln("${config.getIndent(defaultIndent+3)}// No available transition stops execution")
-                result.appendln("${config.getIndent(defaultIndent+3)}remaining_transitions = 0;")
-                result.appendln("${config.getIndent(defaultIndent+2)}}")
+                result.appendLine("${config.getIndent(defaultIndent+3)}// No available transition stops execution")
+                result.appendLine("${config.getIndent(defaultIndent+3)}remaining_transitions = 0;")
+                result.appendLine("${config.getIndent(defaultIndent+2)}}")
             }
 
             // Break from the state machine logic for this state
-            result.appendln("${config.getIndent(defaultIndent+2)}break;")
+            result.appendLine("${config.getIndent(defaultIndent+2)}break;")
         }
 
         // Close the switch statement
-        result.appendln("${config.getIndent(defaultIndent)}}")
+        result.appendLine("${config.getIndent(defaultIndent)}}")
 
         // Return the state machine
         return result.toString()
@@ -503,31 +503,31 @@ object CFileGenerator {
         val result = StringBuilder()
 
         // Start the state machine
-        result.appendln("${config.getIndent(1)}// Intra-location logic for every state")
+        result.appendLine("${config.getIndent(1)}// Intra-location logic for every state")
 
         // Start the switch statement (operating on the current state) that captures the state machine
-        result.appendln("${config.getIndent(1)}switch(me->state) {")
+        result.appendLine("${config.getIndent(1)}switch(me->state) {")
 
         // For each location we will generate an entry
         for(location in automata.locations) {
             // Generate the case that matches this state
-            result.appendln("${config.getIndent(2)}case ${Utils.createMacroName(automata.name, location.name)}: // Intra-location logic for state ${location.name}")
+            result.appendLine("${config.getIndent(2)}case ${Utils.createMacroName(automata.name, location.name)}: // Intra-location logic for state ${location.name}")
 
             // Add the code for the intra-transition, which will include both flow and updates
             result.append(generateCodeForIntraLogic(location, automata, 3))
 
             // Break from the state machine logic for this state
-            result.appendln("${config.getIndent(3)}break;")
+            result.appendLine("${config.getIndent(3)}break;")
         }
 
         // Close the switch statement
-        result.appendln("${config.getIndent(1)}}")
-        result.appendln()
+        result.appendLine("${config.getIndent(1)}}")
+        result.appendLine()
 
         // Now we do the opposite of earlier, and update each internal variable / output from the intermediary ones we
         // created and used throughout the state machine. This time however, we don't need to worry about state as that
         // won't have changed
-        result.appendln("${config.getIndent(1)}// Update from intermediary variables")
+        result.appendLine("${config.getIndent(1)}// Update from intermediary variables")
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.EXTERNAL_OUTPUT, CFileGenerator::updateFromIntermediateVariable, config))
 
         result.append(Utils.performVariableFunctionForLocality(automata, Locality.INTERNAL, CFileGenerator::updateFromIntermediateVariable, config))
@@ -553,7 +553,7 @@ object CFileGenerator {
             val eulerSolution = Plus(ParseTreeVariable(variable), Multiply(equation, ParseTreeVariable("STEP_SIZE")))
 
             // And then generate code that performs the ODE
-            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))};")
+            result.appendLine("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(eulerSolution, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes))};")
 
             // We also keep track of the variables we've added in flow, so that the latest copies can be used in the
             // update section
@@ -561,16 +561,16 @@ object CFileGenerator {
         }
 
         if(location.flow.isNotEmpty())
-            result.appendln()
+            result.appendLine()
 
         // Now go through each update constraint
         for((variable, equation) in location.update) {
             // Generate code that performs the given update
-            result.appendln("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customVars))};")
+            result.appendLine("${config.getIndent(indent)}${Utils.createVariableName(variable)}_u = ${Utils.generateCodeForParseTreeItem(equation, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, delayedVariableTypes, customVars))};")
         }
 
         if(location.update.isNotEmpty())
-            result.appendln()
+            result.appendLine()
 
         // Now we look at saturation, so collect all the limits
         val saturationLimits = CodeGenManager.collectSaturationLimits(location, automata.edges)
@@ -590,33 +590,33 @@ object CFileGenerator {
             }
 
             // Add the code that checks for the saturation condition
-            result.appendln("${config.getIndent(indent)}if($condition) {")
-            result.appendln("${config.getIndent(indent+1)}// Need to saturate ${point.variable} to $limit")
+            result.appendLine("${config.getIndent(indent)}if($condition) {")
+            result.appendLine("${config.getIndent(indent+1)}// Need to saturate ${point.variable} to $limit")
 
             // Now we have the code that actually performs the saturation
             if(dependencies.isNotEmpty()) {
                 // All dependencies that we allow are linear combinations, so we work out at what time the limit would
                 // have been hit "frac", and then use that to scale each of the values with respect to their previous
                 // values
-                result.appendln("${config.getIndent(indent+1)}// Also some dependencies that need saturating")
-                result.appendln("${config.getIndent(indent+1)}double frac = ($limit - me->$variable) / (${variable}_u - me->$variable);")
-                result.appendln()
+                result.appendLine("${config.getIndent(indent+1)}// Also some dependencies that need saturating")
+                result.appendLine("${config.getIndent(indent+1)}double frac = ($limit - me->$variable) / (${variable}_u - me->$variable);")
+                result.appendLine()
 
                 // Now do the scaling with respect to their previous values
                 dependencies
                         .map { Utils.createVariableName(it) }
-                        .forEach { result.appendln("${config.getIndent(indent+1)}${it}_u = me->$it + frac * (${it}_u - me->$it);") }
-                result.appendln()
+                        .forEach { result.appendLine("${config.getIndent(indent+1)}${it}_u = me->$it + frac * (${it}_u - me->$it);") }
+                result.appendLine()
             }
 
             // And saturate the actual variable we're looking at
-            result.appendln("${config.getIndent(indent+1)}${variable}_u = $limit;")
+            result.appendLine("${config.getIndent(indent+1)}${variable}_u = $limit;")
             // Close the check for saturation
-            result.appendln("${config.getIndent(indent)}}")
+            result.appendLine("${config.getIndent(indent)}}")
         }
 
         if(saturationLimits.isNotEmpty())
-            result.appendln()
+            result.appendLine()
 
         // Return the intra-location state machine
         return result.toString()
@@ -647,8 +647,8 @@ object CFileGenerator {
         // Let's start by adding an entry to each delayed variable that we have to keep track of
         if (network.variables.any { it.canBeDelayed() }) {
             for (variable in network.variables.filter { it.canBeDelayed() })
-                result.appendln("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
-            result.appendln()
+                result.appendLine("${config.getIndent(1)}${Utils.createFunctionName("Delayable", Utils.generateCType(variable.type), "Add")}(&me->${Utils.createVariableName(variable.name, "delayed")}, me->${Utils.createVariableName(variable.name)});")
+            result.appendLine()
         }
 
         // Get a list of the inputs that we're assigning to, in a sorted order so it looks slightly nicer
@@ -664,7 +664,7 @@ object CFileGenerator {
         for (key in keys) {
             // Header for variable mappings, when needed
             if(prev != key.automata && prev != null && prev.isBlank())
-                result.appendln("${config.getIndent(1)}// Mappings")
+                result.appendLine("${config.getIndent(1)}// Mappings")
 
             prev = key.automata
 
@@ -672,23 +672,23 @@ object CFileGenerator {
             val from = network.ioMapping[key]!!
             if(!key.automata.isBlank())
                 // We are writing to an input of a sub-automata
-                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
+                result.appendLine("${config.getIndent(1)}me->${Utils.createVariableName(key.automata, "data")}.${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
         }
 
-        result.appendln()
+        result.appendLine()
 
         // Let's start the run code
-        result.appendln("${config.getIndent(1)}// Run Automata")
+        result.appendLine("${config.getIndent(1)}// Run Automata")
 
         // We go through each instantiate we've created
         var first = true
         for ((name, instance) in objects) {
             if (!first)
-                result.appendln()
+                result.appendLine()
             first = false
 
             // And simply call the "Run" function for it
-            result.appendln("${config.getIndent(1)}${Utils.createFunctionName(instance, "Run")}(&me->${Utils.createVariableName(name, "data")});")
+            result.appendLine("${config.getIndent(1)}${Utils.createFunctionName(instance, "Run")}(&me->${Utils.createVariableName(name, "data")});")
         }
 
         // Now we go through each output
@@ -696,8 +696,8 @@ object CFileGenerator {
         for (key in keys) {
             // Header for output mappings, when needed
             if(prev != key.automata && key.automata.isBlank()) {
-                result.appendln()
-                result.appendln("${config.getIndent(1)}// Output Mapping")
+                result.appendLine()
+                result.appendLine("${config.getIndent(1)}// Output Mapping")
             }
 
             prev = key.automata
@@ -706,7 +706,7 @@ object CFileGenerator {
             val from = network.ioMapping[key]!!
             if(key.automata.isBlank())
                 // We are writing to an output of this automata
-                result.appendln("${config.getIndent(1)}me->${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
+                result.appendLine("${config.getIndent(1)}me->${Utils.createVariableName(key.variable)} = ${Utils.generateCodeForParseTreeItem(from, Utils.PrefixData("me->", requireSelfReferenceInFunctionCalls, customVariableNames = customVariableNames))};")
        }
 
         // And return the collection of "Run" functions

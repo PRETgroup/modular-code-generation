@@ -48,8 +48,9 @@ class Importer {
             // Otherwise, let's try it as a CellML file
             val filteredContents = contents.replace(Regex("<documentation.*</documentation>", RegexOption.DOT_MATCHES_ALL), "")
 
-            val xmlMapper = XmlMapper().registerKotlinModule()
-            xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES, false)
+            val xmlMapper = XmlMapper.builder()
+                .configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES, false)
+                .build().registerKotlinModule()
             val cellMLTree = xmlMapper.readValue(filteredContents, CellMLModel::class.java)
 
             // Check if we could actually import it as an XML file
