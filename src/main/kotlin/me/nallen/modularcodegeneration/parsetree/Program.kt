@@ -110,6 +110,7 @@ data class Program(
                             addVariable(name, type, Locality.INTERNAL)
                     }
                 }
+                is Break -> {}
             }
         }
 
@@ -148,6 +149,9 @@ data class Program(
                 }
                 is ElseStatement -> bodiesToParse.add(line.body)
                 is ForStatement -> bodiesToParse.add(line.body)
+                is Assignment -> {}
+                is Break -> {}
+                is Statement -> {}
             }
         }
 
@@ -493,6 +497,7 @@ fun Program.setParameterValue(key: String, value: ParseTreeItem): Program {
             }
             is ElseStatement -> line.body.setParameterValue(key, value)
             is ForStatement -> line.body.setParameterValue(key, value)
+            is Break -> {}
         }
     }
 
@@ -532,6 +537,7 @@ fun Program.removeFunctionArguments(list: List<String>): Program {
             }
             is ElseStatement -> line.body.removeFunctionArguments(list)
             is ForStatement -> line.body.removeFunctionArguments(list)
+            is Break -> {}
         }
     }
 

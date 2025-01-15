@@ -3,6 +3,7 @@ package me.nallen.modularcodegeneration.description.haml
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import me.nallen.modularcodegeneration.codegen.Configuration
 import me.nallen.modularcodegeneration.description.Importer
 import me.nallen.modularcodegeneration.hybridautomata.*
@@ -36,7 +37,7 @@ class Importer {
 
             // Now we want to read the file as a YAML file...
             val mapper = ObjectMapper(YAMLFactory())
-            mapper.registerModule(KotlinModule())
+            mapper.registerKotlinModule()
 
             Logger.info("Parsing Schema...")
 

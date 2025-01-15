@@ -3,6 +3,7 @@ package me.nallen.modularcodegeneration.description.cellml
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import me.nallen.modularcodegeneration.codegen.Configuration
 import me.nallen.modularcodegeneration.description.Importer
 import me.nallen.modularcodegeneration.description.cellml.Importer.Factory.variableMap
@@ -41,7 +42,7 @@ class Importer {
 
             val filteredContents = contents.replace(Regex("<documentation.*</documentation>", RegexOption.DOT_MATCHES_ALL), "")
 
-            val xmlMapper = XmlMapper().registerModule(KotlinModule())
+            val xmlMapper = XmlMapper().registerKotlinModule()
             xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES, false)
             val cellMLTree: Model? = xmlMapper.readValue(filteredContents, Model::class.java)
 

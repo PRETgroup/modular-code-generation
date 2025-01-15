@@ -357,7 +357,7 @@ open class SimpleUnit {
                 }
             }
 
-            multiply = this.multiply?.pow(power)
+            multiply = this.multiply.pow(power)
             offset = this.offset
         }
 

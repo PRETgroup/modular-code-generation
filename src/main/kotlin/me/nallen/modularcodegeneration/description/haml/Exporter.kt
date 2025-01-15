@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import me.nallen.modularcodegeneration.codegen.Configuration
 import me.nallen.modularcodegeneration.hybridautomata.AutomataVariablePair
 import me.nallen.modularcodegeneration.hybridautomata.HybridAutomata
@@ -44,7 +45,7 @@ class Exporter {
             
             val mapper = ObjectMapper(YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES))
             mapper.setSerializationInclusion(Include.NON_NULL)
-            mapper.registerModule(KotlinModule())
+            mapper.registerKotlinModule()
 
             val output = mapper.writeValueAsString(schema)
 
