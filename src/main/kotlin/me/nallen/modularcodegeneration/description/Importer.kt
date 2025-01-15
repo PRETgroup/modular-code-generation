@@ -34,7 +34,7 @@ class Importer {
             val (contents, _) = loadFromPath(path)
 
             // Now we want to try read the file as a YAML file...
-            val yamlMapper = YAMLMapper().registerModule(KotlinModule())
+            val yamlMapper = YAMLMapper().registerKotlinModule()
             val yamlTree = yamlMapper.readTree(contents)
 
             // Check if we could actually import it as a YAML file
@@ -48,7 +48,7 @@ class Importer {
             // Otherwise, let's try it as a CellML file
             val filteredContents = contents.replace(Regex("<documentation.*</documentation>", RegexOption.DOT_MATCHES_ALL), "")
 
-            val xmlMapper = XmlMapper().registerModule(KotlinModule())
+            val xmlMapper = XmlMapper().registerKotlinModule()
             xmlMapper.configure(MapperFeature.INFER_CREATOR_FROM_CONSTRUCTOR_PROPERTIES, false)
             val cellMLTree = xmlMapper.readValue(filteredContents, CellMLModel::class.java)
 
